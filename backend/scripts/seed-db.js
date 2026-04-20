@@ -38,9 +38,11 @@ async function run() {
     await conn.query(`USE \`${database}\``);
 
     const userRoleId = await ensureRole(conn, 'user');
+    const specialistRoleId = await ensureRole(conn, 'specialist');
     const adminRoleId = await ensureRole(conn, 'admin');
 
     const userHash = await bcrypt.hash('password123', 10);
+    const specialistHash = await bcrypt.hash('specialist123', 10);
     const adminHash = await bcrypt.hash('admin123', 10);
 
     await upsertUser(conn, {
@@ -50,6 +52,12 @@ async function run() {
       roleId: userRoleId,
     });
     await upsertUser(conn, {
+      name: 'Specialist Hairvelous',
+      email: 'specialist@hairvelous.com',
+      passwordHash: specialistHash,
+      roleId: specialistRoleId,
+    });
+    await upsertUser(conn, {
       name: 'Admin Hairvelous',
       email: 'admin@hairvelous.com',
       passwordHash: adminHash,
@@ -57,7 +65,7 @@ async function run() {
     });
 
     console.log('Seed complete.');
-    console.log('Default accounts: hairvelian@example.com / password123, admin@hairvelous.com / admin123');
+    console.log('Default accounts: hairvelian@example.com / password123, specialist@hairvelous.com / specialist123, admin@hairvelous.com / admin123');
   } finally {
     await conn.end();
   }

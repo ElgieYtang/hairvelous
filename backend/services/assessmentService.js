@@ -26,6 +26,29 @@ function normalizeIssueEntry(i) {
   return String(i);
 }
 
+function toCleanList(arr) {
+  return (Array.isArray(arr) ? arr : [])
+    .map((x) => String(x || '').trim())
+    .filter(Boolean)
+    .filter((v, idx, src) => src.indexOf(v) === idx);
+}
+
+function buildSummaryText(data) {
+  const hairType = (data && data.hairType) ? String(data.hairType).trim() : 'unspecified hair type';
+  const scalp = (data && data.scalpCondition) ? String(data.scalpCondition).trim() : 'unspecified scalp condition';
+  const issues = toCleanList((data && data.issues) || []);
+  const isBald = !!(data && data.isBald);
+
+  if (isBald) {
+    return `Your responses indicate very little or no visible scalp hair. Focus on gentle scalp care and specialist guidance for targeted plans.`;
+  }
+  if (!issues.length) {
+    return `You reported ${hairType} hair with a ${scalp} scalp. No major concerns were selected, so maintain a gentle, consistent care routine and monitor changes weekly.`;
+  }
+  const topIssues = issues.slice(0, 3).join(', ');
+  return `You reported ${hairType} hair with a ${scalp} scalp. Your top concern${issues.length > 1 ? 's are' : ' is'} ${topIssues}; recommended care is prioritized around these indicators.`;
+}
+
 // In-memory store for SKIP_DB_FOR_TESTING mode
 const _mockStore = {
   nextId: 1,
@@ -199,6 +222,7 @@ class AssessmentService {
         scalpCondition: data.scalpCondition || null,
         issuesDetected: data.issues || [],
         isBald: !!data.isBald,
+        summaryText: buildSummaryText(data),
       };
     }
 
@@ -231,6 +255,7 @@ class AssessmentService {
       scalpCondition: data.scalpCondition || null,
       issuesDetected: data.issues || [],
       isBald: !!data.isBald,
+      summaryText: buildSummaryText(data),
     };
   }
 
@@ -251,6 +276,7 @@ class AssessmentService {
         scalpCondition: data.scalpCondition || null,
         issuesDetected: data.issues || [],
         isBald: !!data.isBald,
+        summaryText: buildSummaryText(data),
       };
     }
 
@@ -274,6 +300,7 @@ class AssessmentService {
       scalpCondition: data.scalpCondition || null,
       issuesDetected: data.issues || [],
       isBald: !!data.isBald,
+      summaryText: buildSummaryText(data),
     };
   }
 

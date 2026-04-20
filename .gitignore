@@ -12,3 +12,5 @@ dbbackup/
 .DS_Store
 **/serviceAccountKey.json
 **/*serviceAccountKey*.json
+**/service-account*.json
+**/firebase-admin*.json

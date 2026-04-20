@@ -29,7 +29,7 @@
     <div class="grid xl:grid-cols-12 gap-6">
       <section class="xl:col-span-3 panel p-5">
         <div class="text-center border-b border-slate-700 pb-5 mb-5">
-          <div class="w-20 h-20 mx-auto rounded-full bg-violet-500/20 border-2 border-violet-400/70 flex items-center justify-center text-2xl font-bold text-violet-200 mb-3" id="user-avatar">U</div>
+          <div class="w-20 h-20 mx-auto rounded-full overflow-hidden bg-violet-500/20 border-2 border-violet-400/70 flex items-center justify-center text-2xl font-bold text-violet-200 mb-3" id="user-avatar">U</div>
           <p class="text-xs tracking-[0.2em] uppercase text-slate-500">Welcome</p>
           <h1 id="user-name" class="text-2xl font-bold text-white mt-1">Hairvelous User</h1>
           <p id="user-email" class="text-slate-400 text-sm mt-1"></p>
@@ -110,6 +110,16 @@
             <p class="text-slate-400">No recommendations yet.</p>
           </div>
         </div>
+
+        <div class="panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">My Consultations</h3>
+            <a href="/consultations.html" class="text-violet-300 hover:text-violet-200 text-sm">Open consultations</a>
+          </div>
+          <div id="consults-list" class="space-y-2">
+            <p class="text-slate-400">No consultations yet. Create one to chat with a specialist.</p>
+          </div>
+        </div>
       </section>
     </div>
   </main>
@@ -138,13 +148,31 @@
       return d.toISOString().slice(0, 10);
     }
 
-    function setIdentity() {
+    function setIdentity(profilePhotoUrl) {
       const user = getUser() || {};
       const name = user.name || 'Hairvelous User';
       const email = user.email || '';
+      const initial = name.charAt(0).toUpperCase();
+      const avatar = document.getElementById('user-avatar');
+      const rawPhoto = profilePhotoUrl || user.profilePhotoUrl || '';
+      const safePhoto = typeof rawPhoto === 'string' && rawPhoto.trim().startsWith('/') ? rawPhoto.trim() : '';
       document.getElementById('user-name').textContent = name;
       document.getElementById('user-email').textContent = email;
-      document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+      if (!avatar) return;
+      if (!safePhoto) {
+        avatar.textContent = initial;
+        return;
+      }
+      avatar.textContent = '';
+      const img = document.createElement('img');
+      img.src = safePhoto;
+      img.alt = `${name} profile photo`;
+      img.className = 'h-full w-full object-cover';
+      img.decoding = 'async';
+      img.onerror = () => {
+        avatar.textContent = initial;
+      };
+      avatar.appendChild(img);
     }
 
     function renderChecklist({ hasProfile, recCount, routineCount, consultCount }) {
@@ -223,6 +251,11 @@
 
       try {
         let profile = await api('/profile');
+        if (profile && profile.profilePhotoUrl) {
+          const u = getUser();
+          if (u) setUser({ ...u, profilePhotoUrl: profile.profilePhotoUrl });
+          setIdentity(profile.profilePhotoUrl);
+        }
         let hp = profile.hairProfile;
         if (!hp) {
           try {
@@ -290,7 +323,69 @@
 
       try {
         const consultations = await api('/consultations');
-        consultCount = (consultations.consultations || []).length;
+        const list = consultations.consultations || [];
+        consultCount = list.length;
+        const consultsList = document.getElementById('consults-list');
+        let unreadConsultIds = new Set();
+        try {
+          const notifData = await api('/notifications');
+          const notifications = Array.isArray(notifData.notifications) ? notifData.notifications : [];
+          notifications
+            .filter((n) => !n.isRead)
+            .forEach((n) => {
+              const link = String(n.linkUrl || '');
+              const m = link.match(/[?&]chat=(\d+)/);
+              if (m && m[1]) unreadConsultIds.add(Number(m[1]));
+            });
+        } catch (_notifErr) {
+          unreadConsultIds = new Set();
+        }
+        const statusClass = (s) => {
+          const st = String(s || '');
+          if (st === 'completed') return 'bg-emerald-500/20 text-emerald-300';
+          if (st === 'scheduled' || st === 'in_progress') return 'bg-sky-500/20 text-sky-300';
+          if (st === 'awaiting_payment') return 'bg-cyan-500/20 text-cyan-300';
+          if (st === 'cancelled' || st === 'declined') return 'bg-rose-500/20 text-rose-300';
+          return 'bg-amber-500/20 text-amber-300';
+        };
+        const statusLabel = (s) => {
+          const st = String(s || '');
+          if (st === 'completed') return 'Closed by Specialist';
+          if (st === 'pending') return 'Request Sent';
+          if (st === 'awaiting_payment') return 'Awaiting Payment';
+          if (st === 'scheduled') return 'Payment Verified';
+          if (st === 'in_progress') return 'Ongoing';
+          if (st === 'cancelled') return 'Cancelled';
+          if (st === 'declined') return 'Declined';
+          return st || 'pending';
+        };
+        if (!list.length) {
+          consultsList.innerHTML = '<p class="text-slate-400">No consultations yet. Create one to chat with a specialist.</p>';
+        } else {
+          const sorted = [...list].sort((a, b) => {
+            const ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
+            const tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
+            return tb - ta;
+          });
+          consultsList.innerHTML = sorted.slice(0, 5).map((c) => `
+            <a href="/consultations.html?chat=${Number(c.consultationId)}" class="mini-tile block px-4 py-3 hover:border-violet-400/60">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-white font-medium truncate flex items-center gap-2">
+                    <span class="truncate">${esc(c.concernTitle || 'Consultation')}</span>
+                    ${
+                      unreadConsultIds.has(Number(c.consultationId))
+                        ? '<span class="shrink-0 rounded-full bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-violet-200">New</span>'
+                        : ''
+                    }
+                  </p>
+                  <p class="text-slate-400 text-xs mt-0.5 truncate">${esc(c.specialistName || 'Specialist pending')} · Ref #${Number(c.consultationId)}</p>
+                </div>
+                <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${statusClass(c.status)}">${esc(statusLabel(c.status))}</span>
+              </div>
+            </a>
+          `).join('');
+        }
       } catch (_err) {}
 
       document.getElementById('stat-assessment').textContent = hasProfile ? '1' : '0';

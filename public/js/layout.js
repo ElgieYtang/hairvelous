@@ -33,15 +33,27 @@ function renderNav() {
     return `<a href="${href}" class="${linkClass(href)}">${label}</a>`;
   }
 
-  /** Compact rail: icon + short label (Canvas-style), centered stack */
+  function mobileLink(href, label, icon) {
+    const active = path === href;
+    return `<a href="${href}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm border transition-colors ${
+      active
+        ? 'bg-violet-500/20 text-violet-100 border-violet-400/30'
+        : 'text-slate-200 border-slate-700/70 hover:bg-slate-800/80 hover:text-white'
+    }">
+      <span class="text-base leading-none" aria-hidden="true">${icon}</span>
+      <span class="font-medium">${escapeHtml(label)}</span>
+    </a>`;
+  }
+
+  /** Sidebar item: icon + label, readable on desktop */
   function railLink(href, title, icon, shortLabel) {
     const active = path === href;
     const state = active
       ? 'bg-violet-500/20 text-violet-100 border border-violet-500/40 shadow-[inset_0_1px_0_0_rgba(167,139,250,0.15)]'
       : 'text-slate-200 border border-transparent hover:text-white hover:bg-slate-800/85';
-    return `<a href="${href}" title="${escapeHtml(title)}" class="rail-nav-item flex flex-col items-center justify-center gap-1 rounded-xl py-3 px-0.5 text-center transition-colors ${state}">
-      <span class="text-[1.45rem] leading-none drop-shadow-sm" aria-hidden="true">${icon}</span>
-      <span class="text-[11px] font-semibold leading-[1.15] tracking-tight">${escapeHtml(shortLabel)}</span>
+    return `<a href="${href}" title="${escapeHtml(title)}" class="rail-nav-item flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${state}">
+      <span class="text-lg leading-none drop-shadow-sm shrink-0" aria-hidden="true">${icon}</span>
+      <span class="text-[13px] font-semibold leading-tight tracking-tight truncate">${escapeHtml(shortLabel)}</span>
     </a>`;
   }
 
@@ -76,6 +88,34 @@ function renderNav() {
       ${railLink('/tracker.html', 'Tracker', '📅', 'Track')}
     `;
 
+  const mobileUserLinks = isAdmin
+    ? `
+      ${mobileLink('/admin_dashboard.html', 'Admin Dashboard', '📊')}
+      ${mobileLink('/admin/clients.html', 'Clients', '👥')}
+      ${mobileLink('/product_management.html', 'Products', '🛒')}
+      ${mobileLink('/consultations.html', 'Consultations', '📋')}
+      ${mobileLink('/admin/billing.html', 'Billing', '💳')}
+    `
+    : isSeller
+    ? `
+      ${mobileLink('/product_management.html', 'Products', '🛒')}
+      ${mobileLink('/consultations.html', 'Consultations', '📋')}
+    `
+    : isSpecialist
+    ? `
+      ${mobileLink('/specialist_dashboard.html', 'Dashboard', '📊')}
+      ${mobileLink('/consultations.html', 'Clients', '💬')}
+      ${mobileLink('/guides.html', 'Guides', '📖')}
+    `
+    : `
+      ${mobileLink('/dashboard.html', 'Home', '📊')}
+      ${mobileLink('/assessment.html', 'Assessment', '📝')}
+      ${mobileLink('/recommendations.html', 'Products', '🛒')}
+      ${mobileLink('/consultations.html', 'Consultations', '📋')}
+      ${mobileLink('/guides.html', 'Guides', '📖')}
+      ${mobileLink('/tracker.html', 'Tracker', '📅')}
+    `;
+
   const accountInitial = (() => {
     const e = ((user && user.email) || '?').trim();
     const ch = e.charAt(0);
@@ -93,13 +133,40 @@ function renderNav() {
 
   return `
     <nav class="z-40">
-      <div class="md:hidden sticky top-0 bg-slate-900/95 backdrop-blur border-b border-slate-700/40 px-6 py-2 flex items-center justify-between">
+      <div class="md:hidden sticky top-0 z-[58] bg-slate-900/95 backdrop-blur border-b border-slate-700/40 px-4 py-2 flex items-center justify-between">
         <a href="/" class="flex items-center gap-2 text-white font-semibold">
           <span class="text-xl icon-bounce">✨</span>
           <span>Hairvelous</span>
         </a>
-        ${isLoggedIn ? `<span class="text-xs text-slate-400">Menu</span>` : ''}
+        ${
+          isLoggedIn
+            ? `<button type="button" id="mobile-menu-toggle" class="inline-flex items-center rounded-lg border border-slate-700/80 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800/70 hover:text-white transition-colors" aria-expanded="false" aria-controls="mobile-menu-panel">Menu</button>`
+            : ''
+        }
       </div>
+      ${
+        isLoggedIn
+          ? `<div id="mobile-menu-panel" class="md:hidden hidden fixed inset-0 z-[68]">
+               <div id="mobile-menu-backdrop" class="absolute inset-0 bg-slate-950/70"></div>
+               <div class="absolute right-0 top-0 h-full w-[min(88vw,22rem)] border-l border-slate-700/80 bg-slate-900 shadow-2xl p-4 overflow-y-auto">
+                 <div class="flex items-center justify-between mb-4">
+                   <p class="text-sm font-semibold text-white">Navigation</p>
+                   <button type="button" id="mobile-menu-close" class="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800/80 hover:text-white">Close</button>
+                 </div>
+                 ${
+                   showPlanInTopBar
+                     ? `<div class="mb-4 rounded-xl border border-slate-700/80 bg-slate-800/55 p-3">
+                          <p class="text-[11px] uppercase tracking-wide text-slate-400 mb-1">Plan</p>
+                          <a href="/pricing.html" class="text-sm text-violet-300 hover:text-violet-200">Manage plan and upgrade</a>
+                        </div>`
+                     : ''
+                 }
+                 <nav class="space-y-2">${mobileUserLinks}</nav>
+                 <button type="button" onclick="logout()" class="mt-5 w-full rounded-xl border border-slate-700/80 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 hover:text-white">Logout</button>
+               </div>
+             </div>`
+          : ''
+      }
       ${
         !isLoggedIn
           ? `<div class="sticky top-0 bg-slate-900/95 backdrop-blur border-b border-slate-700/40 px-4 py-2 flex items-center justify-between">
@@ -116,16 +183,16 @@ function renderNav() {
           ${
             isLoggedIn
         ? `${sidebarExpandFab}
-           <div id="app-top-bar" class="hidden md:flex fixed top-0 left-0 right-0 z-[55] h-14 pl-20 pr-6 items-center border-b border-slate-700/40 bg-slate-900/95 backdrop-blur pointer-events-none">
+           <div id="app-top-bar" class="hidden md:flex fixed top-0 left-0 right-0 z-[55] h-14 pl-24 lg:pl-[18rem] pr-6 items-center border-b border-slate-700/40 bg-slate-900/95 backdrop-blur pointer-events-none">
              <a href="/" class="pointer-events-auto flex items-center gap-2 text-white font-semibold min-w-0">
                <span class="text-2xl icon-bounce">✨</span>
                <span>Hairvelous</span>
              </a>
            </div>
-           <div id="notification-root" class="fixed top-16 right-6 z-[65] flex items-center gap-2 md:top-1.5 md:right-6">
+           <div id="notification-root" class="hidden md:flex fixed top-1.5 right-6 z-[65] flex-nowrap items-center justify-end gap-2">
              ${
               showPlanInTopBar
-                ? `<div id="top-plan-chip" class="pointer-events-auto inline-flex items-center rounded-lg border border-slate-700/80 bg-slate-900/95 px-2.5 py-1.5 text-[11px] text-slate-300 shadow-[0_8px_24px_rgba(2,6,23,0.45)] ${
+                ? `<div id="top-plan-chip" class="pointer-events-auto hidden lg:inline-flex shrink-0 whitespace-nowrap items-center rounded-lg border border-slate-700/80 bg-slate-900/95 px-2.5 py-1.5 text-[11px] text-slate-300 shadow-[0_8px_24px_rgba(2,6,23,0.45)] ${
                     pricingPageActive ? 'ring-1 ring-violet-500/30' : ''
                   }">
                     <span id="top-plan-label" class="font-medium">Plan</span>
@@ -135,7 +202,7 @@ function renderNav() {
                  : ''
              }
              <div class="relative shrink-0">
-               <button type="button" id="notification-bell" class="relative flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-slate-900/95 text-lg text-white shadow-[0_8px_24px_rgba(2,6,23,0.45)] hover:bg-slate-800 hover:border-violet-500/40 transition-colors" title="Notifications" aria-label="Notifications">
+               <button type="button" id="notification-bell" class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-700/80 bg-slate-900/95 text-lg text-white shadow-[0_8px_24px_rgba(2,6,23,0.45)] hover:bg-slate-800 hover:border-violet-500/40 transition-colors" title="Notifications" aria-label="Notifications">
                  <span aria-hidden="true">🔔</span>
                  <span id="notification-count" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] leading-[18px] text-center">0</span>
                </button>
@@ -151,8 +218,8 @@ function renderNav() {
              </div>
            </div>
            <div id="sidebar-backdrop" class="fixed inset-0 z-[45] max-w-full cursor-default bg-slate-950/55 opacity-0 pointer-events-none transition-opacity duration-300 ease-out" aria-hidden="true"></div>
-           <aside id="app-sidebar" class="app-sidebar hidden md:flex fixed left-6 top-14 bottom-6 w-[6rem] flex-col overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-950 shadow-[4px_0_24px_rgba(2,6,23,0.45)]">
-             <a href="/profile-edit.html" class="group flex flex-col items-center border-b border-slate-800/80 px-1.5 pt-3 pb-2 text-center outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+           <aside id="app-sidebar" class="app-sidebar hidden md:flex fixed left-0 top-14 bottom-0 w-[15rem] flex-col overflow-hidden rounded-none border-r border-slate-800/90 bg-slate-950 shadow-[4px_0_24px_rgba(2,6,23,0.45)]">
+             <a href="/profile-edit.html" class="group flex items-center gap-3 border-b border-slate-800/80 px-3 pt-3 pb-3 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                profilePageActive
                  ? 'bg-violet-500/20 shadow-[inset_0_1px_0_0_rgba(167,139,250,0.12)] ring-1 ring-inset ring-violet-500/30'
                  : 'hover:bg-slate-800/55'
@@ -161,19 +228,22 @@ function renderNav() {
                  <img id="sidebar-account-photo"${profilePhotoSrc ? ` src="${escapeHtml(profilePhotoSrc)}"` : ''} alt="" class="absolute inset-0 h-full w-full object-cover ${profilePhotoSrc ? '' : 'hidden'}" decoding="async" />
                  <span id="sidebar-account-initial" class="relative z-0 ${profilePhotoSrc ? 'hidden' : ''}">${accountInitial}</span>
                </div>
-               <span class="mt-1.5 max-w-full truncate text-center text-[8px] font-medium uppercase tracking-wider ${profilePageActive ? 'text-violet-200/95' : 'text-slate-500 group-hover:text-slate-400'}">Account</span>
+              <div class="min-w-0 flex-1">
+                <p class="text-[11px] font-medium uppercase tracking-wider ${profilePageActive ? 'text-violet-200/95' : 'text-slate-500 group-hover:text-slate-400'}">Account</p>
+                <p class="text-xs text-slate-300 truncate">${escapeHtml((user && user.name) || (user && user.email) || 'Profile')}</p>
+              </div>
              </a>
-             <nav class="flex min-h-0 flex-1 flex-col items-stretch gap-1 overflow-y-auto overscroll-contain px-1 py-2" aria-label="Main navigation">
+             <nav class="flex min-h-0 flex-1 flex-col items-stretch gap-1 overflow-y-auto overscroll-contain px-2 py-2" aria-label="Main navigation">
                ${userLinks}
              </nav>
-             <div class="flex flex-col items-center gap-1.5 border-t border-slate-800/80 px-1.5 pb-2.5 pt-2">
-               <button type="button" onclick="logout()" class="flex w-full flex-col items-center gap-0.5 rounded-xl py-2 text-slate-300 transition-colors hover:bg-slate-800/80 hover:text-white" title="Log out">
-                 <span class="text-base leading-none" aria-hidden="true">🚪</span>
-                 <span class="text-[10px] font-semibold leading-tight">Logout</span>
+             <div class="flex flex-col items-stretch gap-1.5 border-t border-slate-800/80 px-2 pb-2.5 pt-2">
+               <button type="button" onclick="logout()" class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-slate-300 transition-colors hover:bg-slate-800/80 hover:text-white" title="Log out">
+                 <span class="text-base leading-none shrink-0" aria-hidden="true">🚪</span>
+                 <span class="text-[12px] font-semibold leading-tight">Logout</span>
                </button>
-               <button type="button" id="sidebar-collapse-btn" class="flex w-full flex-col items-center gap-0.5 rounded-xl py-2 text-slate-300 transition-colors hover:bg-slate-800/80 hover:text-white" title="Collapse menu" aria-expanded="true" aria-label="Collapse navigation">
-                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                 <span class="text-[9px] font-semibold uppercase tracking-wide text-slate-400">Hide</span>
+               <button type="button" id="sidebar-collapse-btn" class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-slate-300 transition-colors hover:bg-slate-800/80 hover:text-white" title="Collapse menu" aria-expanded="true" aria-label="Collapse navigation">
+                 <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                 <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Hide menu</span>
                </button>
              </div>
            </aside>`
@@ -187,6 +257,8 @@ async function loadTopPlanBadge() {
   const label = document.getElementById('top-plan-label');
   const upgradeLink = document.getElementById('top-plan-upgrade-link');
   if (!chip || !label || !upgradeLink || typeof api !== 'function') return;
+  const baseResponsiveClasses =
+    'pointer-events-auto hidden lg:inline-flex shrink-0 whitespace-nowrap items-center rounded-lg px-2.5 py-1.5 text-[11px] shadow-[0_8px_24px_rgba(2,6,23,0.45)]';
   try {
     const data = await api('/billing/status');
     const status = (data && data.status) || {};
@@ -195,18 +267,20 @@ async function loadTopPlanBadge() {
       upgradeLink.textContent = 'Manage';
       upgradeLink.href = '/pricing.html';
       chip.className =
-        'pointer-events-auto inline-flex items-center rounded-lg border border-emerald-700/50 bg-emerald-900/25 px-2.5 py-1.5 text-[11px] text-emerald-200 shadow-[0_8px_24px_rgba(2,6,23,0.45)]';
+        `${baseResponsiveClasses} border border-emerald-700/50 bg-emerald-900/25 text-emerald-200`;
     } else {
       label.textContent = 'Free plan';
       upgradeLink.textContent = 'Upgrade';
       upgradeLink.href = '/pricing.html';
       chip.className =
-        'pointer-events-auto inline-flex items-center rounded-lg border border-slate-700/80 bg-slate-900/95 px-2.5 py-1.5 text-[11px] text-slate-300 shadow-[0_8px_24px_rgba(2,6,23,0.45)]';
+        `${baseResponsiveClasses} border border-slate-700/80 bg-slate-900/95 text-slate-300`;
     }
   } catch (_err) {
     label.textContent = 'Free plan';
     upgradeLink.textContent = 'Upgrade';
     upgradeLink.href = '/pricing.html';
+    chip.className =
+      `${baseResponsiveClasses} border border-slate-700/80 bg-slate-900/95 text-slate-300`;
   }
 }
 
@@ -459,6 +533,29 @@ function initNotificationBell() {
   setInterval(loadNotifications, 5000);
 }
 
+function initMobileMenu() {
+  const panel = document.getElementById('mobile-menu-panel');
+  const toggle = document.getElementById('mobile-menu-toggle');
+  if (!panel || !toggle) return;
+  const closeBtn = document.getElementById('mobile-menu-close');
+  const backdrop = document.getElementById('mobile-menu-backdrop');
+
+  function setOpen(open) {
+    panel.classList.toggle('hidden', !open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.classList.toggle('overflow-hidden', open);
+  }
+
+  toggle.addEventListener('click', () => {
+    setOpen(panel.classList.contains('hidden'));
+  });
+  closeBtn?.addEventListener('click', () => setOpen(false));
+  backdrop?.addEventListener('click', () => setOpen(false));
+  panel.addEventListener('click', (e) => {
+    if (e.target.closest('a[href]')) setOpen(false);
+  });
+}
+
 function initLayout() {
   loadAnimationsCSS();
   const navPlaceholder = document.getElementById('nav-placeholder');
@@ -467,6 +564,7 @@ function initLayout() {
     navPlaceholder.innerHTML = renderNav();
     loadTopPlanBadge();
     initNotificationBell();
+    initMobileMenu();
     initSidebarToggle();
     if (typeof getToken === 'function' && getToken() && typeof getUser === 'function' && getUser() && typeof api === 'function') {
       api('/profile')
@@ -540,6 +638,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.style.transition = 'opacity 0.3s ease-in';
     document.body.style.opacity = '1';
   }, 10);
+});
+
+// When returning with browser Back/Forward, some browsers restore the previous
+// page from bfcache including inline styles (e.g. opacity: 0 from fade-out).
+// Ensure page is visible after history navigation.
+window.addEventListener('pageshow', () => {
+  document.body.style.opacity = '1';
+  if (!document.body.style.transition) {
+    document.body.style.transition = 'opacity 0.2s ease-in';
+  }
 });
 
 // Auto-init on load

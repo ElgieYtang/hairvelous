@@ -105,8 +105,8 @@
       /* Staff: inline workspace — same 3-col grid (was lg-only via Tailwind; grid-cols-1 won until 1024px) */
       #mainWorkspaceSlot #consultationsWorkspace:not(.moderator-queue-layout) {
         display: grid !important;
-        grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(260px, 340px) !important;
-        grid-template-rows: minmax(0, 1fr);
+        grid-template-columns: minmax(220px, 270px) minmax(0, 1.35fr) minmax(280px, 360px) !important;
+        grid-template-rows: auto;
         gap: 0 !important;
         align-items: stretch;
       }
@@ -131,6 +131,18 @@
         display: flex;
         flex-direction: column;
       }
+    }
+    @media (min-width: 1280px) {
+      #mainWorkspaceSlot #consultationsWorkspace:not(.moderator-queue-layout) {
+        grid-template-columns: minmax(230px, 290px) minmax(0, 1.5fr) minmax(320px, 430px) !important;
+      }
+    }
+    #mainWorkspaceSlot {
+      overflow: visible !important;
+    }
+    #mainWorkspaceSlot #consultationsWorkspace:not(.moderator-queue-layout) {
+      height: auto !important;
+      min-height: 620px;
     }
     #drawerWorkspaceSlot #detailPanel {
       max-height: none !important;
@@ -158,7 +170,7 @@
 
   <main
     id="consultPageMain"
-    class="mx-auto flex w-full max-w-[min(100%,1680px)] flex-col overflow-x-hidden px-3 pb-6 pt-3 md:px-6 md:pb-8 md:pt-2"
+    class="mx-auto flex w-full max-w-[min(100%,1920px)] flex-col overflow-x-hidden px-3 pb-6 pt-3 md:px-6 md:pb-8 md:pt-2"
   >
     <!-- Landing: specialist cards only for clients (workspace opens from FAB) -->
     <section id="specialistBrowseSection" class="mb-5 w-full shrink-0 lg:mb-4">
@@ -211,8 +223,42 @@
       </div>
     </section>
 
+    <section id="specialistRevenueSection" class="mb-5 hidden w-full shrink-0 lg:mb-4">
+      <div class="w-full rounded-2xl border border-slate-700/80 bg-slate-950/50 p-4 shadow-xl shadow-black/20 sm:p-6">
+        <header class="relative border-l-2 border-emerald-500/70 pl-4 sm:pl-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-400/95">Specialist revenue</p>
+          <h2 class="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Earnings & payout</h2>
+          <p class="mt-1 text-sm text-slate-400">10% platform commission is automatically deducted after completed paid consultations.</p>
+        </header>
+        <div id="specialistRevenueStats" class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" id="specialistPayoutRequestBtn" class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500">
+            Request payout (bi-weekly)
+          </button>
+          <p id="specialistPayoutHint" class="text-xs text-slate-500"></p>
+        </div>
+        <div id="specialistPayoutHistory" class="mt-4 space-y-2">
+          <p class="text-sm text-slate-400">No payout requests yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="specialistWorkflowSection" class="mb-5 hidden w-full shrink-0 lg:mb-4">
+      <div class="w-full rounded-2xl border border-slate-700/80 bg-slate-950/50 p-4 shadow-xl shadow-black/20 sm:p-6">
+        <header class="relative border-l-2 border-violet-500/70 pl-4 sm:pl-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-300/95">Specialist workflow</p>
+          <h2 class="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Needs action queue</h2>
+          <p class="mt-1 text-sm text-slate-400">Prioritized items that usually need your next step first.</p>
+        </header>
+        <div id="specialistActionStats" class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+        <div id="specialistActionQueue" class="mt-4 space-y-2">
+          <p class="text-sm text-slate-400">No actionable consultations right now.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Inline workspace slot (admin / specialist — list + detail stays on page) -->
-    <div id="mainWorkspaceSlot" class="hidden min-h-0 flex-1 flex-col overflow-hidden lg:min-h-0 lg:h-full"></div>
+    <div id="mainWorkspaceSlot" class="hidden w-full flex-col"></div>
   </main>
 
   <!-- Clients: moved into #notification-root (top-right with Pro + Bell) via mountConsultMessengerFabInHeader -->
@@ -251,7 +297,7 @@
   <!-- Three-column shell: conversations | chat | details (Hairvelous dark theme) -->
   <div
     id="consultationsWorkspace"
-    class="consult-shell grid h-full min-h-0 flex-1 gap-3 md:min-h-0 md:items-stretch md:gap-0 md:overflow-hidden md:rounded-2xl md:border md:border-slate-700/50 md:bg-slate-950/40 md:shadow-[inset_0_1px_0_0_rgba(148,163,184,0.06)]"
+    class="consult-shell grid w-full min-h-0 gap-3 md:min-h-0 md:items-stretch md:gap-0 md:rounded-2xl md:border md:border-slate-700/50 md:bg-slate-950/40 md:shadow-[inset_0_1px_0_0_rgba(148,163,184,0.06)]"
   >
       <aside
         id="consultColList"
@@ -489,9 +535,18 @@
                 <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h2v2h-2v-2zm-4 4h2v2h-2v-2zm2-2h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z" />
               </svg>
             </button>
+            <button
+              type="button"
+              id="paymentIconDemo"
+              class="group flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-500/40 bg-violet-500/10 text-violet-100 transition hover:border-violet-400/60 hover:bg-violet-500/20"
+              title="Demo payment (no real money)"
+              aria-label="Use demo payment"
+            >
+              <span class="text-[10px] font-bold tracking-wide">DEMO</span>
+            </button>
           </div>
           <p id="paymentModalStubNote" class="mt-2 text-[11px] leading-relaxed text-slate-500">
-            Connect PayMongo keys on the server to enable live checkout. Icons stay available for integration.
+            Demo button submits a fake payment for admin verification (no real money). Connect PayMongo keys for live checkout.
           </p>
         </div>
         <details class="rounded-lg border border-slate-600/50 bg-slate-950/40 px-3 py-2">
@@ -533,6 +588,39 @@
         <button type="button" id="clientConsultModalClose" class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">✕</button>
       </div>
       <div id="clientConsultModalBody" class="max-h-[min(70vh,520px)] overflow-y-auto p-4 text-sm text-slate-300"></div>
+    </div>
+  </div>
+
+  <!-- Specialist: structured close-case summary -->
+  <div id="closeCaseModal" class="fixed inset-0 z-[126] hidden items-end justify-center bg-slate-950/75 p-3 sm:items-center sm:p-6">
+    <button type="button" id="closeCaseModalBackdrop" class="absolute inset-0 cursor-default" aria-label="Close"></button>
+    <div class="relative z-[1] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-600/80 bg-slate-900 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700/80 px-4 py-3">
+        <div>
+          <h3 class="text-sm font-semibold text-white">Close consultation</h3>
+          <p class="mt-1 text-[11px] text-slate-400">Add a short structured summary before closure.</p>
+        </div>
+        <button type="button" id="closeCaseModalClose" class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">✕</button>
+      </div>
+      <form id="closeCaseForm" class="space-y-3 p-4">
+        <input type="hidden" id="closeCaseConsultationId" value="" />
+        <div>
+          <label for="closeCaseFindings" class="mb-1 block text-xs font-medium text-slate-300">Findings</label>
+          <textarea id="closeCaseFindings" rows="3" maxlength="600" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="Briefly describe current hair/scalp findings."></textarea>
+        </div>
+        <div>
+          <label for="closeCasePlan" class="mb-1 block text-xs font-medium text-slate-300">Plan</label>
+          <textarea id="closeCasePlan" rows="3" maxlength="600" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="What routine/product adjustments should the client continue?"></textarea>
+        </div>
+        <div>
+          <label for="closeCaseFollowUp" class="mb-1 block text-xs font-medium text-slate-300">Follow-up</label>
+          <textarea id="closeCaseFollowUp" rows="2" maxlength="400" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="When should they check in again?"></textarea>
+        </div>
+        <div class="flex flex-wrap items-center justify-end gap-2 pt-1">
+          <button type="button" id="closeCaseCancelBtn" class="rounded-md border border-slate-600 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">Cancel</button>
+          <button type="submit" id="closeCaseSubmitBtn" class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500">Save summary & close case</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -594,6 +682,7 @@
     const chatLatestFromQuery = new URLSearchParams(window.location.search).get('chat_latest') === '1';
     let queryChatOpened = false;
     let didInitialChatSelect = false;
+    let pendingCloseCaseConsultationId = null;
     /** File picked for the next Send — send photo only, or photo + optional caption in the text field. */
     let pendingChatPhoto = null;
     let pendingChatPhotoPreviewUrl = '';
@@ -656,7 +745,7 @@
           listHint.classList.remove('hidden');
         }
       }
-      consultPageMain?.classList.add(
+      consultPageMain?.classList.remove(
         'lg:h-[calc(100dvh-5rem)]',
         'lg:max-h-[calc(100dvh-5rem)]',
         'lg:min-h-0',
@@ -696,6 +785,11 @@
         closeClientConsultModal();
         return;
       }
+      const closeCaseModal = document.getElementById('closeCaseModal');
+      if (closeCaseModal && !closeCaseModal.classList.contains('hidden')) {
+        closeCloseCaseModal();
+        return;
+      }
       closeChatKebabMenu();
       const payBd = document.getElementById('consultation-payment-backdrop');
       if (payBd && payBd.classList.contains('open')) {
@@ -728,9 +822,18 @@
     const consultationTrackerSection = document.getElementById('consultationTrackerSection');
     const consultationTrackerRoot = document.getElementById('consultationTrackerRoot');
     const specialistFeeSection = document.getElementById('specialistFeeSection');
+    const specialistRevenueSection = document.getElementById('specialistRevenueSection');
     const specialistFeeForm = document.getElementById('specialistFeeForm');
     const specialistFeeInput = document.getElementById('specialistFeeInput');
     const specialistFeeHint = document.getElementById('specialistFeeHint');
+    const specialistRevenueStats = document.getElementById('specialistRevenueStats');
+    const specialistPayoutRequestBtn = document.getElementById('specialistPayoutRequestBtn');
+    const specialistPayoutHint = document.getElementById('specialistPayoutHint');
+    const specialistPayoutHistory = document.getElementById('specialistPayoutHistory');
+    const specialistWorkflowSection = document.getElementById('specialistWorkflowSection');
+    const specialistActionStats = document.getElementById('specialistActionStats');
+    const specialistActionQueue = document.getElementById('specialistActionQueue');
+    let lastSpecialistRevenueRefreshAt = 0;
     let trackerPollTimer = null;
     /** User explicitly opened specialist browse while a booking exists — keep cards visible until the booking ends or they submit again. */
     let browseSpecialistsOverride = false;
@@ -751,6 +854,8 @@
     if (isSpecialist && !isModerator) {
       if (specialistBrowseSection) specialistBrowseSection.classList.add('hidden');
       if (specialistFeeSection) specialistFeeSection.classList.remove('hidden');
+      if (specialistRevenueSection) specialistRevenueSection.classList.remove('hidden');
+      if (specialistWorkflowSection) specialistWorkflowSection.classList.remove('hidden');
       const listTitle = document.getElementById('consultListSectionTitle');
       const listHint = document.getElementById('consultListSectionHint');
       if (listTitle) listTitle.textContent = 'Your clients';
@@ -792,6 +897,29 @@
       const d = new Date(v);
       if (Number.isNaN(d.getTime())) return '';
       return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    function formatRelativeTime(value) {
+      const dt = new Date(value);
+      if (Number.isNaN(dt.getTime())) return 'just now';
+      const diffMs = Date.now() - dt.getTime();
+      if (diffMs < 60000) return 'just now';
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 60) return `${mins}m ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
+    }
+
+    function toDateKey(v) {
+      if (!v) return '';
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     }
 
     function resolveChatImageUrl(message) {
@@ -925,27 +1053,37 @@
 
     function statusBadge(status) {
       const s = String(status || '');
+      const labelMap = {
+        pending: 'Request Sent',
+        awaiting_payment: 'Awaiting Payment',
+        scheduled: 'Payment Verified',
+        in_progress: 'Ongoing',
+        completed: 'Closed by Specialist',
+        cancelled: 'Cancelled',
+        declined: 'Declined',
+      };
+      const shown = labelMap[s] || s;
       const color =
         s === 'completed'
           ? 'bg-emerald-500/20 text-emerald-300'
-          : s === 'in_progress' || s === 'paid'
+          : s === 'in_progress' || s === 'scheduled' || s === 'paid'
             ? 'bg-sky-500/20 text-sky-300'
             : s === 'awaiting_payment' || s === 'accepted'
               ? 'bg-cyan-500/20 text-cyan-300'
               : s === 'cancelled' || s === 'declined'
                 ? 'bg-red-500/20 text-red-300'
                 : 'bg-amber-500/20 text-amber-300';
-      return `<span class="rounded-full px-1.5 py-0.5 text-[9px] font-medium ${color}">${esc(s)}</span>`;
+      return `<span class="rounded-full px-1.5 py-0.5 text-[9px] font-medium ${color}">${esc(shown)}</span>`;
     }
 
     /** Staff list: second line so payment state is not confused with session status */
     function paymentStaffListBadge(c) {
       const pay = c.paymentStatus || 'unpaid';
       if (pay === 'pending_review') {
-        return '<span class="rounded-full bg-amber-500/25 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-amber-100">Proof</span>';
+        return '<span class="rounded-full bg-amber-500/25 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-amber-100">Pending Review</span>';
       }
       if (pay === 'verified') {
-        return '<span class="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-emerald-200">Paid</span>';
+        return '<span class="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-emerald-200">Payment Verified</span>';
       }
       return '<span class="rounded-full bg-slate-600/35 px-1.5 py-0.5 text-[8px] font-medium text-slate-400">Unpaid</span>';
     }
@@ -1520,6 +1658,38 @@
       modal.classList.remove('flex');
     }
 
+    function closeCloseCaseModal() {
+      const modal = document.getElementById('closeCaseModal');
+      const form = document.getElementById('closeCaseForm');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      pendingCloseCaseConsultationId = null;
+      if (form) form.reset();
+    }
+
+    function openCloseCaseModal(consultationId) {
+      const modal = document.getElementById('closeCaseModal');
+      const input = document.getElementById('closeCaseConsultationId');
+      const findings = document.getElementById('closeCaseFindings');
+      if (!modal || !input) return;
+      pendingCloseCaseConsultationId = Number(consultationId);
+      input.value = String(consultationId);
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (findings) findings.focus();
+    }
+
+    function composeCloseSummary() {
+      const findings = (document.getElementById('closeCaseFindings')?.value || '').trim();
+      const plan = (document.getElementById('closeCasePlan')?.value || '').trim();
+      const followUp = (document.getElementById('closeCaseFollowUp')?.value || '').trim();
+      if (!findings || !plan || !followUp) {
+        return '';
+      }
+      return `Findings: ${findings}\nPlan: ${plan}\nFollow-up: ${followUp}`;
+    }
+
     async function openClientConsultSummaryModal(consultationId) {
       const id = Number(consultationId);
       if (!Number.isFinite(id)) return;
@@ -1720,6 +1890,72 @@
       }
     }
 
+    async function paymentModalDemo() {
+      const id = paymentModalConsultationId || Number(document.getElementById('paymentModalConsultationId')?.value);
+      if (!Number.isFinite(id) || id <= 0) return;
+      const row = findConsultation(id);
+      const st = String((row && row.status) || '');
+      const pay = String((row && row.paymentStatus) || '');
+      if (st === 'pending') {
+        showToast('Specialist must accept first before payment.', 'info');
+        return;
+      }
+      if (st !== 'awaiting_payment' || pay === 'verified' || st === 'scheduled' || st === 'in_progress' || st === 'completed') {
+        showToast('This consultation is already past the payment stage.', 'info');
+        return;
+      }
+      const demoRef = `DEMO-${Date.now()}`;
+      try {
+        await api('/consultations/' + id + '/demo-payment', {
+          method: 'POST',
+          body: '{}',
+        });
+        await loadConsultations();
+        closeConsultationPaymentModal();
+        showToast('Demo payment submitted. Admin can now verify it.', 'success');
+      } catch (err) {
+        const msg = String((err && (err.error || err.message)) || '').toLowerCase();
+        const shouldFallback = msg.includes('not found');
+        if (!shouldFallback) {
+          showToast(err.error || err.message || 'Demo payment is unavailable', 'error');
+          return;
+        }
+        try {
+          const fallbackFd = new FormData();
+          fallbackFd.append('paymentReference', demoRef);
+          const pngBlob = await new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 360;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(new Blob(['demo'], { type: 'text/plain' }));
+              return;
+            }
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#8b5cf6';
+            ctx.font = 'bold 30px Outfit, Arial';
+            ctx.fillText('HAIRVELOUS DEMO PAYMENT', 28, 72);
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '20px Outfit, Arial';
+            ctx.fillText(`Reference: ${demoRef}`, 28, 130);
+            ctx.fillText(`Consultation #${id}`, 28, 170);
+            ctx.fillText(new Date().toLocaleString(), 28, 210);
+            canvas.toBlob((blob) => resolve(blob || new Blob(['demo'], { type: 'text/plain' })), 'image/png');
+          });
+          const demoFile = new File([pngBlob], `demo-payment-${id}.png`, { type: 'image/png' });
+          fallbackFd.append('receipt', demoFile);
+          await apiForm('/consultations/' + id + '/payment-proof', fallbackFd);
+          await loadConsultations();
+          closeConsultationPaymentModal();
+          showToast('Demo payment submitted via compatibility mode.', 'success');
+        } catch (fallbackErr) {
+          showToast(fallbackErr.error || 'Demo payment fallback failed', 'error');
+        }
+      }
+    }
+
     function renderDetail(c, detailTargetEl) {
       const el = detailTargetEl || document.getElementById('detailPanel');
       if (!el) return;
@@ -1781,11 +2017,11 @@
           : '';
       const payBadge =
         pay === 'verified'
-          ? '<span class="mt-1 inline-block rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-300">Paid (verified)</span>'
+          ? '<span class="mt-1 inline-block rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-300">Payment Verified</span>'
           : pay === 'pending_review'
-            ? '<span class="mt-1 inline-block rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-200">Payment: pending review</span>'
+            ? '<span class="mt-1 inline-block rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-200">Payment Pending Review</span>'
             : pay === 'rejected'
-              ? '<span class="mt-1 inline-block rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[9px] text-rose-200">Payment: rejected — resubmit</span>'
+              ? '<span class="mt-1 inline-block rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[9px] text-rose-200">Payment Rejected - Resubmit</span>'
               : '';
       const canRate =
         !isModerator &&
@@ -1823,13 +2059,21 @@
       let staffActions = '';
       if (isModerator) {
         const verifyBlock =
-          pay === 'pending_review'
+          pay === 'pending_review' || (String(c.status || '') === 'awaiting_payment' && (pay === 'unpaid' || pay === 'rejected'))
             ? `<div class="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/[0.08] p-3">
                  <p class="text-[11px] font-semibold text-amber-100">Manual GCash proof</p>
-                 <p class="mt-1 text-[11px] leading-relaxed text-amber-200/75">Check the receipt matches the fee below, then verify or ask the user to resubmit.</p>
+                 <p class="mt-1 text-[11px] leading-relaxed text-amber-200/75">${
+                   pay === 'pending_review'
+                     ? 'Check the receipt matches the fee below, then verify or ask the user to resubmit.'
+                     : 'No proof yet. For demo/internal testing, admin can directly verify and continue to scheduling.'
+                 }</p>
                  <div class="mt-3 flex flex-col gap-2 sm:flex-row">
                    <button type="button" data-verify="${c.consultationId}" class="${modBtn} flex-1 bg-emerald-600 text-white hover:bg-emerald-500">Verify payment</button>
-                   <button type="button" data-rejectpay="${c.consultationId}" class="${modBtn} flex-1 border border-rose-500/50 bg-rose-600/25 text-rose-100 hover:bg-rose-600/40">Reject proof</button>
+                   ${
+                     pay === 'pending_review'
+                       ? `<button type="button" data-rejectpay="${c.consultationId}" class="${modBtn} flex-1 border border-rose-500/50 bg-rose-600/25 text-rose-100 hover:bg-rose-600/40">Reject proof</button>`
+                       : ''
+                   }
                  </div>
                </div>`
             : '';
@@ -1844,8 +2088,13 @@
                 : ''
             }
             ${
+              c.status === 'scheduled'
+                ? `<button type="button" data-act="in_progress" data-id="${c.consultationId}" class="${modBtn} bg-indigo-600/35 text-indigo-100 hover:bg-indigo-600/55">Start session</button>`
+                : ''
+            }
+            ${
               c.status === 'in_progress'
-                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="${modBtn} bg-emerald-600/35 text-emerald-100 hover:bg-emerald-600/55">Complete</button>`
+                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="${modBtn} bg-emerald-600/35 text-emerald-100 hover:bg-emerald-600/55">Close case</button>`
                 : ''
             }
                 <button type="button" data-notes="${c.consultationId}" class="${modBtn} bg-violet-600/35 text-violet-100 hover:bg-violet-600/55">Notes</button>
@@ -1862,8 +2111,13 @@
                 : ''
             }
             ${
+              c.status === 'scheduled'
+                ? `<button type="button" data-act="in_progress" data-id="${c.consultationId}" class="rounded-md bg-indigo-600/30 px-2 py-0.5 text-[10px] text-indigo-200 hover:bg-indigo-600/50">Start session</button>`
+                : ''
+            }
+            ${
               c.status === 'in_progress'
-                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="rounded-md bg-emerald-600/30 px-2 py-0.5 text-[10px] text-emerald-200 hover:bg-emerald-600/50">Complete</button>`
+                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="rounded-md bg-emerald-600/30 px-2 py-0.5 text-[10px] text-emerald-200 hover:bg-emerald-600/50">Close case</button>`
                 : ''
             }
             <button type="button" data-notes="${c.consultationId}" class="rounded-md bg-violet-600/30 px-2 py-0.5 text-[10px] text-violet-200 hover:bg-violet-600/50">Notes</button>
@@ -2071,7 +2325,19 @@
         const declineReason = prompt('Reason (optional):') || '';
         body = { action: 'decline', declineReason };
       } else {
-        body = { status: act };
+        if (act === 'in_progress') {
+          const c = findConsultation(consultationId);
+          if (c && (!c.meetingUrl || !String(c.meetingUrl).trim())) {
+            showToast('Set meeting link first before starting the session.', 'error');
+            return;
+          }
+        }
+        if (act === 'completed') {
+          openCloseCaseModal(consultationId);
+          return;
+        } else {
+          body = { status: act };
+        }
       }
       try {
         await api('/consultations/' + consultationId, {
@@ -2079,10 +2345,43 @@
           body: JSON.stringify(body),
         });
         await loadConsultations();
+        await refreshSpecialistRevenueIfNeeded(true);
         if (activeChatId === consultationId) setChatLocked();
         showToast('Consultation updated', 'success');
       } catch (err) {
         showToast(err.error || 'Update failed', 'error');
+      }
+    }
+
+    async function submitCloseCaseSummary() {
+      const consultationId = Number(
+        pendingCloseCaseConsultationId || document.getElementById('closeCaseConsultationId')?.value
+      );
+      if (!Number.isFinite(consultationId) || consultationId <= 0) {
+        showToast('Invalid consultation selected.', 'error');
+        return;
+      }
+      const finalRecommendation = composeCloseSummary();
+      if (!finalRecommendation) {
+        showToast('Please complete findings, plan, and follow-up.', 'error');
+        return;
+      }
+      const submitBtn = document.getElementById('closeCaseSubmitBtn');
+      if (submitBtn) submitBtn.setAttribute('disabled', 'disabled');
+      try {
+        await api('/consultations/' + consultationId, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'completed', finalRecommendation }),
+        });
+        closeCloseCaseModal();
+        await loadConsultations();
+        await refreshSpecialistRevenueIfNeeded(true);
+        if (activeChatId === consultationId) setChatLocked();
+        showToast('Case closed with summary.', 'success');
+      } catch (err) {
+        showToast(err.error || 'Could not close case', 'error');
+      } finally {
+        if (submitBtn) submitBtn.removeAttribute('disabled');
       }
     }
 
@@ -2100,7 +2399,17 @@
       const list = document.getElementById('consultList');
       const q = (document.getElementById('consultSearch').value || '').trim().toLowerCase();
       const baseRows = isModerator
-        ? rows.filter((c) => (c.paymentStatus || '') === 'pending_review')
+        ? [...rows].sort((a, b) => {
+            const pa = String((a && a.paymentStatus) || '');
+            const pb = String((b && b.paymentStatus) || '');
+            const score = (v) => {
+              if (v === 'pending_review') return 0;
+              if (v === 'unpaid' || v === 'rejected') return 1;
+              if (v === 'verified') return 2;
+              return 3;
+            };
+            return score(pa) - score(pb);
+          })
         : rows;
       const filtered = q
         ? baseRows.filter((c) => {
@@ -2115,7 +2424,7 @@
           : q
             ? 'No matches.'
             : isModerator
-              ? 'No manual payment proofs awaiting review right now.'
+              ? 'No consultations to review right now.'
               : 'No matches.';
         list.innerHTML = `<div class="px-2 py-8 text-center text-xs text-slate-500">${msg}</div>`;
         return;
@@ -2142,6 +2451,7 @@
               <p class="mt-0.5 line-clamp-1 text-xs text-slate-300">${esc(c.concernTitle || '')}</p>
               <p class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500">${esc(snippet)}${snippet.length >= 56 ? '…' : ''}</p>
               ${isModerator || isSpecialist ? `<p class="mt-1 truncate text-[9px] text-slate-600">${esc(c.userName || '')}</p>` : ''}
+              ${isSpecialist ? `<p class="mt-1 text-[10px] text-slate-500">Updated ${esc(formatRelativeTime(c.updatedAt || c.createdAt))}</p>` : ''}
             </div>
           </button>`;
         })
@@ -2165,6 +2475,10 @@
         rows.forEach((c) => consultationTitleById.set(Number(c.consultationId), c.concernTitle || 'Untitled'));
 
         renderConsultationList(rows);
+        if (isSpecialist && !isModerator) {
+          renderSpecialistActionQueue(rows);
+          await refreshSpecialistRevenueIfNeeded(false);
+        }
         updateRequestUi(rows.length);
 
         setChatLocked();
@@ -2177,7 +2491,7 @@
           if (isModerator) {
             const modalBody = document.getElementById('adminApprovalModalBody');
             const bd = document.getElementById('adminApprovalModalBackdrop');
-            if (!cur || (cur.paymentStatus || '') !== 'pending_review') {
+            if (!cur) {
               closeAdminApprovalModal();
               activeChatId = null;
               if (modalBody) renderDetail(null, modalBody);
@@ -2233,14 +2547,24 @@
       if (!c) return 'Select a conversation on the left';
       const t = c.concernTitle || 'Consultation';
       const short = t.length > 52 ? t.slice(0, 52) + '…' : t;
+      const statusMap = {
+        pending: 'Request Sent',
+        awaiting_payment: 'Awaiting Payment',
+        scheduled: 'Payment Verified',
+        in_progress: 'Ongoing',
+        completed: 'Closed by Specialist',
+        cancelled: 'Cancelled',
+        declined: 'Declined',
+      };
+      const statusLabel = statusMap[String(c.status || '')] || String(c.status || '');
       const pay = c.paymentStatus || 'unpaid';
       let payHint = '';
       if (isModerator || isSpecialist) {
-        if (pay === 'pending_review') payHint = ' · Proof pending review';
-        else if (pay === 'verified') payHint = ' · Paid';
-        else payHint = ' · Not paid';
+        if (pay === 'pending_review') payHint = ' · Payment pending review';
+        else if (pay === 'verified') payHint = ' · Payment verified';
+        else payHint = ' · Payment not submitted';
       }
-      return `${c.status}${payHint} · ${short}`;
+      return `${statusLabel}${payHint} · ${short}`;
     }
 
     function partnerNameForList(c) {
@@ -2248,6 +2572,22 @@
       if (isModerator || isSpecialist) return c.userName || 'User';
       if (c.specialistName) return c.specialistName;
       return 'Hair specialist';
+    }
+
+    function toDateOnly(v) {
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return '—';
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function prettyPayoutStatus(status) {
+      const map = {
+        requested: 'Pending review',
+        approved: 'Approved',
+        paid: 'Paid out',
+        rejected: 'Rejected',
+      };
+      return map[String(status || '').toLowerCase()] || String(status || 'unknown');
     }
 
     async function openReviewerPrompt(consultationId) {
@@ -2533,6 +2873,13 @@
       document.getElementById('specialistProfileModalClose')?.addEventListener('click', closeSpecialistProfileModal);
       document.getElementById('clientConsultModalBackdrop')?.addEventListener('click', closeClientConsultModal);
       document.getElementById('clientConsultModalClose')?.addEventListener('click', closeClientConsultModal);
+      document.getElementById('closeCaseModalBackdrop')?.addEventListener('click', closeCloseCaseModal);
+      document.getElementById('closeCaseModalClose')?.addEventListener('click', closeCloseCaseModal);
+      document.getElementById('closeCaseCancelBtn')?.addEventListener('click', closeCloseCaseModal);
+      document.getElementById('closeCaseForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await submitCloseCaseSummary();
+      });
 
       document.getElementById('paymongoQrClose')?.addEventListener('click', closePaymongoQrModal);
       document.getElementById('paymongoQrModal')?.addEventListener('click', (ev) => {
@@ -2550,6 +2897,7 @@
       });
       document.getElementById('paymentIconPaymongo')?.addEventListener('click', () => paymentModalPaymongoCheckout());
       document.getElementById('paymentIconQrPh')?.addEventListener('click', () => paymentModalQrPh());
+      document.getElementById('paymentIconDemo')?.addEventListener('click', () => paymentModalDemo());
       const proof = document.getElementById('paymentModalProofForm');
       if (proof) {
         proof.addEventListener('submit', async (ev) => {
@@ -2768,6 +3116,138 @@
       }
     }
 
+    function renderRevenueStatCard(label, value, accent) {
+      return `<div class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3">
+        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-400">${esc(label)}</p>
+        <p class="mt-1 text-xl font-bold ${accent}">${esc(value)}</p>
+      </div>`;
+    }
+
+    function renderSpecialistActionQueue(rows) {
+      if (!isSpecialist || !specialistActionStats || !specialistActionQueue) return;
+      const allRows = Array.isArray(rows) ? rows : [];
+      const todayKey = toDateKey(new Date());
+      const actions = allRows.filter((c) => c && c.status !== 'declined' && c.status !== 'cancelled');
+      const queue = [];
+      actions.forEach((c) => {
+        const status = String(c.status || '');
+        const paymentStatus = String(c.paymentStatus || '').toLowerCase();
+        const updatedLabel = formatRelativeTime(c.updatedAt || c.createdAt);
+        if (status === 'pending') {
+          queue.push({ priority: 1, reason: 'Needs accept/decline', c, updatedLabel });
+          return;
+        }
+        if (status === 'awaiting_payment' && paymentStatus !== 'verified') {
+          queue.push({ priority: 2, reason: 'Waiting for client payment', c, updatedLabel });
+          return;
+        }
+        if (status === 'scheduled' && toDateKey(c.scheduledAt) === todayKey) {
+          queue.push({ priority: 3, reason: 'Session scheduled today', c, updatedLabel });
+          return;
+        }
+        if (status === 'in_progress') {
+          queue.push({ priority: 4, reason: 'Ready for case closure', c, updatedLabel });
+        }
+      });
+      queue.sort((a, b) => a.priority - b.priority);
+      const counts = {
+        pending: queue.filter((q) => q.priority === 1).length,
+        payment: queue.filter((q) => q.priority === 2).length,
+        today: queue.filter((q) => q.priority === 3).length,
+        active: queue.filter((q) => q.priority === 4).length,
+      };
+      specialistActionStats.innerHTML = [
+        renderRevenueStatCard('New requests', String(counts.pending), 'text-cyan-300'),
+        renderRevenueStatCard('Awaiting payment', String(counts.payment), 'text-amber-300'),
+        renderRevenueStatCard('Scheduled today', String(counts.today), 'text-violet-300'),
+        renderRevenueStatCard('Need closing', String(counts.active), 'text-emerald-300'),
+      ].join('');
+      if (!queue.length) {
+        specialistActionQueue.innerHTML = '<p class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3 text-sm text-slate-400">No actionable consultations right now.</p>';
+        return;
+      }
+      specialistActionQueue.innerHTML = queue.slice(0, 8).map((item) => {
+        const c = item.c || {};
+        const partner = partnerNameForList(c);
+        return `<button type="button" data-open-chat-id="${esc(String(c.consultationId || ''))}" class="w-full rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3 text-left transition hover:border-violet-400/60 hover:bg-slate-800/70">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm font-semibold text-white">${esc(c.concernTitle || 'Consultation')}</p>
+            <span class="rounded-full border border-violet-500/45 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-200">${esc(item.reason)}</span>
+          </div>
+          <p class="mt-1 text-xs text-slate-300">${esc(partner || 'Client')}</p>
+          <p class="mt-1 text-[11px] text-slate-500">Updated ${esc(item.updatedLabel)}</p>
+        </button>`;
+      }).join('');
+      specialistActionQueue.querySelectorAll('[data-open-chat-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.getAttribute('data-open-chat-id'));
+          if (!Number.isFinite(id)) return;
+          openChat(id);
+        });
+      });
+    }
+
+    function renderPayoutHistory(rows) {
+      if (!specialistPayoutHistory) return;
+      const history = Array.isArray(rows) ? rows : [];
+      if (!history.length) {
+        specialistPayoutHistory.innerHTML = '<p class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3 text-sm text-slate-400">No payout requests yet.</p>';
+        return;
+      }
+      const php = (n) => `₱${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+      specialistPayoutHistory.innerHTML = history.slice(0, 8).map((item) => {
+        const status = prettyPayoutStatus(item.status || '');
+        return `<div class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm font-semibold text-white">${esc(toDateOnly(item.periodStart))} to ${esc(toDateOnly(item.periodEnd))}</p>
+            <span class="rounded-full border border-emerald-500/45 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-200">${esc(status)}</span>
+          </div>
+          <p class="mt-1 text-xs text-slate-300">Net ${esc(php(item.netPhp))} from ${esc(String(item.itemCount || 0))} consultation(s).</p>
+          <p class="mt-1 text-[11px] text-slate-500">Requested ${esc(toDateOnly(item.requestedAt || ''))}</p>
+        </div>`;
+      }).join('');
+    }
+
+    async function refreshSpecialistRevenueIfNeeded(force = false) {
+      if (!isSpecialist || isModerator) return;
+      const now = Date.now();
+      // Prevent aggressive re-fetching when consultations list is polled frequently.
+      if (!force && now - lastSpecialistRevenueRefreshAt < 20000) return;
+      lastSpecialistRevenueRefreshAt = now;
+      await loadSpecialistRevenue();
+    }
+
+    async function loadSpecialistRevenue() {
+      if (!isSpecialist || !specialistRevenueStats) return;
+      try {
+        const data = await api('/consultations/specialist/revenue');
+        const totals = (data && data.totals) || {};
+        const php = (n) => `₱${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        specialistRevenueStats.innerHTML = [
+          renderRevenueStatCard('Gross total', php(totals.grossPhp), 'text-cyan-300'),
+          renderRevenueStatCard('Commission total', php(totals.commissionPhp), 'text-amber-300'),
+          renderRevenueStatCard('Net total', php(totals.netPhp), 'text-emerald-300'),
+          renderRevenueStatCard('Withdrawable now', php(totals.availableNowPhp), 'text-violet-300'),
+        ].join('');
+        const eligibleAt = data && data.nextPayoutEligibleAt ? String(data.nextPayoutEligibleAt).slice(0, 10) : '';
+        if (specialistPayoutHint) {
+          specialistPayoutHint.textContent = eligibleAt
+            ? `Next payout request date: ${eligibleAt} (every ${data.payoutIntervalDays || 14} days).`
+            : 'You can request payout every 14 days.';
+        }
+        renderPayoutHistory((data && data.payoutRequests) || []);
+      } catch (err) {
+        specialistRevenueStats.innerHTML =
+          '<p class="col-span-full rounded-xl border border-rose-500/30 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">Could not load revenue summary.</p>';
+        if (specialistPayoutHint) specialistPayoutHint.textContent = '';
+        if (specialistPayoutHistory) {
+          specialistPayoutHistory.innerHTML =
+            '<p class="rounded-xl border border-rose-500/30 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">Could not load payout history.</p>';
+        }
+        showToast(err.error || 'Failed to load specialist revenue', 'error');
+      }
+    }
+
     specialistFeeForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fee = Number(specialistFeeInput && specialistFeeInput.value);
@@ -2786,6 +3266,24 @@
         }
       } catch (err) {
         showToast(err.error || 'Could not update fee', 'error');
+      }
+    });
+
+    specialistPayoutRequestBtn?.addEventListener('click', async () => {
+      try {
+        const result = await api('/consultations/specialist/payout-request', {
+          method: 'POST',
+          body: '{}',
+        });
+        const t = result && result.totals;
+        const net = t ? `₱${Number(t.netPhp || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '';
+        showToast(
+          `Payout request submitted${net ? ` (${net})` : ''}.`,
+          'success'
+        );
+        await loadSpecialistRevenue();
+      } catch (err) {
+        showToast(err.error || 'Could not submit payout request', 'error');
       }
     });
 
@@ -2809,7 +3307,10 @@
 
     if (isSpecialist || isModerator) {
       if (specialistBrowseSection) specialistBrowseSection.classList.add('hidden');
-      if (isSpecialist) loadSpecialistFeeSettings();
+      if (isSpecialist) {
+        loadSpecialistFeeSettings();
+        loadSpecialistRevenue();
+      }
     } else {
       loadSpecialists();
     }

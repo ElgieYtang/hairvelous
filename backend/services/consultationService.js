@@ -3,9 +3,13 @@ const billingService = require('./billingService');
 const notificationService = require('./notificationService');
 
 const DEFAULT_CONSULTATION_PHP = 499;
+const DEFAULT_PLATFORM_FEE_PERCENT = 10;
+const SPECIALIST_PAYOUT_INTERVAL_DAYS = 14;
 const PLATFORM_FEE_PERCENT = (() => {
-  const n = Number.parseFloat(process.env.PLATFORM_CONSULTATION_FEE_PERCENT || '15');
-  return Number.isFinite(n) && n >= 0 && n <= 100 ? n : 15;
+  const n = Number.parseFloat(
+    process.env.PLATFORM_CONSULTATION_FEE_PERCENT || String(DEFAULT_PLATFORM_FEE_PERCENT)
+  );
+  return Number.isFinite(n) && n >= 0 && n <= 100 ? n : DEFAULT_PLATFORM_FEE_PERCENT;
 })();
 
 function isModerator(actor) {
@@ -19,6 +23,40 @@ function isAssignedSpecialist(actor, specialistUserId) {
 function canManageConsultation(actor, row) {
   if (isModerator(actor)) return true;
   return isAssignedSpecialist(actor, row.specialist_user_id);
+}
+
+function isDemoPaymentEnabled() {
+  const mode = String(process.env.PAYMENT_MODE || '').trim().toLowerCase();
+  if (mode === 'demo') return true;
+  if (String(process.env.ENABLE_DEMO_PAYMENTS || '').trim().toLowerCase() === 'true') return true;
+  return String(process.env.NODE_ENV || 'development').trim().toLowerCase() !== 'production';
+}
+
+const STATUS_FLOW = Object.freeze({
+  pending: new Set(['awaiting_payment', 'declined', 'cancelled']),
+  awaiting_payment: new Set(['scheduled', 'cancelled']),
+  scheduled: new Set(['in_progress', 'completed', 'cancelled']),
+  in_progress: new Set(['completed', 'cancelled']),
+  completed: new Set([]),
+  cancelled: new Set([]),
+  declined: new Set([]),
+});
+
+function normalizeStatus(status) {
+  const s = String(status || '').trim().toLowerCase();
+  if (s === 'accepted' || s === 'paid') return 'scheduled';
+  return s;
+}
+
+function assertStatusTransition(fromStatus, toStatus) {
+  const from = normalizeStatus(fromStatus);
+  const to = normalizeStatus(toStatus);
+  if (from === to) return to;
+  const allowed = STATUS_FLOW[from];
+  if (!allowed || !allowed.has(to)) {
+    throw new Error(`Invalid status transition: ${from} -> ${to}`);
+  }
+  return to;
 }
 
 class ConsultationService {
@@ -97,6 +135,7 @@ class ConsultationService {
       )
     `);
     await this.ensureExtendedColumns();
+    await this.ensureRevenueSchema();
     this.tableReady = true;
   }
 
@@ -121,28 +160,76 @@ class ConsultationService {
     await tryAlter('ALTER TABLE consultations ADD COLUMN meeting_url VARCHAR(512) NULL');
     await tryAlter('ALTER TABLE consultations ADD COLUMN decline_reason TEXT NULL');
     await tryAlter('ALTER TABLE consultations ADD COLUMN paid_verified_at TIMESTAMP NULL');
+    await tryAlter('ALTER TABLE consultations ADD COLUMN scheduled_at DATETIME NULL');
+    await tryAlter('ALTER TABLE consultations ADD COLUMN completed_at DATETIME NULL');
     await tryAlter('ALTER TABLE consultations ADD COLUMN verified_by_admin_user_id INT NULL');
     await tryAlter('ALTER TABLE consultations ADD COLUMN paymongo_checkout_session_id VARCHAR(128) NULL');
     await tryAlter('ALTER TABLE consultations ADD COLUMN paymongo_payment_intent_id VARCHAR(128) NULL');
-    try {
-      await pool.query(
-        `UPDATE consultations c
-         SET payment_status = 'verified'
-         WHERE c.payment_status = 'unpaid'
-           AND (
-             c.status = 'completed'
-             OR EXISTS (SELECT 1 FROM consultation_messages m WHERE m.consultation_id = c.consultation_id)
-           )`
-      );
-    } catch (_e) {
-      /* ignore */
-    }
     try {
       await pool.query(`UPDATE consultations SET status = 'awaiting_payment' WHERE status = 'accepted'`);
     } catch (_e) {
       /* ignore */
     }
+    try {
+      await pool.query(`UPDATE consultations SET status = 'scheduled' WHERE status = 'paid'`);
+    } catch (_e) {
+      /* ignore */
+    }
     this.extendedReady = true;
+  }
+
+  async ensureRevenueSchema() {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS specialist_earnings_ledger (
+        earning_id INT PRIMARY KEY AUTO_INCREMENT,
+        consultation_id INT NOT NULL,
+        specialist_user_id INT NOT NULL,
+        gross_amount_php DECIMAL(10,2) NOT NULL,
+        commission_percent DECIMAL(5,2) NOT NULL,
+        commission_amount_php DECIMAL(10,2) NOT NULL,
+        net_amount_php DECIMAL(10,2) NOT NULL,
+        status ENUM('released','in_payout','paid_out') NOT NULL DEFAULT 'released',
+        released_at DATETIME NOT NULL,
+        payout_request_id INT NULL,
+        payout_paid_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_earnings_consult (consultation_id),
+        INDEX idx_earnings_specialist_status (specialist_user_id, status, released_at),
+        CONSTRAINT fk_earnings_consult FOREIGN KEY (consultation_id) REFERENCES consultations(consultation_id) ON DELETE CASCADE,
+        CONSTRAINT fk_earnings_specialist FOREIGN KEY (specialist_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS specialist_payout_requests (
+        payout_request_id INT PRIMARY KEY AUTO_INCREMENT,
+        specialist_user_id INT NOT NULL,
+        period_start DATETIME NOT NULL,
+        period_end DATETIME NOT NULL,
+        gross_amount_php DECIMAL(10,2) NOT NULL,
+        commission_amount_php DECIMAL(10,2) NOT NULL,
+        net_amount_php DECIMAL(10,2) NOT NULL,
+        item_count INT NOT NULL DEFAULT 0,
+        status ENUM('requested','approved','paid','rejected') NOT NULL DEFAULT 'requested',
+        requested_at DATETIME NOT NULL,
+        processed_at DATETIME NULL,
+        processed_by_user_id INT NULL,
+        admin_note TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_payout_specialist_requested (specialist_user_id, requested_at),
+        CONSTRAINT fk_payout_specialist FOREIGN KEY (specialist_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        CONSTRAINT fk_payout_processor FOREIGN KEY (processed_by_user_id) REFERENCES users(user_id) ON DELETE SET NULL
+      )
+    `);
+    try {
+      await pool.query(`
+        ALTER TABLE specialist_earnings_ledger
+        ADD CONSTRAINT fk_earnings_payout_request
+        FOREIGN KEY (payout_request_id) REFERENCES specialist_payout_requests(payout_request_id)
+        ON DELETE SET NULL
+      `);
+    } catch (_e) {
+      /* already exists */
+    }
   }
 
   toImageUrl(p) {
@@ -203,6 +290,8 @@ class ConsultationService {
       paymentReceiptUrl: r.payment_receipt_path ? this.toImageUrl(r.payment_receipt_path) : null,
       paymentSubmittedAt: r.payment_submitted_at || null,
       meetingUrl: r.meeting_url || null,
+      scheduledAt: r.scheduled_at || null,
+      completedAt: r.completed_at || null,
       declineReason: r.decline_reason || null,
       paidVerifiedAt: r.paid_verified_at || null,
       feedbackRating: r.feedback_rating != null ? Number(r.feedback_rating) : null,
@@ -217,6 +306,56 @@ class ConsultationService {
     const pay = row.paymentStatus || 'unpaid';
     const unlocked = pay === 'verified' || isModerator(actor);
     return { ...row, chatUnlocked: unlocked };
+  }
+
+  calculateSplit(amountPhp, commissionPercent) {
+    const gross = Number(amountPhp || 0);
+    const pct = Number(commissionPercent || 0);
+    const normalizedCommission = Math.round(((gross * pct) / 100) * 100) / 100;
+    const net = Math.round((gross - normalizedCommission) * 100) / 100;
+    return {
+      grossAmountPhp: Math.round(gross * 100) / 100,
+      commissionPercent: Math.round(pct * 100) / 100,
+      commissionAmountPhp: normalizedCommission,
+      netAmountPhp: net,
+    };
+  }
+
+  async releaseConsultationEarning(consultationId) {
+    const id = Number(consultationId);
+    if (!Number.isFinite(id)) return;
+    const [rows] = await pool.query(
+      `SELECT consultation_id, specialist_user_id, amount_php, platform_fee_percent, status, payment_status
+       FROM consultations WHERE consultation_id = ?`,
+      [id]
+    );
+    if (!rows.length) return;
+    const c = rows[0];
+    const st = String(c.status || '');
+    if (!c.specialist_user_id || String(c.payment_status) !== 'verified') return;
+    if (st === 'cancelled' || st === 'declined') return;
+    // Accuracy rule: specialist earning is released only after case closure.
+    if (st !== 'completed') return;
+    const split = this.calculateSplit(c.amount_php || DEFAULT_CONSULTATION_PHP, c.platform_fee_percent || PLATFORM_FEE_PERCENT);
+    await pool.query(
+      `INSERT INTO specialist_earnings_ledger
+         (consultation_id, specialist_user_id, gross_amount_php, commission_percent, commission_amount_php, net_amount_php, status, released_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'released', NOW())
+       ON DUPLICATE KEY UPDATE
+         specialist_user_id = VALUES(specialist_user_id),
+         gross_amount_php = VALUES(gross_amount_php),
+         commission_percent = VALUES(commission_percent),
+         commission_amount_php = VALUES(commission_amount_php),
+         net_amount_php = VALUES(net_amount_php)`,
+      [
+        id,
+        c.specialist_user_id,
+        split.grossAmountPhp,
+        split.commissionPercent,
+        split.commissionAmountPhp,
+        split.netAmountPhp,
+      ]
+    );
   }
 
   async createRequest(userId, payload) {
@@ -308,7 +447,7 @@ class ConsultationService {
               c.preferred_date, c.status, c.specialist_notes, c.validated_products_text,
               c.final_recommendation, c.created_at, c.updated_at,
               c.amount_php, c.platform_fee_percent, c.payment_status, c.payment_reference,
-              c.payment_receipt_path, c.payment_submitted_at, c.meeting_url, c.decline_reason,
+              c.payment_receipt_path, c.payment_submitted_at, c.meeting_url, c.scheduled_at, c.completed_at, c.decline_reason,
               c.paid_verified_at, c.verified_by_admin_user_id,
               cf.rating AS feedback_rating, cf.feedback_text, cf.created_at AS feedback_created_at,
               u.name AS user_name, u.email AS user_email,
@@ -409,7 +548,7 @@ class ConsultationService {
     if (!Number.isFinite(id)) throw new Error('Invalid consultation ID');
 
     const [rows] = await pool.query(
-      `SELECT consultation_id, user_id, specialist_user_id, concern_title, status, payment_status
+      `SELECT consultation_id, user_id, specialist_user_id, concern_title, status, payment_status, final_recommendation
        FROM consultations WHERE consultation_id = ?`,
       [id]
     );
@@ -444,20 +583,9 @@ class ConsultationService {
         fields.push('decline_reason = ?');
         values.push(payload.declineReason != null ? String(payload.declineReason).trim() || null : null);
       } else if (payload.status !== undefined) {
-        let st = String(payload.status);
-        if (st === 'accepted') st = 'awaiting_payment';
-        const allowed = [
-          'pending',
-          'awaiting_payment',
-          'paid',
-          'in_progress',
-          'completed',
-          'cancelled',
-          'declined',
-        ];
-        if (!allowed.includes(st)) throw new Error('Invalid status');
-        if (st === 'awaiting_payment' && existing.status !== 'pending') {
-          throw new Error('Invalid status transition');
+        const st = assertStatusTransition(existing.status, payload.status);
+        if (st === 'scheduled' && (!payload.meetingUrl || !String(payload.meetingUrl).trim())) {
+          throw new Error('Meeting link is required before scheduling a paid consultation');
         }
         fields.push('status = ?');
         values.push(st);
@@ -465,6 +593,19 @@ class ConsultationService {
           const meetingUrl = payload.meetingUrl != null ? String(payload.meetingUrl).trim() : '';
           fields.push('meeting_url = ?');
           values.push(meetingUrl || null);
+        }
+        if (st === 'scheduled' && payload.meetingUrl !== undefined) {
+          fields.push('meeting_url = ?');
+          values.push(String(payload.meetingUrl).trim() || null);
+          fields.push('scheduled_at = COALESCE(scheduled_at, NOW())');
+        }
+        if (st === 'completed') {
+          const finalRecommendation = payload.finalRecommendation != null ? String(payload.finalRecommendation).trim() : '';
+          const existingFinal = existing.final_recommendation != null ? String(existing.final_recommendation).trim() : '';
+          if (!finalRecommendation && !existingFinal) {
+            throw new Error('Provide a short case summary before closing the consultation');
+          }
+          fields.push('completed_at = COALESCE(completed_at, NOW())');
         }
       }
       if (payload.specialistNotes !== undefined) {
@@ -485,11 +626,13 @@ class ConsultationService {
         if (
           payOk &&
           st !== 'declined' &&
-          st !== 'cancelled' &&
-          st !== 'pending'
+          st !== 'cancelled'
         ) {
           fields.push('meeting_url = ?');
           values.push(String(payload.meetingUrl).trim() || null);
+          if (st === 'scheduled' || st === 'in_progress') {
+            fields.push('scheduled_at = COALESCE(scheduled_at, NOW())');
+          }
         }
       }
       if (existing.specialist_user_id == null && isModerator(actor)) {
@@ -535,7 +678,12 @@ class ConsultationService {
     values.push(id);
     await pool.query(`UPDATE consultations SET ${fields.join(', ')} WHERE consultation_id = ?`, values);
 
-    const effectiveStatus = action === 'accept' ? 'awaiting_payment' : action === 'decline' ? 'declined' : requestedStatus;
+    const effectiveStatus =
+      action === 'accept' ? 'awaiting_payment' : action === 'decline' ? 'declined' : normalizeStatus(requestedStatus);
+
+    if (effectiveStatus === 'completed') {
+      await this.releaseConsultationEarning(id);
+    }
 
     if (canManage) {
       const st = effectiveStatus || requestedStatus;
@@ -634,6 +782,50 @@ class ConsultationService {
     return { consultationId: id, submitted: true };
   }
 
+  async submitDemoPayment(actor, consultationId) {
+    await this.ensureTable();
+    if (!isDemoPaymentEnabled()) {
+      throw new Error('Demo payment mode is disabled on this server');
+    }
+    const id = Number(consultationId);
+    if (!Number.isFinite(id)) throw new Error('Invalid consultation ID');
+    const [rows] = await pool.query(
+      `SELECT consultation_id, user_id, status, payment_status
+       FROM consultations WHERE consultation_id = ?`,
+      [id]
+    );
+    if (!rows.length) throw new Error('Consultation not found');
+    const c = rows[0];
+    if (c.user_id !== actor.userId) throw new Error('Not allowed');
+    if (c.status !== 'awaiting_payment') throw new Error('Payment is not required for this consultation');
+    if (c.payment_status === 'verified') throw new Error('Payment already verified');
+    if (c.payment_status === 'pending_review') throw new Error('Payment already submitted for review');
+
+    const reference = `DEMO-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    await pool.query(
+      `UPDATE consultations SET
+         payment_reference = ?,
+         payment_receipt_path = NULL,
+         payment_status = 'pending_review',
+         payment_submitted_at = CURRENT_TIMESTAMP
+       WHERE consultation_id = ?`,
+      [reference, id]
+    );
+
+    await notificationService.createForRoles(
+      ['admin'],
+      {
+        type: 'payment_pending',
+        title: 'Demo payment submitted',
+        message: `Consultation #${id} submitted demo payment for verification.`,
+        linkUrl: '/consultations.html',
+      },
+      actor.userId
+    );
+
+    return { consultationId: id, submitted: true, demoReference: reference };
+  }
+
   async verifyPayment(adminUserId, consultationId) {
     await this.ensureTable();
     const id = Number(consultationId);
@@ -646,14 +838,18 @@ class ConsultationService {
     );
     if (!rows.length) throw new Error('Consultation not found');
     const c = rows[0];
-    if (c.payment_status !== 'pending_review') {
-      throw new Error('This consultation is not awaiting payment verification');
+    const canDirectVerify =
+      c.status === 'awaiting_payment' &&
+      (c.payment_status === 'pending_review' || c.payment_status === 'unpaid' || c.payment_status === 'rejected');
+    if (!canDirectVerify) {
+      throw new Error('This consultation is not eligible for payment verification');
     }
 
     await pool.query(
       `UPDATE consultations SET
          payment_status = 'verified',
-         status = 'in_progress',
+         status = 'scheduled',
+         scheduled_at = COALESCE(scheduled_at, NOW()),
          paid_verified_at = CURRENT_TIMESTAMP,
          verified_by_admin_user_id = ?
        WHERE consultation_id = ?`,
@@ -674,6 +870,8 @@ class ConsultationService {
         linkUrl: `/consultations.html?chat=${id}`,
       });
     }
+
+    await this.releaseConsultationEarning(id);
 
     return { consultationId: id, verified: true };
   }
@@ -1114,7 +1312,8 @@ class ConsultationService {
     const [result] = await pool.query(
       `UPDATE consultations SET
          payment_status = 'verified',
-         status = 'in_progress',
+         status = 'scheduled',
+         scheduled_at = COALESCE(scheduled_at, NOW()),
          paid_verified_at = CURRENT_TIMESTAMP,
          verified_by_admin_user_id = NULL,
          payment_reference = ?
@@ -1127,6 +1326,8 @@ class ConsultationService {
     if (!result.affectedRows) {
       return { consultationId: id, skipped: true };
     }
+
+    await this.releaseConsultationEarning(id);
 
     await notificationService.createForUser(c.user_id, {
       type: 'payment_verified',
@@ -1144,6 +1345,326 @@ class ConsultationService {
     }
 
     return { consultationId: id, verified: true };
+  }
+
+  async getSpecialistRevenue(actor) {
+    await this.ensureTable();
+    if (actor.roleName !== 'specialist') {
+      const e = new Error('Specialist access only');
+      e.status = 403;
+      throw e;
+    }
+    const specialistId = Number(actor.userId);
+    const [totalsRows] = await pool.query(
+      `SELECT
+         COALESCE(SUM(el.gross_amount_php), 0) AS gross_total,
+         COALESCE(SUM(el.commission_amount_php), 0) AS commission_total,
+         COALESCE(SUM(el.net_amount_php), 0) AS net_total,
+         COALESCE(SUM(CASE WHEN el.status = 'released' THEN el.net_amount_php ELSE 0 END), 0) AS available_now
+       FROM specialist_earnings_ledger el
+       JOIN consultations c ON c.consultation_id = el.consultation_id
+       WHERE el.specialist_user_id = ?
+         AND c.status = 'completed'
+         AND c.payment_status = 'verified'`,
+      [specialistId]
+    );
+    const [recentRows] = await pool.query(
+      `SELECT el.earning_id, el.consultation_id, el.gross_amount_php, el.commission_percent, el.commission_amount_php, el.net_amount_php, el.status, el.released_at, el.payout_paid_at
+       FROM specialist_earnings_ledger el
+       JOIN consultations c ON c.consultation_id = el.consultation_id
+       WHERE el.specialist_user_id = ?
+         AND c.status = 'completed'
+         AND c.payment_status = 'verified'
+       ORDER BY el.released_at DESC
+       LIMIT 100`,
+      [specialistId]
+    );
+    const [latestPayoutRows] = await pool.query(
+      `SELECT requested_at
+       FROM specialist_payout_requests
+       WHERE specialist_user_id = ? AND status IN ('requested','approved','paid')
+       ORDER BY requested_at DESC
+       LIMIT 1`,
+      [specialistId]
+    );
+    const [payoutRows] = await pool.query(
+      `SELECT payout_request_id, period_start, period_end, gross_amount_php, commission_amount_php, net_amount_php,
+              item_count, status, requested_at, processed_at
+       FROM specialist_payout_requests
+       WHERE specialist_user_id = ?
+       ORDER BY requested_at DESC
+       LIMIT 30`,
+      [specialistId]
+    );
+    const latest = latestPayoutRows[0] ? new Date(latestPayoutRows[0].requested_at) : null;
+    const now = new Date();
+    const nextEligibleAt = latest ? new Date(latest.getTime() + SPECIALIST_PAYOUT_INTERVAL_DAYS * 24 * 60 * 60 * 1000) : now;
+    return {
+      totals: {
+        grossPhp: Number(totalsRows[0]?.gross_total || 0),
+        commissionPhp: Number(totalsRows[0]?.commission_total || 0),
+        netPhp: Number(totalsRows[0]?.net_total || 0),
+        availableNowPhp: Number(totalsRows[0]?.available_now || 0),
+      },
+      nextPayoutEligibleAt: nextEligibleAt,
+      payoutIntervalDays: SPECIALIST_PAYOUT_INTERVAL_DAYS,
+      ledger: (recentRows || []).map((r) => ({
+        earningId: r.earning_id,
+        consultationId: r.consultation_id,
+        grossPhp: Number(r.gross_amount_php),
+        commissionPercent: Number(r.commission_percent),
+        commissionPhp: Number(r.commission_amount_php),
+        netPhp: Number(r.net_amount_php),
+        status: r.status,
+        releasedAt: r.released_at,
+        payoutPaidAt: r.payout_paid_at,
+      })),
+      payoutRequests: (payoutRows || []).map((r) => ({
+        payoutRequestId: r.payout_request_id,
+        periodStart: r.period_start,
+        periodEnd: r.period_end,
+        grossPhp: Number(r.gross_amount_php || 0),
+        commissionPhp: Number(r.commission_amount_php || 0),
+        netPhp: Number(r.net_amount_php || 0),
+        itemCount: Number(r.item_count || 0),
+        status: r.status,
+        requestedAt: r.requested_at,
+        processedAt: r.processed_at,
+      })),
+    };
+  }
+
+  async requestSpecialistPayout(actor) {
+    await this.ensureTable();
+    if (actor.roleName !== 'specialist') {
+      const e = new Error('Specialist access only');
+      e.status = 403;
+      throw e;
+    }
+    const specialistId = Number(actor.userId);
+    const [latestRows] = await pool.query(
+      `SELECT requested_at
+       FROM specialist_payout_requests
+       WHERE specialist_user_id = ? AND status IN ('requested','approved','paid')
+       ORDER BY requested_at DESC
+       LIMIT 1`,
+      [specialistId]
+    );
+    if (latestRows.length) {
+      const lastRequestedAt = new Date(latestRows[0].requested_at);
+      const minNextAt = new Date(lastRequestedAt.getTime() + SPECIALIST_PAYOUT_INTERVAL_DAYS * 24 * 60 * 60 * 1000);
+      if (Date.now() < minNextAt.getTime()) {
+        throw new Error(`Payout requests are allowed every ${SPECIALIST_PAYOUT_INTERVAL_DAYS} days. Next eligible date: ${minNextAt.toISOString().slice(0, 10)}`);
+      }
+    }
+    const [ledgerRows] = await pool.query(
+      `SELECT el.earning_id, el.consultation_id, el.gross_amount_php, el.commission_amount_php, el.net_amount_php, el.released_at
+       FROM specialist_earnings_ledger el
+       JOIN consultations c ON c.consultation_id = el.consultation_id
+       WHERE el.specialist_user_id = ?
+         AND el.status = 'released'
+         AND c.status = 'completed'
+         AND c.payment_status = 'verified'
+       ORDER BY el.released_at ASC`,
+      [specialistId]
+    );
+    if (!ledgerRows.length) {
+      throw new Error('No released earnings available for payout');
+    }
+    const sums = ledgerRows.reduce(
+      (acc, row) => {
+        acc.gross += Number(row.gross_amount_php || 0);
+        acc.commission += Number(row.commission_amount_php || 0);
+        acc.net += Number(row.net_amount_php || 0);
+        return acc;
+      },
+      { gross: 0, commission: 0, net: 0 }
+    );
+    const periodStart = ledgerRows[0].released_at;
+    const periodEnd = ledgerRows[ledgerRows.length - 1].released_at;
+    const [insert] = await pool.query(
+      `INSERT INTO specialist_payout_requests
+         (specialist_user_id, period_start, period_end, gross_amount_php, commission_amount_php, net_amount_php, item_count, status, requested_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'requested', NOW())`,
+      [specialistId, periodStart, periodEnd, sums.gross, sums.commission, sums.net, ledgerRows.length]
+    );
+    const payoutRequestId = insert.insertId;
+    const earningIds = ledgerRows.map((r) => Number(r.earning_id)).filter((n) => Number.isFinite(n));
+    const placeholders = earningIds.map(() => '?').join(',');
+    await pool.query(
+      `UPDATE specialist_earnings_ledger
+       SET status = 'in_payout', payout_request_id = ?
+       WHERE specialist_user_id = ?
+         AND earning_id IN (${placeholders})`,
+      [payoutRequestId, specialistId, ...earningIds]
+    );
+    return {
+      payoutRequestId,
+      requested: true,
+      totals: {
+        grossPhp: Math.round(sums.gross * 100) / 100,
+        commissionPhp: Math.round(sums.commission * 100) / 100,
+        netPhp: Math.round(sums.net * 100) / 100,
+        itemCount: ledgerRows.length,
+      },
+    };
+  }
+
+  async getAdminTransactionReport(actor) {
+    await this.ensureTable();
+    if (!isModerator(actor) && actor.roleName !== 'admin') {
+      const e = new Error('Admin access only');
+      e.status = 403;
+      throw e;
+    }
+    const [rows] = await pool.query(
+      `SELECT c.consultation_id, c.concern_title, c.status, c.payment_status, c.amount_php, c.platform_fee_percent,
+              c.paid_verified_at, c.completed_at,
+              u.name AS user_name, u.email AS user_email,
+              s.name AS specialist_name, s.email AS specialist_email,
+              el.earning_id, el.gross_amount_php, el.commission_amount_php, el.net_amount_php, el.status AS earning_status,
+              pr.payout_request_id, pr.status AS payout_status, pr.requested_at AS payout_requested_at
+       FROM consultations c
+       JOIN users u ON u.user_id = c.user_id
+       LEFT JOIN users s ON s.user_id = c.specialist_user_id
+       LEFT JOIN specialist_earnings_ledger el ON el.consultation_id = c.consultation_id
+       LEFT JOIN specialist_payout_requests pr ON pr.payout_request_id = el.payout_request_id
+       WHERE c.payment_status = 'verified'
+       ORDER BY c.updated_at DESC
+       LIMIT 500`
+    );
+    return {
+      transactions: (rows || []).map((r) => ({
+        consultationId: r.consultation_id,
+        concernTitle: r.concern_title,
+        consultationStatus: r.status,
+        paymentStatus: r.payment_status,
+        clientName: r.user_name,
+        clientEmail: r.user_email,
+        specialistName: r.specialist_name,
+        specialistEmail: r.specialist_email,
+        amountPhp: r.amount_php != null ? Number(r.amount_php) : null,
+        platformFeePercent: r.platform_fee_percent != null ? Number(r.platform_fee_percent) : null,
+        paidVerifiedAt: r.paid_verified_at,
+        completedAt: r.completed_at,
+        earningId: r.earning_id || null,
+        grossPhp: r.gross_amount_php != null ? Number(r.gross_amount_php) : null,
+        commissionPhp: r.commission_amount_php != null ? Number(r.commission_amount_php) : null,
+        specialistNetPhp: r.net_amount_php != null ? Number(r.net_amount_php) : null,
+        earningStatus: r.earning_status || null,
+        payoutRequestId: r.payout_request_id || null,
+        payoutStatus: r.payout_status || null,
+        payoutRequestedAt: r.payout_requested_at || null,
+      })),
+    };
+  }
+
+  async listPayoutRequests(actor) {
+    await this.ensureTable();
+    if (!isModerator(actor) && actor.roleName !== 'admin') {
+      const e = new Error('Admin access only');
+      e.status = 403;
+      throw e;
+    }
+    const [rows] = await pool.query(
+      `SELECT pr.payout_request_id, pr.specialist_user_id, s.name AS specialist_name, s.email AS specialist_email,
+              pr.period_start, pr.period_end, pr.gross_amount_php, pr.commission_amount_php, pr.net_amount_php,
+              pr.item_count, pr.status, pr.requested_at, pr.processed_at, pr.admin_note
+       FROM specialist_payout_requests pr
+       JOIN users s ON s.user_id = pr.specialist_user_id
+       ORDER BY pr.requested_at DESC
+       LIMIT 300`
+    );
+    return {
+      payoutRequests: (rows || []).map((r) => ({
+        payoutRequestId: r.payout_request_id,
+        specialistUserId: r.specialist_user_id,
+        specialistName: r.specialist_name,
+        specialistEmail: r.specialist_email,
+        periodStart: r.period_start,
+        periodEnd: r.period_end,
+        grossPhp: Number(r.gross_amount_php || 0),
+        commissionPhp: Number(r.commission_amount_php || 0),
+        netPhp: Number(r.net_amount_php || 0),
+        itemCount: Number(r.item_count || 0),
+        status: r.status,
+        requestedAt: r.requested_at,
+        processedAt: r.processed_at,
+        adminNote: r.admin_note || null,
+      })),
+    };
+  }
+
+  async processPayoutRequest(actor, payoutRequestId, payload) {
+    await this.ensureTable();
+    if (!isModerator(actor) && actor.roleName !== 'admin') {
+      const e = new Error('Admin access only');
+      e.status = 403;
+      throw e;
+    }
+    const id = Number(payoutRequestId);
+    if (!Number.isFinite(id)) throw new Error('Invalid payout request ID');
+    const action = String((payload && payload.action) || '').trim().toLowerCase();
+    if (!['approve', 'paid', 'reject'].includes(action)) {
+      throw new Error('Invalid payout action');
+    }
+    const note = payload && payload.note != null ? String(payload.note).trim() : null;
+    const [rows] = await pool.query(
+      `SELECT payout_request_id, specialist_user_id, status
+       FROM specialist_payout_requests
+       WHERE payout_request_id = ?`,
+      [id]
+    );
+    if (!rows.length) throw new Error('Payout request not found');
+    const row = rows[0];
+    const current = String(row.status || '');
+
+    if (action === 'approve') {
+      if (current !== 'requested') throw new Error('Only requested payouts can be approved');
+      await pool.query(
+        `UPDATE specialist_payout_requests
+         SET status = 'approved', processed_at = NOW(), processed_by_user_id = ?, admin_note = ?
+         WHERE payout_request_id = ?`,
+        [actor.userId, note, id]
+      );
+      return { payoutRequestId: id, status: 'approved' };
+    }
+
+    if (action === 'reject') {
+      if (current !== 'requested' && current !== 'approved') {
+        throw new Error('Only requested/approved payouts can be rejected');
+      }
+      await pool.query(
+        `UPDATE specialist_payout_requests
+         SET status = 'rejected', processed_at = NOW(), processed_by_user_id = ?, admin_note = ?
+         WHERE payout_request_id = ?`,
+        [actor.userId, note, id]
+      );
+      await pool.query(
+        `UPDATE specialist_earnings_ledger
+         SET status = 'released', payout_request_id = NULL
+         WHERE payout_request_id = ? AND status = 'in_payout'`,
+        [id]
+      );
+      return { payoutRequestId: id, status: 'rejected' };
+    }
+
+    if (current !== 'approved' && current !== 'requested') {
+      throw new Error('Only requested/approved payouts can be marked paid');
+    }
+    await pool.query(
+      `UPDATE specialist_payout_requests
+       SET status = 'paid', processed_at = NOW(), processed_by_user_id = ?, admin_note = ?
+       WHERE payout_request_id = ?`,
+      [actor.userId, note, id]
+    );
+    await pool.query(
+      `UPDATE specialist_earnings_ledger
+       SET status = 'paid_out', payout_paid_at = NOW()
+       WHERE payout_request_id = ? AND status = 'in_payout'`,
+      [id]
+    );
+    return { payoutRequestId: id, status: 'paid' };
   }
 
   async submitFeedback(actor, consultationId, payload) {
@@ -1371,7 +1892,29 @@ class ConsultationService {
        ORDER BY last_updated DESC LIMIT 1`,
       [row.user_id]
     );
-    const hp = hpRows[0] || null;
+    let hp = hpRows[0] || null;
+    const hpHasData =
+      !!hp &&
+      (String(hp.hair_type || '').trim() ||
+        String(hp.scalp_condition || '').trim() ||
+        String(hp.issues_detected || '').trim());
+    if (!hpHasData) {
+      try {
+        const assessmentService = require('./assessmentService');
+        const latest = await assessmentService.getLatestResults(row.user_id);
+        if (latest) {
+          const issues = Array.isArray(latest.issuesDetected) ? latest.issuesDetected.filter(Boolean).join(', ') : '';
+          hp = {
+            hair_type: latest.hairType || null,
+            scalp_condition: latest.scalpCondition || null,
+            issues_detected: issues || null,
+            last_updated: new Date().toISOString(),
+          };
+        }
+      } catch (_fallbackErr) {
+        // Keep null if no assessment fallback is available.
+      }
+    }
 
     return {
       consultationId: id,

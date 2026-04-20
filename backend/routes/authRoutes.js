@@ -18,5 +18,6 @@ router.post('/reset-password', validateResetPassword, authController.resetPasswo
 router.get('/google/status', authController.googleAuthStatus);
 router.get('/google', authController.googleAuth);
 router.get('/google/callback', authController.googleCallback);
+router.post('/google/firebase', authController.googleFirebase);
 
 module.exports = router;

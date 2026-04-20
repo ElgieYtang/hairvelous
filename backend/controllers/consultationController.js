@@ -89,6 +89,15 @@ class ConsultationController {
     }
   }
 
+  async submitDemoPayment(req, res, next) {
+    try {
+      const result = await consultationService.submitDemoPayment(req.user, req.params.consultationId);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async createPayMongoCheckout(req, res, next) {
     try {
       const result = await consultationService.createPayMongoCheckoutForOwner(
@@ -172,6 +181,55 @@ class ConsultationController {
         .map((v) => Number(v.trim()))
         .filter((n) => Number.isFinite(n) && n > 0);
       const result = await consultationService.getSpecialistFeedbackSummaries(raw);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async specialistRevenue(req, res, next) {
+    try {
+      const result = await consultationService.getSpecialistRevenue(req.user);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async requestSpecialistPayout(req, res, next) {
+    try {
+      const result = await consultationService.requestSpecialistPayout(req.user);
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async adminTransactionReport(req, res, next) {
+    try {
+      const result = await consultationService.getAdminTransactionReport(req.user);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async adminPayoutRequests(req, res, next) {
+    try {
+      const result = await consultationService.listPayoutRequests(req.user);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async adminProcessPayoutRequest(req, res, next) {
+    try {
+      const result = await consultationService.processPayoutRequest(
+        req.user,
+        req.params.payoutRequestId,
+        req.body || {}
+      );
       res.json(result);
     } catch (err) {
       next(err);

@@ -101,8 +101,8 @@
     <div class="flex flex-col lg:flex-row gap-8">
       <aside class="lg:w-64 shrink-0">
         <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-5 sticky top-24">
-          <h2 class="text-lg font-semibold text-white mb-1">Recommended</h2>
-          <p class="text-slate-400 text-sm mb-6">Products tailored to your hair profile.</p>
+          <h2 id="sidebar-panel-title" class="text-lg font-semibold text-white mb-1">Recommended</h2>
+          <p id="sidebar-panel-subtitle" class="text-slate-400 text-sm mb-6">Products tailored to your hair profile.</p>
 
           <h3 class="text-sm font-medium text-slate-300 mb-3">Categories</h3>
           <div id="categories-list" class="space-y-1.5 mb-6">
@@ -294,11 +294,16 @@
       });
       const sort = document.getElementById('sort-products')?.value || 'relevance';
       if (sort === 'relevance') {
-        items = [...items].sort((a, b) => {
-          const recDelta = (Number(b.isRecommended) || 0) - (Number(a.isRecommended) || 0);
-          if (recDelta !== 0) return recDelta;
-          return (Number(b.matchScore) || 0) - (Number(a.matchScore) || 0);
-        });
+        if (productMode === 'recommended') {
+          items = [...items].sort((a, b) => {
+            const recDelta = (Number(b.isRecommended) || 0) - (Number(a.isRecommended) || 0);
+            if (recDelta !== 0) return recDelta;
+            return (Number(b.matchScore) || 0) - (Number(a.matchScore) || 0);
+          });
+        } else {
+          // All Products mode: neutral catalog ordering.
+          items = [...items].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        }
       }
       return items;
     }
@@ -694,6 +699,8 @@
     function syncModeButtons() {
       const recBtn = document.getElementById('btn-mode-recommended');
       const allBtn = document.getElementById('btn-mode-all');
+      const panelTitle = document.getElementById('sidebar-panel-title');
+      const panelSubtitle = document.getElementById('sidebar-panel-subtitle');
       const active = 'px-4 py-1.5 rounded-md text-sm font-medium bg-violet-600 text-white';
       const inactive = 'px-4 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white';
       recBtn.className = productMode === 'recommended' ? active : inactive;
@@ -701,7 +708,15 @@
       const modeHint = document.getElementById('mode-hint');
       modeHint.textContent = productMode === 'recommended'
         ? 'Recommended items are prioritized from your hair profile.'
-        : 'Showing all products, with recommended items still pinned higher.';
+        : 'Showing all products in neutral catalog order.';
+      if (panelTitle) {
+        panelTitle.textContent = productMode === 'recommended' ? 'Recommended' : 'Catalog Filters';
+      }
+      if (panelSubtitle) {
+        panelSubtitle.textContent = productMode === 'recommended'
+          ? 'Products tailored to your hair profile.'
+          : 'Browse and refine the full product catalog.';
+      }
     }
 
     document.getElementById('btn-mode-recommended').addEventListener('click', () => {

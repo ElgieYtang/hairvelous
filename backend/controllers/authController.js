@@ -5,6 +5,7 @@
  */
 const authService = require('../services/authService');
 const googleAuthService = require('../services/googleAuthService');
+const firebaseAuthService = require('../services/firebaseAuthService');
 const { validationResult } = require('express-validator');
 const crypto = require('crypto');
 
@@ -101,13 +102,35 @@ class AuthController {
       const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
       const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
       const callbackUrl = process.env.GOOGLE_CALLBACK_URL?.trim();
+      const firebaseCredPath = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
       
       const isConfigured = !!(clientId && clientSecret && callbackUrl && 
                                clientId !== '' && clientSecret !== '' && callbackUrl !== '');
+      const firebaseConfigured = !!(firebaseCredPath && firebaseCredPath !== '');
       
-      res.json({ configured: isConfigured });
+      res.json({ configured: isConfigured || firebaseConfigured, oauthConfigured: isConfigured, firebaseConfigured });
     } catch (err) {
       res.json({ configured: false });
+    }
+  }
+
+  /**
+   * Firebase Google Sign-In endpoint:
+   * 1) verify Firebase ID token
+   * 2) create/link user via existing Google callback handler
+   * 3) return app JWT + user payload
+   */
+  async googleFirebase(req, res, next) {
+    try {
+      const idToken = String((req.body && req.body.idToken) || '').trim();
+      if (!idToken) return res.status(400).json({ error: 'Missing idToken' });
+
+      const googlePayload = await firebaseAuthService.verifyFirebaseIdToken(idToken);
+      const result = await googleAuthService.handleGoogleCallback(googlePayload);
+      res.json(result);
+    } catch (err) {
+      console.error('Firebase Google sign-in error:', err.message || err);
+      res.status(401).json({ error: err.message || 'Google sign-in failed' });
     }
   }
 

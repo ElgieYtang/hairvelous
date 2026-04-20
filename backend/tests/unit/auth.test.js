@@ -18,6 +18,7 @@ const pool = require('../../config/db');
 describe('User Authentication Module (UA)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(authService, 'hasGoogleOAuthColumns').mockResolvedValue(false);
   });
 
   // UA-001: Login returns token for valid user

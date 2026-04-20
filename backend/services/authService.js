@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const pool = require('../config/db');
 const { signToken } = require('../middleware/auth');
+const emailService = require('./emailService');
 
 class AuthService {
   async ensureUserProfileDemographicColumns() {
@@ -127,13 +128,17 @@ async register(name, email, password, profile = {}) {
 
     const user = rows[0];
     
-    // Check if user is trying to login with password but account is Google-only
-    if (hasGoogleColumns && user.auth_provider === 'google') {
-      throw new Error('This account uses Google sign-in. Please use "Continue with Google" instead.');
+    // Allow dual auth: Google-linked accounts can still use email/password
+    // after they set a password via forgot-password/reset flow.
+    if (!user.password_hash) {
+      throw new Error('No password is set for this account yet. Use "Forgot password" to create one.');
     }
 
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
+      if (hasGoogleColumns && user.auth_provider === 'google') {
+        throw new Error('Incorrect password. If this is a Google account, use "Forgot password" to set an email password.');
+      }
       throw new Error('Invalid email or password');
     }
 
@@ -151,28 +156,42 @@ async register(name, email, password, profile = {}) {
   }
 
   /**
-   * Generate reset token (stub: returns token in response for prototype)
+   * Generate reset token and send reset email.
    */
   async forgotPassword(email) {
-    const [rows] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.query('SELECT user_id, name, email FROM users WHERE email = ?', [email]);
     if (rows.length === 0) {
       // Don't reveal if email exists (security best practice)
       return { message: 'If an account exists, a reset link has been sent.' };
     }
 
+    const user = rows[0];
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await pool.query(
       'UPDATE users SET reset_token = ?, reset_token_expires_at = ? WHERE user_id = ?',
-      [token, expiresAt, rows[0].user_id]
+      [token, expiresAt, user.user_id]
     );
 
-    // In production: send email. For prototype, return token in response.
-    return {
+    const appPublicUrl = String(process.env.APP_PUBLIC_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
+    const resetLink = `${appPublicUrl}/reset-password.html?token=${encodeURIComponent(token)}`;
+    let mailResult = { sent: false, reason: 'unknown' };
+    try {
+      mailResult = await emailService.sendPasswordResetEmail(user.email, user.name, resetLink);
+    } catch (err) {
+      console.error('[authService] Failed to send reset email:', err.message);
+      mailResult = { sent: false, reason: 'send_failed' };
+    }
+    const payload = {
       message: 'If an account exists, a reset link has been sent.',
-      resetToken: token, // Remove in production
     };
+    // Dev fallback so local testing still works without SMTP.
+    if (!mailResult.sent && process.env.NODE_ENV !== 'production') {
+      payload.devResetLink = resetLink;
+      payload.devNotice = 'SMTP is not configured. Use devResetLink for local testing.';
+    }
+    return payload;
   }
 
   /**

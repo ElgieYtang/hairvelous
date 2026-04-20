@@ -14,6 +14,21 @@ router.get('/specialist/analytics', requireAuth, (req, res, next) =>
 router.get('/specialist-feedback-summaries', requireAuth, (req, res, next) =>
   consultationController.specialistFeedbackSummaries(req, res, next)
 );
+router.get('/specialist/revenue', requireAuth, (req, res, next) =>
+  consultationController.specialistRevenue(req, res, next)
+);
+router.post('/specialist/payout-request', requireAuth, (req, res, next) =>
+  consultationController.requestSpecialistPayout(req, res, next)
+);
+router.get('/admin/transactions', requireAuth, (req, res, next) =>
+  consultationController.adminTransactionReport(req, res, next)
+);
+router.get('/admin/payout-requests', requireAuth, (req, res, next) =>
+  consultationController.adminPayoutRequests(req, res, next)
+);
+router.patch('/admin/payout-requests/:payoutRequestId', requireAuth, (req, res, next) =>
+  consultationController.adminProcessPayoutRequest(req, res, next)
+);
 router.get('/:consultationId/client-summary', requireAuth, (req, res, next) =>
   consultationController.clientConsultSummary(req, res, next)
 );
@@ -46,6 +61,9 @@ router.post(
   requireAuth,
   uploadConsultationPaymentReceipt.single('receipt'),
   (req, res, next) => consultationController.submitPayment(req, res, next)
+);
+router.post('/:consultationId/demo-payment', requireAuth, (req, res, next) =>
+  consultationController.submitDemoPayment(req, res, next)
 );
 router.post('/:consultationId/paymongo/checkout', requireAuth, (req, res, next) =>
   consultationController.createPayMongoCheckout(req, res, next)
