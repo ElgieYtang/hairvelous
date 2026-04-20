@@ -23,6 +23,21 @@ function runBootstrap() {
   });
 }
 
+function runSeed() {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [path.join(__dirname, 'seed-db.js')], {
+      cwd: backendDir,
+      stdio: 'inherit',
+    });
+
+    child.on('error', reject);
+    child.on('exit', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Database seed failed with exit code ${code}`));
+    });
+  });
+}
+
 async function ensureEnvFile() {
   try {
     await fs.access(envPath);
@@ -43,6 +58,7 @@ async function run() {
   await ensureEnvFile();
   await ensureUploadsDir();
   await runBootstrap();
+  await runSeed();
   console.log('Local setup complete. You can now run: npm run dev');
 }
 

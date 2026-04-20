@@ -8,6 +8,7 @@
     "dev": "cd backend && npm run dev",
     "setup": "cd backend && npm run setup",
     "db:bootstrap": "cd backend && npm run db:bootstrap",
+    "db:seed": "cd backend && npm run db:seed",
     "install:backend": "cd backend && npm install",
     "postinstall": "cd backend && npm install",
     "test": "cd backend && npm test"

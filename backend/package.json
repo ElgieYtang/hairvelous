@@ -8,6 +8,7 @@
     "dev": "node server.js",
     "setup": "node scripts/setup-local.js",
     "db:bootstrap": "node scripts/bootstrap-db.js",
+    "db:seed": "node scripts/seed-db.js",
     "db:fix-products-columns": "node scripts/fix-products-columns.js",
     "db:fix-hair-photos": "node scripts/fix-hair-photos-table.js",
     "db:fix-hair-assessment": "node scripts/fix-hair-assessment-tables.js",

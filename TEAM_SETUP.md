@@ -20,6 +20,7 @@ What this does:
 - Creates `backend/.env` from `backend/.env.example` if missing
 - Ensures the root `uploads/` folder exists
 - Bootstraps the MySQL database schema and migrations
+- Seeds shared starter data (default roles/users/questions/products/guides)
 
 ## 3) Start the app
 
@@ -32,3 +33,6 @@ npm run dev
 - Ensure MySQL is running locally before `npm run setup`.
 - Update `backend/.env` with your own local credentials/secrets.
 - Database files/backups/secrets are intentionally excluded from Git via `.gitignore`.
+- Default seeded login accounts:
+  - `hairvelian@example.com` / `password123`
+  - `admin@hairvelous.com` / `admin123`
