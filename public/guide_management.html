@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guide Management – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="disclaimer-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-white mb-2">Guide Management</h1>
+        <p class="text-slate-400">Add, edit, or delete DIY guides.</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="showAddForm()" class="bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg">+ Add Guide</button>
+        <a href="/admin_dashboard.html" class="text-violet-400 hover:underline">← Back to Admin</a>
+      </div>
+    </div>
+
+    <div id="add-form" class="hidden bg-slate-800/50 rounded-xl p-6 border border-slate-700 mb-6">
+      <h2 class="text-lg font-semibold text-white mb-4" id="form-title">Add New Guide</h2>
+      <form id="guide-form" class="space-y-4">
+        <div>
+          <label class="block text-sm text-slate-300 mb-1">Title *</label>
+          <input type="text" id="g-title" required class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2" />
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Category *</label>
+            <select id="g-category" required class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2">
+              <option value="mask">Mask</option>
+              <option value="oil">Oil</option>
+              <option value="rinse">Rinse</option>
+              <option value="growth">Growth</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Difficulty *</label>
+            <select id="g-difficulty" required class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2">
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-300 mb-1">Ingredients</label>
+          <textarea id="g-ingredients" rows="3" class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2" placeholder="List ingredients separated by commas"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-300 mb-1">Steps *</label>
+          <textarea id="g-steps" rows="8" required class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2" placeholder="Numbered steps, one per line"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-300 mb-1">Caution/Warnings</label>
+          <textarea id="g-caution" rows="2" class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2" placeholder="Any warnings or precautions"></textarea>
+        </div>
+        <div class="flex gap-3">
+          <button type="submit" class="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-lg">Save</button>
+          <button type="button" onclick="hideAddForm()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="guides-list" class="space-y-4"></div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth() || !requireAdmin()) { /* redirects */ }
+
+    let editingId = null;
+
+    async function loadGuides() {
+      try {
+        const data = await api('/guides');
+        const guides = data.guides || [];
+        const container = document.getElementById('guides-list');
+        container.innerHTML = '';
+        guides.forEach(g => {
+          const card = document.createElement('div');
+          card.className = 'bg-slate-800/50 rounded-xl p-5 border border-slate-700';
+          card.innerHTML = `
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="font-semibold text-white">${escapeHtml(g.title)}</div>
+                <div class="flex gap-2 mt-1">
+                  <span class="px-2 py-0.5 rounded text-xs bg-violet-600/30 text-violet-300">${g.category}</span>
+                  <span class="px-2 py-0.5 rounded text-xs bg-slate-700 text-slate-300">${g.difficulty}</span>
+                </div>
+              </div>
+            </div>
+            ${g.ingredients ? '<p class="text-slate-400 text-sm mt-2 line-clamp-2">' + escapeHtml(g.ingredients.substring(0, 100)) + '</p>' : ''}
+            <div class="flex gap-2 mt-4">
+              <button onclick="editGuide(${g.guideId})" class="text-violet-400 hover:underline text-sm">Edit</button>
+              <button onclick="deleteGuide(${g.guideId})" class="text-red-400 hover:underline text-sm">Delete</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        showToast(err.error || 'Failed to load guides', 'error');
+      }
+    }
+
+    function showAddForm() {
+      editingId = null;
+      document.getElementById('form-title').textContent = 'Add New Guide';
+      document.getElementById('add-form').classList.remove('hidden');
+      document.getElementById('guide-form').reset();
+      document.getElementById('g-category').value = 'mask';
+      document.getElementById('g-difficulty').value = 'easy';
+    }
+
+    function hideAddForm() {
+      document.getElementById('add-form').classList.add('hidden');
+    }
+
+    document.getElementById('guide-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        title: document.getElementById('g-title').value.trim(),
+        category: document.getElementById('g-category').value,
+        difficulty: document.getElementById('g-difficulty').value,
+        ingredients: document.getElementById('g-ingredients').value.trim() || undefined,
+        steps: document.getElementById('g-steps').value.trim(),
+        caution: document.getElementById('g-caution').value.trim() || undefined,
+      };
+      try {
+        if (editingId) {
+          await api('/guides/' + editingId, { method: 'PUT', body: JSON.stringify(data) });
+          showToast('Guide updated', 'success');
+        } else {
+          await api('/guides', { method: 'POST', body: JSON.stringify(data) });
+          showToast('Guide added', 'success');
+        }
+        hideAddForm();
+        loadGuides();
+      } catch (err) {
+        showToast(err.error || 'Failed', 'error');
+      }
+    });
+
+    window.editGuide = async (id) => {
+      try {
+        const data = await api('/guides/' + id);
+        const g = data.guide;
+        editingId = id;
+        document.getElementById('form-title').textContent = 'Edit Guide';
+        document.getElementById('g-title').value = g.title;
+        document.getElementById('g-category').value = g.category || 'mask';
+        document.getElementById('g-difficulty').value = g.difficulty || 'easy';
+        document.getElementById('g-ingredients').value = g.ingredients || '';
+        document.getElementById('g-steps').value = g.steps || '';
+        document.getElementById('g-caution').value = g.caution || '';
+        document.getElementById('add-form').classList.remove('hidden');
+      } catch (err) {
+        showToast(err.error || 'Failed', 'error');
+      }
+    };
+
+    window.deleteGuide = async (id) => {
+      if (!confirm('Delete this guide?')) return;
+      try {
+        await api('/guides/' + id, { method: 'DELETE' });
+        showToast('Guide deleted', 'success');
+        loadGuides();
+      } catch (err) {
+        showToast(err.error || 'Failed', 'error');
+      }
+    };
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    loadGuides();
+  </script>
+</body>
+</html>

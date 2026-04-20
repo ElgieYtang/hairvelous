@@ -1,0 +1,24 @@
+HAIRVELOUS - How to start and open the app
+==========================================
+
+If you see "This site can't be reached" or "localhost refused to connect",
+the server is not running. Start it first, then open http://localhost:3000.
+
+--- Option A: Double-click START_SERVER.bat (easiest on Windows) ---
+1. Double-click  START_SERVER.bat  in the project folder (elai).
+2. Leave the black window OPEN. You should see: "Hairvelous server running at http://localhost:3000"
+3. In your browser go to:  http://localhost:3000
+
+--- Option B: Terminal ---
+1. Open PowerShell or Command Prompt.
+2. Go to the project folder, e.g.:   cd C:\Users\AMD\Desktop\elai
+3. Install backend once:   cd backend   then   npm install   then   cd ..
+4. Start the server:   node backend/server.js
+   (Or from inside backend:   npm start   or   node server.js)
+5. Leave the terminal OPEN. You must see: "Hairvelous server running at http://localhost:3000"
+6. In your browser go to:  http://localhost:3000
+
+--- Important ---
+- Keep the server window/terminal OPEN while you use the site. Closing it stops the server.
+- Do NOT open the HTML files directly (double-click). Always use http://localhost:3000.
+- If the server does not start, check for red error messages in the terminal (e.g. "port 3000 in use" or "Cannot find module" = run npm install in the backend folder).

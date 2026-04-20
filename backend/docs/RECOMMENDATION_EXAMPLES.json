@@ -1,0 +1,234 @@
+{
+  "example1": {
+    "description": "User with curly hair, dry scalp, experiencing dryness and frizz, medium budget, prefers all product types",
+    "input": {
+      "hairType": "curly",
+      "scalpCondition": "dry",
+      "issues": ["dryness", "frizz"],
+      "preferences": {
+        "budget": "medium",
+        "productType": "all"
+      }
+    },
+    "output": {
+      "recommendations": [
+        {
+          "productId": 3,
+          "name": "Deep Moisture Hair Mask",
+          "brand": "HydrateCo",
+          "description": "Intensive hydration for dry, brittle hair.",
+          "price": 14.99,
+          "reason": "Addresses: dryness, frizz. Category: moisturizing, anti-frizz. Suitable for curly hair. For dry scalp.",
+          "matchScore": 12
+        },
+        {
+          "productId": 4,
+          "name": "Daily Moisturizing Conditioner",
+          "brand": "HairCare Pro",
+          "description": "Lightweight moisture for daily use.",
+          "price": 9.99,
+          "reason": "Addresses: dryness, frizz. Category: moisturizing. Suitable for curly hair. For dry scalp.",
+          "matchScore": 10
+        },
+        {
+          "productId": 5,
+          "name": "Frizz Control Oil",
+          "brand": "SmoothLock",
+          "description": "Reduces frizz and adds shine without weighing down.",
+          "price": 16.00,
+          "reason": "Addresses: dryness, frizz. Category: anti-frizz, moisturizing. Suitable for curly hair. For dry scalp.",
+          "matchScore": 11
+        },
+        {
+          "productId": 6,
+          "name": "Anti-Frizz Smoothing Serum",
+          "brand": "HairCare Pro",
+          "description": "Heat-protectant and frizz control in one.",
+          "price": 13.50,
+          "reason": "Addresses: dryness, frizz. Category: anti-frizz. Suitable for curly hair. For dry scalp.",
+          "matchScore": 9
+        }
+      ],
+      "routinePlan": {
+        "daily": [
+          {
+            "time": "Morning",
+            "step": "Apply lightweight serum or oil",
+            "product": "Frizz Control Oil",
+            "note": "Focus on ends and mid-lengths"
+          }
+        ],
+        "weekly": [
+          {
+            "step": "Wash hair",
+            "frequency": "1-2 times per week",
+            "products": [],
+            "note": "Use lukewarm water, focus on scalp"
+          },
+          {
+            "step": "Condition",
+            "frequency": "After every wash",
+            "products": ["Daily Moisturizing Conditioner"],
+            "note": "Apply to mid-lengths and ends, avoid roots"
+          },
+          {
+            "step": "Deep treatment mask",
+            "frequency": "Once per week",
+            "products": ["Deep Moisture Hair Mask"],
+            "note": "Leave on for 15-30 minutes, then rinse"
+          }
+        ],
+        "notes": [
+          "Adjust frequency based on your hair's response",
+          "Always use products as directed",
+          "Patch test new products before full use"
+        ]
+      },
+      "warnings": [
+        "Always patch test new products on a small area of skin first (behind ear or inner arm)",
+        "Stop use immediately if you experience irritation, redness, or discomfort",
+        "Consult a healthcare professional for severe or persistent symptoms"
+      ],
+      "diyGuides": [
+        {
+          "guideId": 1,
+          "title": "DIY Coconut Oil Mask",
+          "summary": "A simple at-home mask for dry hair."
+        }
+      ],
+      "disclaimer": "These recommendations are for preventive awareness only. They do not diagnose or treat. Consult a healthcare professional for severe or persistent concerns."
+    }
+  },
+  "example2": {
+    "description": "User with straight hair, oily scalp, experiencing oiliness and flaking, low budget, prefers shampoo and conditioner",
+    "input": {
+      "hairType": "straight",
+      "scalpCondition": "oily",
+      "issues": ["oiliness", "flaking"],
+      "preferences": {
+        "budget": "low",
+        "productType": "shampoo"
+      }
+    },
+    "output": {
+      "recommendations": [
+        {
+          "productId": 7,
+          "name": "Clarifying Shampoo",
+          "brand": "PureScalp",
+          "description": "Removes buildup; for oily scalp. Use weekly.",
+          "price": 11.99,
+          "reason": "Addresses: oiliness, flaking. Category: clarifying/oily scalp, anti-dandruff. Suitable for straight hair. For oily scalp.",
+          "matchScore": 13
+        },
+        {
+          "productId": 1,
+          "name": "Scalp Relief Shampoo",
+          "brand": "HairCare Pro",
+          "description": "Helps reduce flaking and soothe itchy scalp. For preventive care only.",
+          "price": 12.99,
+          "reason": "Addresses: oiliness, flaking. Category: anti-dandruff. Suitable for straight hair. For oily scalp.",
+          "matchScore": 11
+        },
+        {
+          "productId": 2,
+          "name": "Anti-Dandruff Treatment Serum",
+          "brand": "ScalpFix",
+          "description": "Targeted serum for visible flaking. Not a medical treatment.",
+          "price": 18.50,
+          "reason": "Addresses: oiliness, flaking. Category: anti-dandruff. Suitable for straight hair. For oily scalp.",
+          "matchScore": 10
+        },
+        {
+          "productId": 8,
+          "name": "Oil-Control Scalp Tonic",
+          "brand": "PureScalp",
+          "description": "Lightweight tonic for oily roots and fresh scalp.",
+          "price": 15.00,
+          "reason": "Addresses: oiliness, flaking. Category: clarifying/oily scalp. Suitable for straight hair. For oily scalp.",
+          "matchScore": 9
+        }
+      ],
+      "routinePlan": {
+        "daily": [],
+        "weekly": [
+          {
+            "step": "Wash hair",
+            "frequency": "3-4 times per week",
+            "products": ["Clarifying Shampoo"],
+            "note": "Use lukewarm water, focus on scalp"
+          },
+          {
+            "step": "Clarifying treatment",
+            "frequency": "Once per month",
+            "note": "Use a clarifying shampoo to remove buildup"
+          }
+        ],
+        "notes": [
+          "Adjust frequency based on your hair's response",
+          "Always use products as directed",
+          "Patch test new products before full use"
+        ]
+      },
+      "warnings": [
+        "Always patch test new products on a small area of skin first (behind ear or inner arm)",
+        "Stop use immediately if you experience irritation, redness, or discomfort",
+        "Consult a healthcare professional for severe or persistent symptoms",
+        "If flaking persists or worsens, consult a dermatologist"
+      ],
+      "diyGuides": [
+        {
+          "guideId": 2,
+          "title": "Apple Cider Vinegar Rinse",
+          "summary": "Gentle clarifying rinse for buildup."
+        }
+      ],
+      "disclaimer": "These recommendations are for preventive awareness only. They do not diagnose or treat. Consult a healthcare professional for severe or persistent concerns."
+    }
+  },
+  "example3": {
+    "description": "User with thinning hair concern - non-medical advice only",
+    "input": {
+      "hairType": "wavy",
+      "scalpCondition": "normal",
+      "issues": ["thinning"],
+      "preferences": {
+        "budget": "medium",
+        "productType": "all"
+      }
+    },
+    "output": {
+      "recommendations": [],
+      "routinePlan": {
+        "daily": [
+          {
+            "time": "Daily",
+            "step": "Gentle hair care",
+            "note": "Handle hair gently, avoid tight hairstyles and harsh chemicals"
+          }
+        ],
+        "weekly": [
+          {
+            "step": "Gentle washing",
+            "frequency": "2-3 times per week",
+            "note": "Use mild, sulfate-free products"
+          }
+        ],
+        "notes": [
+          "Avoid excessive heat styling",
+          "Use wide-tooth comb instead of brush",
+          "Protect hair from sun damage"
+        ]
+      },
+      "warnings": [
+        "Hair loss concerns require professional evaluation",
+        "Consult a healthcare provider or dermatologist for proper diagnosis",
+        "This system provides preventive awareness only, not medical advice",
+        "Early consultation can help identify underlying causes"
+      ],
+      "diyGuides": [],
+      "disclaimer": "Hair loss/thinning requires professional medical evaluation. This system provides general preventive awareness only and does not diagnose or treat. Please consult a healthcare professional for proper assessment.",
+      "medicalAdvice": "For hair loss concerns, we recommend consulting a healthcare professional or dermatologist. They can help identify underlying causes and recommend appropriate treatments."
+    }
+  }
+}

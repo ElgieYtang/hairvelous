@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+    .panel {
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: linear-gradient(160deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.95));
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
+    }
+    .mini-tile {
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(15, 23, 42, 0.55);
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="disclaimer-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <div class="grid xl:grid-cols-12 gap-6">
+      <section class="xl:col-span-3 panel p-5">
+        <div class="text-center border-b border-slate-700 pb-5 mb-5">
+          <div class="w-20 h-20 mx-auto rounded-full bg-violet-500/20 border-2 border-violet-400/70 flex items-center justify-center text-2xl font-bold text-violet-200 mb-3" id="user-avatar">U</div>
+          <p class="text-xs tracking-[0.2em] uppercase text-slate-500">Welcome</p>
+          <h1 id="user-name" class="text-2xl font-bold text-white mt-1">Hairvelous User</h1>
+          <p id="user-email" class="text-slate-400 text-sm mt-1"></p>
+          <div id="plan-indicator" class="inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700">
+            Plan: Loading...
+          </div>
+        </div>
+        <div class="space-y-3">
+          <a href="/assessment.html" class="block mini-tile px-4 py-3 hover:border-violet-400/60">
+            <p class="text-white font-medium">Take Assessment</p>
+            <p class="text-slate-400 text-xs">Refresh your profile data</p>
+          </a>
+          <a href="/recommendations.html" class="block mini-tile px-4 py-3 hover:border-violet-400/60">
+            <p class="text-white font-medium">Product Matches</p>
+            <p class="text-slate-400 text-xs">See products for your profile</p>
+          </a>
+          <a href="/tracker.html" class="block mini-tile px-4 py-3 hover:border-violet-400/60">
+            <p class="text-white font-medium">Routine Tracker</p>
+            <p class="text-slate-400 text-xs">Log photo/video progress</p>
+          </a>
+          <a id="consult-link" href="/consultations.html" class="block mini-tile px-4 py-3 hover:border-violet-400/60">
+            <p class="text-white font-medium">Consultations</p>
+            <p class="text-slate-400 text-xs">Get specialist guidance</p>
+          </a>
+        </div>
+      </section>
+
+      <section class="xl:col-span-9 space-y-6">
+        <div class="panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-semibold text-white">My Statistics</h2>
+              <p class="text-slate-400 text-sm">Quick view of your journey status</p>
+            </div>
+            <span class="text-xs rounded-full px-3 py-1 bg-emerald-500/20 text-emerald-300">Live</span>
+          </div>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="mini-tile p-4">
+              <p class="text-xs text-slate-400">Assessments</p>
+              <p id="stat-assessment" class="text-2xl font-bold text-cyan-300">0</p>
+            </div>
+            <div class="mini-tile p-4">
+              <p class="text-xs text-slate-400">Recommendations</p>
+              <p id="stat-recs" class="text-2xl font-bold text-violet-300">0</p>
+            </div>
+            <div class="mini-tile p-4">
+              <p class="text-xs text-slate-400">Routine Logs</p>
+              <p id="stat-routine" class="text-2xl font-bold text-amber-300">0</p>
+            </div>
+            <div class="mini-tile p-4">
+              <p class="text-xs text-slate-400">Consultations</p>
+              <p id="stat-consults" class="text-2xl font-bold text-emerald-300">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-5 gap-6">
+          <div class="lg:col-span-3 panel p-5">
+            <h3 class="text-lg font-semibold text-white mb-3">Hair Profile Snapshot</h3>
+            <div id="profile-content" class="text-slate-400">
+              <p>Complete an assessment to populate your profile.</p>
+            </div>
+          </div>
+          <div class="lg:col-span-2 panel p-5">
+            <h3 class="text-lg font-semibold text-white mb-3">Progress Checklist</h3>
+            <div id="progress-list" class="space-y-2 text-sm">
+              <p class="text-slate-400">Loading...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">Recent Recommendations</h3>
+            <a href="/recommendations.html" class="text-violet-300 hover:text-violet-200 text-sm">View all</a>
+          </div>
+          <div id="recs-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <p class="text-slate-400">No recommendations yet.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth()) { /* redirects */ }
+    (function redirectSpecialist() {
+      const u = getUser();
+      const role = u && (u.roleName || u.role);
+      if (role === 'specialist') {
+        window.location.replace('/specialist_dashboard.html');
+      }
+    })();
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function toDateOnly(v) {
+      if (!v) return '';
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return String(v).slice(0, 10);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function setIdentity() {
+      const user = getUser() || {};
+      const name = user.name || 'Hairvelous User';
+      const email = user.email || '';
+      document.getElementById('user-name').textContent = name;
+      document.getElementById('user-email').textContent = email;
+      document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+    }
+
+    function renderChecklist({ hasProfile, recCount, routineCount, consultCount }) {
+      const checks = [
+        { label: 'Assessment completed', done: hasProfile, link: '/assessment.html' },
+        { label: 'At least 1 recommendation', done: recCount > 0, link: '/recommendations.html' },
+        { label: 'At least 3 routine logs', done: routineCount >= 3, link: '/tracker.html' },
+        { label: 'Consultation requested', done: consultCount > 0, link: '/consultations.html' },
+      ];
+      const container = document.getElementById('progress-list');
+      container.innerHTML = checks.map((c) => `
+        <a href="${c.link}" class="flex items-center justify-between rounded-lg px-3 py-2 border ${c.done ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' : 'border-slate-700 bg-slate-800/50 text-slate-300'}">
+          <span>${esc(c.label)}</span>
+          <span>${c.done ? '✓' : '○'}</span>
+        </a>
+      `).join('');
+    }
+
+    async function loadPlanIndicator() {
+      const indicator = document.getElementById('plan-indicator');
+      const consultLink = document.getElementById('consult-link');
+      try {
+        const statusResp = await api('/billing/status');
+        const status = statusResp.status || {};
+        if (status.isPro) {
+          const until = status.activeUntil ? ` until ${String(status.activeUntil).slice(0, 10)}` : '';
+          indicator.textContent = `Plan: Pro (${status.planName || 'Active'}${until})`;
+          indicator.className = 'inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-emerald-900/30 text-emerald-300 border-emerald-700/40';
+          if (consultLink) {
+            consultLink.href = '/consultations.html';
+            consultLink.className = 'block mini-tile px-4 py-3 hover:border-violet-400/60';
+            consultLink.querySelector('p.text-slate-400').textContent = 'Get specialist guidance';
+          }
+        } else {
+          indicator.textContent = `Plan: ${status.planName || 'Free'}`;
+          indicator.className = 'inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700';
+          if (consultLink) {
+            consultLink.href = '/pricing.html';
+            consultLink.className = 'block mini-tile px-4 py-3 border-slate-700 opacity-80';
+            consultLink.querySelector('p.text-slate-400').textContent = 'Pro only - upgrade to unlock';
+          }
+        }
+        return status;
+      } catch (_err) {
+        indicator.textContent = 'Plan: Free';
+        indicator.className = 'inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700';
+        if (consultLink) {
+          consultLink.href = '/pricing.html';
+          consultLink.className = 'block mini-tile px-4 py-3 border-slate-700 opacity-80';
+          consultLink.querySelector('p.text-slate-400').textContent = 'Pro only - upgrade to unlock';
+        }
+        return null;
+      }
+    }
+
+    function consumePlanFlash(status) {
+      const flash = localStorage.getItem('hairvelous_plan_flash');
+      if (!flash) return;
+      if (flash === 'pro' && status && status.isPro) {
+        showToast('Payment successful. Your Pro plan is now active.', 'success');
+        localStorage.removeItem('hairvelous_plan_flash');
+      } else if (flash === 'free' && status && !status.isPro) {
+        showToast('Switched to Free plan.', 'info');
+        localStorage.removeItem('hairvelous_plan_flash');
+      }
+    }
+
+    async function loadDashboard() {
+      setIdentity();
+      const billingStatus = await loadPlanIndicator();
+      consumePlanFlash(billingStatus);
+      let hasProfile = false;
+      let recCount = 0;
+      let routineCount = 0;
+      let consultCount = 0;
+
+      try {
+        let profile = await api('/profile');
+        let hp = profile.hairProfile;
+        if (!hp) {
+          try {
+            const latest = await api('/assessments/latest/results');
+            if (latest && latest.hairType && !latest.message) {
+              profile = await api('/profile');
+              hp = profile.hairProfile;
+            }
+          } catch (_syncErr) {
+            /* no assessment yet */
+          }
+        }
+        if (hp) {
+          hasProfile = true;
+          const issues =
+            hp.issuesDetected == null || hp.issuesDetected === ''
+              ? 'None listed'
+              : String(hp.issuesDetected);
+          document.getElementById('profile-content').innerHTML = `
+            <div class="grid sm:grid-cols-2 gap-3 text-sm">
+              <div class="mini-tile p-3"><p class="text-slate-400">Hair Type</p><p class="text-white font-medium">${esc(hp.hairType || 'Not set')}</p></div>
+              <div class="mini-tile p-3"><p class="text-slate-400">Scalp Condition</p><p class="text-white font-medium">${esc(hp.scalpCondition || 'Not set')}</p></div>
+              <div class="mini-tile p-3 sm:col-span-2"><p class="text-slate-400">Detected Indicators</p><p class="text-white font-medium">${esc(issues)}</p></div>
+            </div>
+            <a href="/results.html" class="inline-block mt-3 text-violet-300 hover:text-violet-200">Open full assessment result →</a>
+          `;
+        }
+      } catch (_err) {}
+
+      try {
+        let recs = await api('/recommendations/saved');
+        let list = recs.recommendations || [];
+        if (!list.length && hasProfile) {
+          try {
+            await api('/assessments/latest/results');
+            recs = await api('/recommendations/saved');
+            list = recs.recommendations || [];
+          } catch (_e) {
+            /* ignore */
+          }
+        }
+        recCount = list.length;
+        const recsList = document.getElementById('recs-list');
+        if (!list.length) {
+          recsList.innerHTML =
+            '<p class="text-slate-400 col-span-full">No product matches yet. Complete an assessment or add products in the catalog so we can match your profile.</p>';
+        } else {
+          recsList.className = 'grid sm:grid-cols-2 lg:grid-cols-3 gap-4';
+          recsList.innerHTML = list.slice(0, 6).map((r) => `
+            <div class="mini-tile p-4">
+              <p class="text-white font-medium">${esc(r.name || 'Untitled')}</p>
+              <p class="text-slate-400 text-xs mt-1">${esc(r.brand || '')}</p>
+              <p class="text-slate-500 text-xs mt-2 line-clamp-2">${esc(r.reason || '')}</p>
+              <p class="text-slate-400 text-xs mt-3">Price may vary by store.</p>
+              <p class="text-slate-500 text-xs mt-1">${esc(toDateOnly(r.dateRecommended || ''))}</p>
+            </div>
+          `).join('');
+        }
+      } catch (_err) {}
+
+      try {
+        const routines = await api('/routine/logs?limit=200');
+        routineCount = (routines.logs || []).length;
+      } catch (_err) {}
+
+      try {
+        const consultations = await api('/consultations');
+        consultCount = (consultations.consultations || []).length;
+      } catch (_err) {}
+
+      document.getElementById('stat-assessment').textContent = hasProfile ? '1' : '0';
+      document.getElementById('stat-recs').textContent = String(recCount);
+      document.getElementById('stat-routine').textContent = String(routineCount);
+      document.getElementById('stat-consults').textContent = String(consultCount);
+      renderChecklist({ hasProfile, recCount, routineCount, consultCount });
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

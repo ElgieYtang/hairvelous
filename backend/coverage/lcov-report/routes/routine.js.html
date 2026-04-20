@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for routes/routine.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="..\prettify.css" />
+    <link rel="stylesheet" href="..\base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(..\sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="..\index.html">All files</a> / <a href="index.html">routes</a> routine.js
+    </h1>
+    <div class='clearfix'>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112</td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = <span class="cstat-no" title="statement not covered" >require('express');</span>
+const { body, validationResult } = <span class="cstat-no" title="statement not covered" >require('express-validator');</span>
+const pool = <span class="cstat-no" title="statement not covered" >require('../config/db');</span>
+const { requireAuth } = <span class="cstat-no" title="statement not covered" >require('../middleware/auth');</span>
+&nbsp;
+const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
+&nbsp;
+// Get routine logs (own, optional date range)
+<span class="cstat-no" title="statement not covered" >router.get('/logs', requireAuth, <span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const from = <span class="cstat-no" title="statement not covered" >req.query.from;</span>
+    const to = <span class="cstat-no" title="statement not covered" >req.query.to;</span>
+    let sql = <span class="cstat-no" title="statement not covered" >'SELECT id, user_id, log_date, routine_type, notes, created_at FROM routine_logs WHERE user_id = ?';</span>
+    const params = <span class="cstat-no" title="statement not covered" >[req.user.id];</span>
+<span class="cstat-no" title="statement not covered" >    if (from) {<span class="cstat-no" title="statement not covered" > sql += ' AND log_date &gt;= ?'<span class="cstat-no" title="statement not covered" >;</span> params.push(from)</span>;</span> }
+<span class="cstat-no" title="statement not covered" >    if (to) {<span class="cstat-no" title="statement not covered" > sql += ' AND log_date &lt;= ?'<span class="cstat-no" title="statement not covered" >;</span> params.push(to)</span>;</span> }
+<span class="cstat-no" title="statement not covered" >    sql += ' ORDER BY log_date DESC, id DESC LIMIT 100';</span>
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query(sql, params);</span>
+<span class="cstat-no" title="statement not covered" >    res.json({ logs: rows });</span>
+  } catch (e) {
+<span class="cstat-no" title="statement not covered" >    next(e);</span>
+  }
+});
+&nbsp;
+// Add routine log
+<span class="cstat-no" title="statement not covered" >router.post(</span>
+  '/logs',
+  requireAuth,
+  [
+    body('logDate').notEmpty(),
+    body('routineType').optional().trim(),
+    body('notes').optional().trim(),
+  ],
+<span class="fstat-no" title="function not covered" ></span>  async (req, res, next) =&gt; {
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      const errors <span class="cstat-no" title="statement not covered" >= validationResult(req</span>);
+<span class="cstat-no" title="statement not covered" >      if (!errors.isEmpty()<span class="cstat-no" title="statement not covered" >) return res.status(400).json({ errors: errors.array() })</span></span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >      await pool.query(</span>
+        'INSERT INTO routine_logs (user_id, log_date, routine_type, notes) VALUES (?, ?, ?, ?)',
+        [req.user.id, req.body.logDate, req.body.routineType || null, req.body.notes || null]
+      );
+      const [rows] <span class="cstat-no" title="statement not covered" >= await pool.query('SELECT * FROM routine_logs WHERE user_id = ? ORDER BY id DESC LIMIT 1', [req.user.id]</span>);
+<span class="cstat-no" title="statement not covered" >      res.status(201).json({ log: rows[0] })</span>;
+    } catch (e) {
+<span class="cstat-no" title="statement not covered" >      next(e)</span>;
+    }
+  }
+);
+&nbsp;
+// Update routine log (own)
+<span class="cstat-no" title="statement not covered" >router.patch('/logs/:id', requireAuth, <span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const id = <span class="cstat-no" title="statement not covered" >parseInt(req.params.id, 10);</span>
+    const { logDate, routineType, notes } = <span class="cstat-no" title="statement not covered" >req.body;</span>
+    const [existing] = <span class="cstat-no" title="statement not covered" >await pool.query('SELECT id FROM routine_logs WHERE id = ? AND user_id = ?', [id, req.user.id]);</span>
+<span class="cstat-no" title="statement not covered" >    if (existing.length === 0) <span class="cstat-no" title="statement not covered" >return res.status(404).json({ error: 'Log not found' });</span></span>
+    const updates = <span class="cstat-no" title="statement not covered" >[];</span>
+    const values = <span class="cstat-no" title="statement not covered" >[];</span>
+<span class="cstat-no" title="statement not covered" >    if (logDate !== undefined) {<span class="cstat-no" title="statement not covered" > updates.push('log_date = ?')<span class="cstat-no" title="statement not covered" >;</span> values.push(logDate)</span>;</span> }
+<span class="cstat-no" title="statement not covered" >    if (routineType !== undefined) {<span class="cstat-no" title="statement not covered" > updates.push('routine_type = ?')<span class="cstat-no" title="statement not covered" >;</span> values.push(routineType)</span>;</span> }
+<span class="cstat-no" title="statement not covered" >    if (notes !== undefined) {<span class="cstat-no" title="statement not covered" > updates.push('notes = ?')<span class="cstat-no" title="statement not covered" >;</span> values.push(notes)</span>;</span> }
+<span class="cstat-no" title="statement not covered" >    if (updates.length === 0) <span class="cstat-no" title="statement not covered" >return res.status(400).json({ error: 'No fields to update' });</span></span>
+<span class="cstat-no" title="statement not covered" >    values.push(id);</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query('UPDATE routine_logs SET ' + updates.join(', ') + ' WHERE id = ?', values);</span>
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query('SELECT * FROM routine_logs WHERE id = ?', [id]);</span>
+<span class="cstat-no" title="statement not covered" >    res.json({ log: rows[0] });</span>
+  } catch (e) {
+<span class="cstat-no" title="statement not covered" >    next(e);</span>
+  }
+});
+&nbsp;
+// Delete routine log (own)
+<span class="cstat-no" title="statement not covered" >router.delete('/logs/:id', requireAuth, <span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const id = <span class="cstat-no" title="statement not covered" >parseInt(req.params.id, 10);</span>
+    const [result] = <span class="cstat-no" title="statement not covered" >await pool.query('DELETE FROM routine_logs WHERE id = ? AND user_id = ?', [id, req.user.id]);</span>
+<span class="cstat-no" title="statement not covered" >    if (result.affectedRows === 0) <span class="cstat-no" title="statement not covered" >return res.status(404).json({ error: 'Log not found' });</span></span>
+<span class="cstat-no" title="statement not covered" >    res.json({ message: 'Log deleted' });</span>
+  } catch (e) {
+<span class="cstat-no" title="statement not covered" >    next(e);</span>
+  }
+});
+&nbsp;
+// Get notification/reminder settings (stub)
+<span class="cstat-no" title="statement not covered" >router.get('/settings', requireAuth, <span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query('SELECT * FROM notification_settings WHERE user_id = ?', [req.user.id]);</span>
+    const settings = <span class="cstat-no" title="statement not covered" >rows[0] || { reminders_enabled: 1, reminder_frequency: 'weekly' };</span>
+<span class="cstat-no" title="statement not covered" >    res.json({ settings });</span>
+  } catch (e) {
+<span class="cstat-no" title="statement not covered" >    next(e);</span>
+  }
+});
+&nbsp;
+// Update notification settings (stub)
+<span class="cstat-no" title="statement not covered" >router.patch('/settings', requireAuth, <span class="fstat-no" title="function not covered" >as</span>ync (req, res, next) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const { remindersEnabled, reminderFrequency } = <span class="cstat-no" title="statement not covered" >req.body;</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query(</span>
+      'INSERT INTO notification_settings (user_id, reminders_enabled, reminder_frequency) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE reminders_enabled = VALUES(reminders_enabled), reminder_frequency = VALUES(reminder_frequency)',
+      [req.user.id, remindersEnabled !== false ? 1 : 0, reminderFrequency || 'weekly']
+    );
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query('SELECT * FROM notification_settings WHERE user_id = ?', [req.user.id]);</span>
+<span class="cstat-no" title="statement not covered" >    res.json({ settings: rows[0] });</span>
+  } catch (e) {
+<span class="cstat-no" title="statement not covered" >    next(e);</span>
+  }
+});
+&nbsp;
+<span class="cstat-no" title="statement not covered" >module.exports = router;</span>
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Sat Apr 18 2026 19:45:13 GMT+0800 (Singapore Standard Time)
+</div>
+</div>
+<script src="..\prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="..\sorter.js"></script>
+</body>
+</html>

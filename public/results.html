@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assessment Results – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-4xl mx-auto px-4 py-10">
+    <h1 class="text-3xl font-bold text-white mb-2">Your Hair Profile</h1>
+    <p class="text-slate-400 mb-8">Based on your assessment results</p>
+
+    <div id="results-content" class="space-y-6">
+      <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+        <h2 class="text-xl font-semibold text-violet-400 mb-4">Profile Summary</h2>
+        <div id="profile-summary" class="space-y-2 text-slate-300"></div>
+      </div>
+
+      <div id="ai-analysis-section" class="hidden bg-slate-800/50 rounded-xl p-6 border border-violet-700">
+        <h2 class="text-xl font-semibold text-violet-400 mb-1">🔬 AI Hair Analysis</h2>
+        <p class="text-slate-500 text-xs mb-4">Based on your uploaded photo combined with your assessment answers above.</p>
+        <div id="ai-content" class="space-y-4 text-slate-300"></div>
+      </div>
+
+      <div id="issues-detected" class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+        <h2 class="text-xl font-semibold text-white mb-4">Detected Indicators</h2>
+        <div id="issues-list" class="flex flex-wrap gap-2"></div>
+        <p id="no-issues" class="text-slate-400 text-sm mt-2">No specific issues detected.</p>
+      </div>
+
+      <div id="severity-warning" class="hidden bg-amber-900/30 border border-amber-700/50 rounded-xl p-4">
+        <p class="text-amber-200 text-sm"><strong>Important:</strong> Based on your answers, we recommend consulting a hair or healthcare professional for personalized advice.</p>
+      </div>
+
+      <div class="flex gap-4">
+        <a href="/recommendations.html" class="bg-violet-600 hover:bg-violet-500 text-white px-6 py-3 rounded-lg">View Recommendations →</a>
+        <a href="/assessment.html" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg border border-slate-600">Retake Assessment</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth()) { /* redirects */ }
+
+    async function loadResults() {
+      const params = new URLSearchParams(location.search);
+      const assessmentId = params.get('assessmentId');
+
+      try {
+        let data;
+        if (assessmentId) {
+          data = await api('/assessments/' + assessmentId + '/results');
+        } else {
+          data = await api('/assessments/latest/results');
+        }
+
+        if (!data || !data.hairType) {
+          document.getElementById('results-content').innerHTML = '<p class="text-slate-400">No assessment results found. <a href="/assessment.html" class="text-violet-400">Take an assessment</a></p>';
+          return;
+        }
+
+        // Profile summary
+        document.getElementById('profile-summary').innerHTML = `
+          <p><span class="text-slate-400">Hair Type:</span> <span class="text-white font-medium">${data.hairType || 'Not specified'}</span></p>
+          <p><span class="text-slate-400">Scalp Condition:</span> <span class="text-white font-medium">${data.scalpCondition || 'Not specified'}</span></p>
+          <p><span class="text-slate-400">Summary:</span> <span class="text-white">${data.summaryText || 'Complete your assessment to see summary.'}</span></p>
+        `;
+
+        // Issues detected
+        const issues = data.issuesDetected || [];
+        const issuesList = document.getElementById('issues-list');
+        const noIssues = document.getElementById('no-issues');
+        if (issues.length > 0) {
+          noIssues.classList.add('hidden');
+          issues.forEach(issue => {
+            const badge = document.createElement('span');
+            badge.className = 'px-3 py-1 rounded-full bg-violet-600/30 text-violet-300 text-sm';
+            badge.textContent = issue;
+            issuesList.appendChild(badge);
+          });
+        } else {
+          issuesList.classList.add('hidden');
+        }
+
+        // Severity warning
+        if (data.severityAdvisory) {
+          document.getElementById('severity-warning').classList.remove('hidden');
+        }
+        
+        // Load AI analysis results from localStorage
+        const aiResultStr = localStorage.getItem('hairAiResult');
+        if (aiResultStr) {
+          try {
+            const aiResult = JSON.parse(aiResultStr);
+            displayAiResults(aiResult);
+          } catch (e) {
+            console.error('Failed to parse AI result:', e);
+          }
+        }
+      } catch (err) {
+        showToast(err.error || 'Failed to load results', 'error');
+        setTimeout(() => window.location.href = '/dashboard.html', 2000);
+      }
+    }
+    
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function displayAiResults(ai) {
+      const section = document.getElementById('ai-analysis-section');
+      const content = document.getElementById('ai-content');
+      if (!ai || !ai.conditionName) return;
+
+      section.classList.remove('hidden');
+
+      let html = `
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <span class="text-slate-400 block text-sm">Condition</span>
+            <span class="text-white font-medium">${esc(ai.conditionName || 'Unknown')}</span>
+            ${ai.confidence ? `<span class="ml-2 text-sm text-violet-400">(${ai.confidence}% confidence)</span>` : ''}
+          </div>
+          <div>
+            <span class="text-slate-400 block text-sm">Hair Type</span>
+            <span class="text-white font-medium capitalize">${esc(ai.hairType || 'Unknown')}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-sm">Scalp Condition</span>
+            <span class="text-white font-medium capitalize">${esc(ai.scalpCondition || 'Unknown')}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-sm">Severity</span>
+            <span class="text-white font-medium capitalize">${esc(ai.severity || 'Unknown')}</span>
+          </div>
+        </div>
+        <p class="text-white mb-4">${esc(ai.summary || '')}</p>
+      `;
+
+      if (ai.careTips && ai.careTips.length > 0) {
+        html += `<p class="text-violet-400 font-medium mb-2">💡 Care Tips:</p><ul class="list-disc list-inside text-slate-300 mb-4 space-y-1">`;
+        ai.careTips.forEach(tip => { html += `<li>${esc(tip)}</li>`; });
+        html += `</ul>`;
+      }
+
+      if (ai.recommendations && ai.recommendations.length > 0) {
+        html += `<p class="text-violet-400 font-medium mb-2">🧴 Product Recommendations:</p><div class="space-y-3 mb-4">`;
+        ai.recommendations.forEach(rec => {
+          html += `
+            <div class="bg-slate-900/50 rounded-lg p-3">
+              <p class="text-white font-medium">${esc(rec.title || '')}</p>
+              <p class="text-slate-400 text-sm">${esc(rec.description || '')}</p>
+              ${rec.usageHint ? `<p class="text-slate-500 text-xs mt-1">💡 ${esc(rec.usageHint)}</p>` : ''}
+              ${rec.exampleProducts && rec.exampleProducts.length > 0
+                ? `<p class="text-slate-500 text-xs mt-1">Examples: ${rec.exampleProducts.map(esc).join(', ')}</p>`
+                : ''}
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+
+      if (ai.whenToSeeProfessional) {
+        html += `<div class="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mb-4">
+          <p class="text-amber-200 text-sm"><strong>👨‍⚕️ When to see a professional:</strong> ${esc(ai.whenToSeeProfessional)}</p>
+        </div>`;
+      }
+
+      if (ai.disclaimer) {
+        html += `<p class="text-slate-500 text-xs italic">⚠️ ${esc(ai.disclaimer)}</p>`;
+      }
+
+      content.innerHTML = html;
+    }
+
+    loadResults();
+  </script>
+</body>
+</html>

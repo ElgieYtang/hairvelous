@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for services/billingService.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="..\prettify.css" />
+    <link rel="stylesheet" href="..\base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(..\sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="..\index.html">All files</a> / <a href="index.html">services</a> billingService.js
+    </h1>
+    <div class='clearfix'>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389</td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const pool = <span class="cstat-no" title="statement not covered" >require('../config/db');</span>
+const notificationService = <span class="cstat-no" title="statement not covered" >require('./notificationService');</span>
+&nbsp;
+class BillingService {
+<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
+<span class="cstat-no" title="statement not covered" >    this.schemaReady = false;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync ensureSchema() {
+<span class="cstat-no" title="statement not covered" >    if (this.schemaReady) <span class="cstat-no" title="statement not covered" >return;</span></span>
+<span class="cstat-no" title="statement not covered" >    await pool.query(`</span>
+      CREATE TABLE IF NOT EXISTS subscription_plans (
+        plan_id INT PRIMARY KEY AUTO_INCREMENT,
+        plan_code VARCHAR(50) NOT NULL UNIQUE,
+        name VARCHAR(120) NOT NULL,
+        price_php DECIMAL(10,2) NOT NULL DEFAULT 0,
+        duration_days INT NOT NULL DEFAULT 30,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+<span class="cstat-no" title="statement not covered" >    await pool.query(`</span>
+      CREATE TABLE IF NOT EXISTS user_subscriptions (
+        subscription_id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        plan_id INT NOT NULL,
+        status ENUM('active','expired','cancelled') NOT NULL DEFAULT 'active',
+        starts_at DATETIME NOT NULL,
+        ends_at DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_sub_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        CONSTRAINT fk_sub_plan FOREIGN KEY (plan_id) REFERENCES subscription_plans(plan_id) ON DELETE RESTRICT
+      )
+    `);
+<span class="cstat-no" title="statement not covered" >    await pool.query(`</span>
+      CREATE TABLE IF NOT EXISTS payment_transactions (
+        payment_id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        plan_id INT NOT NULL,
+        method ENUM('gcash','card') NOT NULL DEFAULT 'gcash',
+        amount_php DECIMAL(10,2) NOT NULL DEFAULT 0,
+        gcash_name VARCHAR(150) NULL,
+        gcash_number VARCHAR(30) NULL,
+        gcash_reference VARCHAR(100) NULL,
+        card_name VARCHAR(150) NULL,
+        card_last4 VARCHAR(4) NULL,
+        card_reference VARCHAR(100) NULL,
+        receipt_path VARCHAR(500) NULL,
+        status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+        admin_note TEXT NULL,
+        reviewed_by INT NULL,
+        reviewed_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_payment_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        CONSTRAINT fk_payment_plan FOREIGN KEY (plan_id) REFERENCES subscription_plans(plan_id) ON DELETE RESTRICT,
+        CONSTRAINT fk_payment_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(user_id) ON DELETE SET NULL
+      )
+    `);
+<span class="cstat-no" title="statement not covered" >    await pool.query("ALTER TABLE payment_transactions MODIFY COLUMN method ENUM('gcash','card') NOT NULL DEFAULT 'gcash'");</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query('ALTER TABLE payment_transactions ADD COLUMN IF NOT EXISTS card_name VARCHAR(150) NULL');</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query('ALTER TABLE payment_transactions ADD COLUMN IF NOT EXISTS card_last4 VARCHAR(4) NULL');</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query('ALTER TABLE payment_transactions ADD COLUMN IF NOT EXISTS card_reference VARCHAR(100) NULL');</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query('ALTER TABLE diy_guides ADD COLUMN IF NOT EXISTS is_pro_only TINYINT(1) NOT NULL DEFAULT 0');</span>
+&nbsp;
+    const [plans] = <span class="cstat-no" title="statement not covered" >await pool.query('SELECT plan_code FROM subscription_plans');</span>
+    const codes = <span class="cstat-no" title="statement not covered" >new Set(plans.map(<span class="fstat-no" title="function not covered" >(p</span>) =<span class="cstat-no" title="statement not covered" >&gt; p.plan_cod</span>e)</span>);
+<span class="cstat-no" title="statement not covered" >    if (!codes.has('free')) {</span>
+<span class="cstat-no" title="statement not covered" >      await pool.query(</span>
+        "INSERT INTO subscription_plans (plan_code, name, price_php, duration_days, is_active) VALUES ('free','Free',0,3650,1)"
+      );
+    }
+<span class="cstat-no" title="statement not covered" >    if (!codes.has('pro_monthly')) {</span>
+<span class="cstat-no" title="statement not covered" >      await pool.query(</span>
+        "INSERT INTO subscription_plans (plan_code, name, price_php, duration_days, is_active) VALUES ('pro_monthly','Pro Monthly',199,30,1)"
+      );
+    }
+<span class="cstat-no" title="statement not covered" >    this.schemaReady = true;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync listPlans() {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'SELECT plan_id, plan_code, name, price_php, duration_days FROM subscription_plans WHERE is_active = 1 ORDER BY price_php ASC'
+    );
+<span class="cstat-no" title="statement not covered" >    return rows.map(<span class="fstat-no" title="function not covered" >(r</span>) =&gt;<span class="cstat-no" title="statement not covered" > ({</span></span>
+      planId: r.plan_id,
+      planCode: r.plan_code,
+      name: r.name,
+      pricePhp: Number(r.price_php),
+      durationDays: r.duration_days,
+    }));
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync getStatus(userId) {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const [subRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT us.subscription_id, us.status, us.starts_at, us.ends_at, sp.plan_code, sp.name
+       FROM user_subscriptions us
+       JOIN subscription_plans sp ON sp.plan_id = us.plan_id
+       WHERE us.user_id = ? AND us.status = 'active' AND us.ends_at &gt;= NOW()
+       ORDER BY us.ends_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+    const [pendingRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT payment_id, method, amount_php, gcash_reference, created_at
+       FROM payment_transactions
+       WHERE user_id = ? AND status = 'pending'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+    const active = <span class="cstat-no" title="statement not covered" >subRows[0] || null;</span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      tier: active ? active.plan_code : 'free',
+      planName: active ? active.name : 'Free',
+      isPro: !!(active &amp;&amp; active.plan_code !== 'free'),
+      activeUntil: active ? active.ends_at : null,
+      pendingPayment: pendingRows[0]
+        ? {
+            paymentId: pendingRows[0].payment_id,
+            method: pendingRows[0].method,
+            amountPhp: Number(pendingRows[0].amount_php),
+            gcashReference: pendingRows[0].gcash_reference,
+            createdAt: pendingRows[0].created_at,
+          }
+        : null,
+    };
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync isUserPro(userId) {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT us.subscription_id
+       FROM user_subscriptions us
+       JOIN subscription_plans sp ON sp.plan_id = us.plan_id
+       WHERE us.user_id = ? AND us.status = 'active' AND us.ends_at &gt;= NOW() AND sp.plan_code &lt;&gt; 'free'
+       LIMIT 1`,
+      [userId]
+    );
+<span class="cstat-no" title="statement not covered" >    return rows.length &gt; 0;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync submitGcashPayment(userId, payload, receiptPath) {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const { planCode, gcashName, gcashNumber, gcashReference } = <span class="cstat-no" title="statement not covered" >payload;</span>
+<span class="cstat-no" title="statement not covered" >    if (!planCode || !gcashName || !gcashNumber || !gcashReference) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('Missing payment fields');</span>
+    }
+    const [planRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'SELECT plan_id, price_php FROM subscription_plans WHERE plan_code = ? AND is_active = 1 LIMIT 1',
+      [planCode]
+    );
+<span class="cstat-no" title="statement not covered" >    if (!planRows.length) <span class="cstat-no" title="statement not covered" >throw new Error('Invalid plan');</span></span>
+    const plan = <span class="cstat-no" title="statement not covered" >planRows[0];</span>
+    const [result] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `INSERT INTO payment_transactions
+         (user_id, plan_id, method, amount_php, gcash_name, gcash_number, gcash_reference, receipt_path, status)
+       VALUES (?, ?, 'gcash', ?, ?, ?, ?, ?, 'pending')`,
+      [
+        userId,
+        plan.plan_id,
+        Number(plan.price_php),
+        gcashName.trim(),
+        gcashNumber.trim(),
+        gcashReference.trim(),
+        receiptPath || null,
+      ]
+    );
+<span class="cstat-no" title="statement not covered" >    return { paymentId: result.insertId, status: 'pending' };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync submitCardPayment(userId, payload, receiptPath) {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const { planCode, cardName, cardLast4, cardReference } = <span class="cstat-no" title="statement not covered" >payload;</span>
+<span class="cstat-no" title="statement not covered" >    if (!planCode || !cardName || !cardLast4 || !cardReference) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('Missing card payment fields');</span>
+    }
+    const [planRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'SELECT plan_id, price_php FROM subscription_plans WHERE plan_code = ? AND is_active = 1 LIMIT 1',
+      [planCode]
+    );
+<span class="cstat-no" title="statement not covered" >    if (!planRows.length) <span class="cstat-no" title="statement not covered" >throw new Error('Invalid plan');</span></span>
+    const plan = <span class="cstat-no" title="statement not covered" >planRows[0];</span>
+    const [result] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `INSERT INTO payment_transactions
+         (user_id, plan_id, method, amount_php, card_name, card_last4, card_reference, receipt_path, status)
+       VALUES (?, ?, 'card', ?, ?, ?, ?, ?, 'pending')`,
+      [userId, plan.plan_id, Number(plan.price_php), cardName.trim(), String(cardLast4).trim().slice(-4), cardReference.trim(), receiptPath || null]
+    );
+<span class="cstat-no" title="statement not covered" >    return { paymentId: result.insertId, status: 'pending' };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync activateProDirect(userId) {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const [planRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT plan_id, plan_code, duration_days
+       FROM subscription_plans
+       WHERE is_active = 1 AND plan_code IN ('pro', 'pro_monthly')
+       ORDER BY CASE WHEN plan_code = 'pro_monthly' THEN 0 ELSE 1 END
+       LIMIT 1`
+    );
+<span class="cstat-no" title="statement not covered" >    if (!planRows.length) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('Pro plan is not available');</span>
+    }
+    const plan = <span class="cstat-no" title="statement not covered" >planRows[0];</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query(</span>
+      "UPDATE user_subscriptions SET status = 'expired' WHERE user_id = ? AND status = 'active'",
+      [userId]
+    );
+<span class="cstat-no" title="statement not covered" >    await pool.query(</span>
+      `INSERT INTO user_subscriptions (user_id, plan_id, status, starts_at, ends_at)
+       VALUES (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))`,
+      [userId, plan.plan_id, plan.duration_days]
+    );
+<span class="cstat-no" title="statement not covered" >    await notificationService.createForUser(userId, {</span>
+      type: 'plan_change',
+      title: 'Pro plan activated',
+      message: 'Your Pro plan is now active.',
+      linkUrl: '/pricing.html',
+    });
+<span class="cstat-no" title="statement not covered" >    return { activated: true, planCode: plan.plan_code };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync activateFreeDirect(userId) {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const [planRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT plan_id, plan_code, duration_days
+       FROM subscription_plans
+       WHERE is_active = 1 AND plan_code = 'free'
+       LIMIT 1`
+    );
+<span class="cstat-no" title="statement not covered" >    if (!planRows.length) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('Free plan is not available');</span>
+    }
+    const plan = <span class="cstat-no" title="statement not covered" >planRows[0];</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query(</span>
+      "UPDATE user_subscriptions SET status = 'expired' WHERE user_id = ? AND status = 'active'",
+      [userId]
+    );
+<span class="cstat-no" title="statement not covered" >    await pool.query(</span>
+      `INSERT INTO user_subscriptions (user_id, plan_id, status, starts_at, ends_at)
+       VALUES (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))`,
+      [userId, plan.plan_id, plan.duration_days]
+    );
+<span class="cstat-no" title="statement not covered" >    await notificationService.createForUser(userId, {</span>
+      type: 'plan_change',
+      title: 'Free plan activated',
+      message: 'Your plan is now set to Free.',
+      linkUrl: '/pricing.html',
+    });
+<span class="cstat-no" title="statement not covered" >    return { activated: true, planCode: plan.plan_code };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync listPayments(status = <span class="branch-0 cbranch-no" title="branch not covered" >null)</span> {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT pt.payment_id, pt.user_id, u.name, u.email, sp.plan_code, sp.name AS plan_name,
+              pt.amount_php, pt.method, pt.gcash_name, pt.gcash_number, pt.gcash_reference,
+              pt.card_name, pt.card_last4, pt.card_reference,
+              pt.receipt_path, pt.status, pt.admin_note, pt.created_at, pt.reviewed_at
+       FROM payment_transactions pt
+       JOIN users u ON u.user_id = pt.user_id
+       JOIN subscription_plans sp ON sp.plan_id = pt.plan_id
+       WHERE (? IS NULL OR pt.status = ?)
+       ORDER BY pt.created_at DESC`,
+      [status, status]
+    );
+<span class="cstat-no" title="statement not covered" >    return rows.map(<span class="fstat-no" title="function not covered" >(r</span>) =&gt;<span class="cstat-no" title="statement not covered" > ({</span></span>
+      paymentId: r.payment_id,
+      userId: r.user_id,
+      userName: r.name,
+      email: r.email,
+      planCode: r.plan_code,
+      planName: r.plan_name,
+      amountPhp: Number(r.amount_php),
+      method: r.method,
+      gcashName: r.gcash_name,
+      gcashNumber: r.gcash_number,
+      gcashReference: r.gcash_reference,
+      cardName: r.card_name,
+      cardLast4: r.card_last4,
+      cardReference: r.card_reference,
+      receiptPath: r.receipt_path ? `/${String(r.receipt_path).replace(/\\/g, '/')}` : null,
+      status: r.status,
+      adminNote: r.admin_note,
+      createdAt: r.created_at,
+      reviewedAt: r.reviewed_at,
+    }));
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync reviewPayment(adminUserId, paymentId, action, adminNote = <span class="branch-0 cbranch-no" title="branch not covered" >null)</span> {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const id = <span class="cstat-no" title="statement not covered" >Number(paymentId);</span>
+<span class="cstat-no" title="statement not covered" >    if (!Number.isFinite(id)) <span class="cstat-no" title="statement not covered" >throw new Error('Invalid payment ID');</span></span>
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT payment_id, user_id, plan_id, status
+       FROM payment_transactions
+       WHERE payment_id = ?`,
+      [id]
+    );
+<span class="cstat-no" title="statement not covered" >    if (!rows.length) <span class="cstat-no" title="statement not covered" >throw new Error('Payment not found');</span></span>
+<span class="cstat-no" title="statement not covered" >    if (rows[0].status !== 'pending') <span class="cstat-no" title="statement not covered" >throw new Error('Payment already reviewed');</span></span>
+&nbsp;
+    const newStatus = <span class="cstat-no" title="statement not covered" >action === 'approve' ? 'approved' : 'rejected';</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query(</span>
+      `UPDATE payment_transactions
+       SET status = ?, admin_note = ?, reviewed_by = ?, reviewed_at = NOW()
+       WHERE payment_id = ?`,
+      [newStatus, adminNote || null, adminUserId, id]
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (newStatus === 'approved') {</span>
+      const [planRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+        'SELECT duration_days, plan_code FROM subscription_plans WHERE plan_id = ? LIMIT 1',
+        [rows[0].plan_id]
+      );
+<span class="cstat-no" title="statement not covered" >      if (!planRows.length) <span class="cstat-no" title="statement not covered" >throw new Error('Plan missing');</span></span>
+      const plan = <span class="cstat-no" title="statement not covered" >planRows[0];</span>
+<span class="cstat-no" title="statement not covered" >      await pool.query(</span>
+        "UPDATE user_subscriptions SET status = 'expired' WHERE user_id = ? AND status = 'active'",
+        [rows[0].user_id]
+      );
+<span class="cstat-no" title="statement not covered" >      await pool.query(</span>
+        `INSERT INTO user_subscriptions (user_id, plan_id, status, starts_at, ends_at)
+         VALUES (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))`,
+        [rows[0].user_id, rows[0].plan_id, plan.duration_days]
+      );
+<span class="cstat-no" title="statement not covered" >      await notificationService.createForUser(rows[0].user_id, {</span>
+        type: 'payment_update',
+        title: 'Payment approved',
+        message: `Your payment was approved and ${plan.plan_code} is now active.`,
+        linkUrl: '/pricing.html',
+      });
+<span class="cstat-no" title="statement not covered" >      return { paymentId: id, status: 'approved', planCode: plan.plan_code };</span>
+    }
+<span class="cstat-no" title="statement not covered" >    await notificationService.createForUser(rows[0].user_id, {</span>
+      type: 'payment_update',
+      title: 'Payment rejected',
+      message: 'Your payment was rejected. Please review billing details.',
+      linkUrl: '/pricing.html',
+    });
+<span class="cstat-no" title="statement not covered" >    return { paymentId: id, status: 'rejected' };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync getProgressReport(userId) {
+<span class="cstat-no" title="statement not covered" >    await this.ensureSchema();</span>
+    const status = <span class="cstat-no" title="statement not covered" >await this.getStatus(userId);</span>
+    const [profileRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'SELECT hair_type, scalp_condition, issues_detected, last_updated FROM hair_profiles WHERE user_id = ? ORDER BY last_updated DESC LIMIT 1',
+      [userId]
+    );
+    const [routineRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT COUNT(*) AS total,
+              SUM(CASE WHEN date_logged &gt;= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS last30
+       FROM routine_logs WHERE user_id = ?`,
+      [userId]
+    );
+    const [recRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT COUNT(*) AS total
+       FROM recommendations
+       WHERE user_id = ?`,
+      [userId]
+    );
+    const profile = <span class="cstat-no" title="statement not covered" >profileRows[0] || null;</span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      generatedAt: new Date().toISOString(),
+      subscription: status,
+      profile: profile
+        ? {
+            hairType: profile.hair_type,
+            scalpCondition: profile.scalp_condition,
+            issuesDetected: profile.issues_detected,
+            lastUpdated: profile.last_updated,
+          }
+        : null,
+      routine: {
+        totalLogs: Number((routineRows[0] &amp;&amp; routineRows[0].total) || 0),
+        logsLast30Days: Number((routineRows[0] &amp;&amp; routineRows[0].last30) || 0),
+      },
+      recommendations: {
+        totalRecommended: Number((recRows[0] &amp;&amp; recRows[0].total) || 0),
+      },
+    };
+  }
+}
+&nbsp;
+<span class="cstat-no" title="statement not covered" >module.exports = new BillingService();</span>
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Sat Apr 18 2026 19:45:13 GMT+0800 (Singapore Standard Time)
+</div>
+</div>
+<script src="..\prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="..\sorter.js"></script>
+</body>
+</html>

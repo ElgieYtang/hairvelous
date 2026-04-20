@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Routine Tracker – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="disclaimer-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-4xl mx-auto px-4 py-10">
+    <h1 class="text-3xl font-bold text-white mb-2">Routine Tracker</h1>
+    <p class="text-slate-400 mb-2">Log your hair care routine and track progress.</p>
+    <p class="text-slate-500 text-sm mb-8">Attach a <span class="text-slate-300">photo or short video</span> to each log to document hair health over time.</p>
+
+    <section id="tracker-pro-status" class="mb-6 hidden rounded-xl border border-violet-700/40 bg-violet-900/20 p-4 text-sm"></section>
+
+    <section class="mb-10">
+      <h2 class="text-lg font-semibold text-white mb-2">Log a Routine</h2>
+      <p class="text-sm text-slate-400">Click a date in the Routine Calendar to open the log form modal.</p>
+      <button id="open-log-modal-btn" type="button" class="mt-3 rounded-lg border border-violet-500/40 bg-violet-600/20 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-600/30">
+        Add routine log
+      </button>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-lg font-semibold text-white mb-4">Progress Summary</h2>
+      <div id="progress-summary" class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+        <p class="text-slate-400">Loading...</p>
+      </div>
+      <div class="grid sm:grid-cols-3 gap-3 mt-4">
+        <div class="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
+          <p class="text-slate-400 text-xs">Current streak</p>
+          <p id="streak-days" class="text-2xl font-bold text-emerald-300">0 days</p>
+        </div>
+        <div class="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
+          <p class="text-slate-400 text-xs">Logs this month</p>
+          <p id="logs-month" class="text-2xl font-bold text-violet-300">0</p>
+        </div>
+        <div class="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
+          <p class="text-slate-400 text-xs">With media</p>
+          <p id="logs-media" class="text-2xl font-bold text-cyan-300">0</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-lg font-semibold text-white mb-4">Routine Calendar</h2>
+      <div class="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+        <div class="mb-3 flex items-center justify-between">
+          <button id="cal-prev-month" type="button" class="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700">← Prev</button>
+          <h3 id="cal-month-title" class="text-sm font-semibold text-white">Month</h3>
+          <button id="cal-next-month" type="button" class="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700">Next →</button>
+        </div>
+        <div id="cal-weekdays" class="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] text-slate-400">
+          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div id="cal-grid" class="grid grid-cols-7 gap-1"></div>
+        <div id="cal-selected-day" class="mt-4 rounded-lg border border-slate-700 bg-slate-900/60 p-3 text-xs text-slate-300">
+          Select a day to view logs.
+        </div>
+      </div>
+    </section>
+
+    <div id="calendar-day-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div id="calendar-day-modal-backdrop" class="absolute inset-0"></div>
+      <div class="relative z-10 w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
+          <h3 id="calendar-day-modal-title" class="text-lg font-semibold text-white">Routine details</h3>
+          <button id="calendar-day-modal-close" type="button" class="rounded px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-white">✕</button>
+        </div>
+        <div id="calendar-day-modal-body" class="max-h-[70vh] space-y-2 overflow-y-auto p-5 text-sm text-slate-200"></div>
+      </div>
+    </div>
+
+    <section id="reminder-section" class="mb-10">
+      <h2 class="text-lg font-semibold text-white mb-4">Enhanced Reminder System (Pro)</h2>
+      <div id="reminder-list" class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 text-slate-300 text-sm">Loading reminders...</div>
+      <div id="reminder-upgrade" class="mt-3 hidden">
+        <a href="/pricing.html" class="inline-flex items-center rounded-lg border border-violet-500/45 bg-violet-600/20 px-3 py-1.5 text-xs font-semibold text-violet-100 hover:bg-violet-600/30">
+          Upgrade to Pro
+        </a>
+      </div>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-lg font-semibold text-white mb-4">Advanced Progress Analytics (Pro)</h2>
+      <div id="advanced-analytics" class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 text-slate-400 text-sm">Upgrade to Pro to unlock advanced analytics.</div>
+      <div id="advanced-analytics-upgrade" class="mt-3 hidden">
+        <a href="/pricing.html" class="inline-flex items-center rounded-lg border border-violet-500/45 bg-violet-600/20 px-3 py-1.5 text-xs font-semibold text-violet-100 hover:bg-violet-600/30">
+          Upgrade to Pro
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-4">Recent Logs</h2>
+      <ul id="logs-list" class="space-y-2"></ul>
+      <p id="no-logs" class="text-slate-500 hidden">No logs yet.</p>
+    </section>
+  </main>
+
+  <div id="log-modal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-slate-950/80 p-3 sm:items-center sm:p-4">
+    <div id="log-modal-backdrop" class="absolute inset-0"></div>
+    <div class="relative z-10 my-4 flex max-h-[92vh] w-full max-w-4xl flex-col rounded-xl border border-slate-700 bg-slate-900 shadow-2xl sm:my-0">
+      <div class="shrink-0 flex items-center justify-between border-b border-slate-700 px-5 py-4">
+        <h3 class="text-lg font-semibold text-white">Log a Routine</h3>
+        <button id="log-modal-close" type="button" class="rounded px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-white">✕</button>
+      </div>
+      <form id="log-form" class="space-y-4 overflow-y-auto p-5">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label for="dateLogged" class="block text-sm text-slate-300 mb-1">Date</label>
+            <input type="date" id="dateLogged" name="dateLogged" required class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2" />
+          </div>
+          <div>
+            <label for="activityType" class="block text-sm text-slate-300 mb-1">Activity Type</label>
+            <input type="text" id="activityType" name="activityType" required class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2" placeholder="e.g. wash, mask, oil" />
+          </div>
+        </div>
+        <div>
+          <label for="notes" class="block text-sm text-slate-300 mb-1">Notes (optional)</label>
+          <textarea id="notes" name="notes" rows="3" class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2" placeholder="Any additional notes..."></textarea>
+        </div>
+        <div>
+          <p class="block text-sm text-slate-300 mb-2">Quick Activity Tags</p>
+          <div id="quick-tags" class="flex flex-wrap gap-2">
+            <button type="button" class="quick-tag px-3 py-1 rounded-full text-xs bg-slate-700 border border-slate-600 hover:bg-slate-600">Wash Day</button>
+            <button type="button" class="quick-tag px-3 py-1 rounded-full text-xs bg-slate-700 border border-slate-600 hover:bg-slate-600">Conditioner</button>
+            <button type="button" class="quick-tag px-3 py-1 rounded-full text-xs bg-slate-700 border border-slate-600 hover:bg-slate-600">Hair Oil</button>
+            <button type="button" class="quick-tag px-3 py-1 rounded-full text-xs bg-slate-700 border border-slate-600 hover:bg-slate-600">Mask</button>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label for="hairFeel" class="block text-sm text-slate-300 mb-1">Hair feel today</label>
+            <select id="hairFeel" class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2">
+              <option value="">Select (optional)</option>
+              <option value="improving">Improving</option>
+              <option value="stable">Stable</option>
+              <option value="worse">Worse</option>
+            </select>
+          </div>
+          <div>
+            <label for="media" class="block text-sm text-slate-300 mb-1">Add photo or video (optional)</label>
+            <div class="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2">
+              <div class="flex items-center gap-2">
+                <label for="media" class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-500/20" title="Choose photo or video">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    <circle cx="9" cy="10" r="1.5" />
+                    <path d="m13 9 4 3-4 3V9z" />
+                  </svg>
+                  Choose media
+                </label>
+                <button type="button" id="clear-media-inline" class="inline-flex items-center gap-1 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2 py-1.5 text-xs text-rose-200 hover:bg-rose-500/20" title="Clear selected media">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4h8v2" />
+                    <path d="M19 6l-1 14H6L5 6" />
+                  </svg>
+                  Clear
+                </button>
+                <span id="media-filename" class="truncate text-xs text-slate-300">No file selected</span>
+              </div>
+            </div>
+            <input type="file" id="media" name="media" accept="image/*,video/mp4,video/webm,video/quicktime" class="hidden" />
+            <p id="media-plan-hint" class="mt-1 text-[11px] text-slate-500"></p>
+            <label class="mt-2 inline-flex items-center gap-2 text-xs text-slate-300">
+              <input id="blur-video-face" type="checkbox" class="h-4 w-4 rounded border-slate-500 bg-slate-800 text-violet-500 focus:ring-violet-500" checked />
+              Auto-blur faces in uploaded videos (privacy beta)
+            </label>
+            <p id="blur-video-hint" class="mt-1 text-[11px] text-slate-500">Face blur runs in-browser before upload on supported browsers (Chrome/Edge on localhost or HTTPS).</p>
+          </div>
+        </div>
+        <div id="media-preview-wrap" class="hidden rounded-lg border border-slate-700 bg-slate-900/60 p-3">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-sm text-slate-300">Media Preview</p>
+            <button type="button" id="clear-media" class="text-xs text-red-300 hover:text-red-200">Remove</button>
+          </div>
+          <div id="media-preview" class="min-h-[80px] flex items-center"></div>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="log-modal-cancel" type="button" class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800">Cancel</button>
+          <button type="submit" class="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-lg">Add Log</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth()) { /* redirects */ }
+
+    let billingStatus = null;
+    let logsCache = [];
+    let calendarCursor = new Date();
+    calendarCursor.setDate(1);
+    let selectedCalendarIso = null;
+    function hasRoutineVideoAccess() {
+      const ent = billingStatus && billingStatus.entitlements ? billingStatus.entitlements : null;
+      if (ent && typeof ent.canUploadRoutineVideo === 'boolean') return !!ent.canUploadRoutineVideo;
+      return !!(billingStatus && billingStatus.isPro);
+    }
+
+    function openLogModal(prefillIso) {
+      const modal = document.getElementById('log-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      const dateInput = document.getElementById('dateLogged');
+      if (dateInput && prefillIso) dateInput.value = prefillIso;
+      if (dateInput && !dateInput.value) dateInput.value = parseDateToISO(new Date());
+      document.getElementById('activityType')?.focus();
+    }
+
+    function closeLogModal() {
+      const modal = document.getElementById('log-modal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function formatLocalISO(dt) {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function parseISODateLocal(iso) {
+      const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) return null;
+      const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      d.setHours(0, 0, 0, 0);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function parseDateToISO(d) {
+      if (!d) return '';
+      if (typeof d === 'string') {
+        const trimmed = d.trim();
+        // Keep date-only values untouched to avoid UTC shifting.
+        if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+      }
+      const dt = new Date(d);
+      if (Number.isNaN(dt.getTime())) return String(d).slice(0, 10);
+      return formatLocalISO(dt);
+    }
+
+    function toDateKey(d) {
+      if (!d) return '';
+      if (typeof d === 'string') {
+        const s = d.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+        // For timezone-aware ISO strings, convert to local date.
+        if (/^\d{4}-\d{2}-\d{2}T/i.test(s) && /(z|[+\-]\d{2}:\d{2})$/i.test(s)) {
+          const dt = new Date(s);
+          if (!Number.isNaN(dt.getTime())) return formatLocalISO(dt);
+        }
+        // For SQL-like datetime strings without timezone, keep date part.
+        const datePrefix = s.match(/^(\d{4}-\d{2}-\d{2})[ t]/i);
+        if (datePrefix) return datePrefix[1];
+      }
+      return parseDateToISO(d);
+    }
+
+    function computeStreakDays(logs) {
+      const dates = [...new Set((logs || []).map((l) => toDateKey(l.dateLogged)).filter(Boolean))].sort().reverse();
+      if (!dates.length) return 0;
+      let streak = 0;
+      const cursor = new Date();
+      cursor.setHours(0, 0, 0, 0);
+      const newest = parseISODateLocal(dates[0]);
+      if (!newest) return 0;
+      const diffDays = Math.floor((cursor - newest) / 86400000);
+      if (diffDays > 1) return 0;
+      if (diffDays === 1) cursor.setDate(cursor.getDate() - 1);
+      for (const d of dates) {
+        const iso = formatLocalISO(cursor);
+        if (d !== iso) break;
+        streak += 1;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      return streak;
+    }
+
+    function updateMiniStats(logs) {
+      const now = new Date();
+      const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const thisMonth = (logs || []).filter((l) => {
+        const iso = toDateKey(l.dateLogged);
+        return iso && iso.slice(0, 7) === currentYm;
+      }).length;
+      const withMedia = (logs || []).filter((l) => !!l.mediaPath).length;
+      const streak = computeStreakDays(logs);
+      document.getElementById('streak-days').textContent = `${streak} day${streak === 1 ? '' : 's'}`;
+      document.getElementById('logs-month').textContent = String(thisMonth);
+      document.getElementById('logs-media').textContent = String(withMedia);
+    }
+
+    function toMediaUrl(mediaPath) {
+      const raw = String(mediaPath || '').trim();
+      if (!raw) return '';
+      if (/^https?:\/\//i.test(raw)) return raw;
+      let s = raw.replace(/\\/g, '/');
+      const lower = s.toLowerCase();
+      const uploadsIdx = lower.indexOf('/uploads/');
+      if (uploadsIdx >= 0) {
+        s = s.slice(uploadsIdx + 1);
+      } else if (lower.startsWith('uploads/')) {
+        // Keep as-is.
+      } else {
+        const innerUploadsIdx = lower.indexOf('uploads/');
+        if (innerUploadsIdx >= 0) {
+          s = s.slice(innerUploadsIdx);
+        } else {
+          s = `uploads/${s.replace(/^\/+/, '')}`;
+        }
+      }
+      s = s.replace(/^\/+/, '');
+      return `/${s}`;
+    }
+
+    function renderMediaPreview(log) {
+      const mediaUrl = String(log.mediaUrl || '').trim() || toMediaUrl(log.mediaPath);
+      if (!mediaUrl) return '';
+      const mediaFrameStart = '<div class="mt-2 overflow-hidden rounded-lg border border-slate-700 bg-slate-950/80">';
+      const mediaFrameEnd = '</div>';
+      if (log.mediaType === 'video') {
+        return `${mediaFrameStart}
+          <div class="relative flex h-56 w-full items-center justify-center bg-black sm:h-64">
+            <video controls preload="metadata" class="h-full w-full object-contain bg-black" src="${escapeHtml(mediaUrl)}"></video>
+          </div>
+        ${mediaFrameEnd}`;
+      }
+      return `${mediaFrameStart}
+        <div class="relative flex h-56 w-full items-center justify-center bg-black sm:h-64">
+          <img class="h-full w-full object-contain bg-black" src="${escapeHtml(mediaUrl)}" alt="Routine media" loading="lazy" />
+        </div>
+      ${mediaFrameEnd}`;
+    }
+
+    async function loadLogs() {
+      try {
+        const logs = await api('/routine/logs');
+        const ul = document.getElementById('logs-list');
+        ul.innerHTML = '';
+        const entries = logs.logs || [];
+        logsCache = entries;
+        const appliedDays = Number(logs.appliedHistoryDays || 0);
+        const histHintId = 'routine-history-hint';
+        let histHint = document.getElementById(histHintId);
+        if (!histHint) {
+          histHint = document.createElement('p');
+          histHint.id = histHintId;
+          histHint.className = 'mt-2 text-xs text-slate-500';
+          document.querySelector('main > p.text-slate-500')?.after(histHint);
+        }
+        histHint.textContent = appliedDays > 0
+          ? `Free history window: showing last ${appliedDays} days. Upgrade to Pro for full timeline.`
+          : 'Pro history window: full routine timeline visible.';
+        updateMiniStats(entries);
+        renderCalendar();
+        if (entries.length > 0) {
+          document.getElementById('no-logs').classList.add('hidden');
+          entries.forEach(l => {
+            const li = document.createElement('li');
+            li.className = 'bg-slate-800/50 rounded-lg px-4 py-3 border border-slate-700';
+            li.innerHTML = `
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="text-white font-medium">${l.activityType}</span>
+                  <span class="text-slate-400 text-sm ml-2">${parseDateToISO(l.dateLogged)}</span>
+                </div>
+                <button onclick="deleteLog(${l.routineId})" class="text-red-400 hover:text-red-300 text-sm">Delete</button>
+              </div>
+              ${l.notes ? '<p class="text-slate-400 text-sm mt-1">' + escapeHtml(l.notes) + '</p>' : ''}
+              ${renderMediaPreview(l)}
+            `;
+            ul.appendChild(li);
+          });
+        } else {
+          document.getElementById('no-logs').classList.remove('hidden');
+        }
+      } catch (err) {
+        showToast(err.error || 'Failed to load logs', 'error');
+      }
+    }
+
+    function startOfDay(d) {
+      const x = new Date(d);
+      x.setHours(0, 0, 0, 0);
+      return x;
+    }
+
+    function logsByDateMap(logs) {
+      const map = new Map();
+      (logs || []).forEach((l) => {
+        const key = toDateKey(l.dateLogged);
+        if (!key) return;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(l);
+      });
+      return map;
+    }
+
+    function renderSelectedDay(iso, dayLogs) {
+      const target = document.getElementById('cal-selected-day');
+      if (!target) return;
+      if (!iso) {
+        target.textContent = 'Select a day to view logs.';
+        return;
+      }
+      if (!dayLogs || !dayLogs.length) {
+        target.innerHTML = `<p class="text-slate-300">${iso}</p><p class="mt-1 text-slate-500">No logs on this day.</p>`;
+        return;
+      }
+      const parseHairFeel = (notes) => {
+        const s = String(notes || '');
+        const m = s.match(/\[Hair feel:\s*([^\]]+)\]/i);
+        return m ? m[1].trim() : '';
+      };
+      const stripHairFeel = (notes) => String(notes || '').replace(/\s*\[Hair feel:[^\]]+\]\s*/gi, ' ').trim();
+      const html = `
+        <p class="text-slate-200 font-medium">${iso} • ${dayLogs.length} log${dayLogs.length === 1 ? '' : 's'}</p>
+        <div class="mt-2 space-y-2">
+          ${dayLogs.map((l) => {
+            const feel = parseHairFeel(l.notes);
+            const cleanNotes = stripHairFeel(l.notes);
+            return `
+              <div class="rounded-lg border border-slate-700 bg-slate-800/50 p-2.5">
+                <p class="text-sm font-medium text-white">${escapeHtml(l.activityType || 'Routine')}</p>
+                ${feel ? `<p class="mt-1 text-[11px] text-cyan-300">Hair feel: ${escapeHtml(feel)}</p>` : ''}
+                ${cleanNotes ? `<p class="mt-1 text-xs text-slate-300">${escapeHtml(cleanNotes)}</p>` : '<p class="mt-1 text-xs text-slate-500">No notes added.</p>'}
+                ${
+                  (l.mediaPath || l.mediaUrl)
+                    ? l.mediaType === 'video'
+                      ? `<video controls class="mt-2 h-44 w-auto max-w-full rounded border border-slate-700 bg-black" src="${escapeHtml(String(l.mediaUrl || '').trim() || toMediaUrl(l.mediaPath))}"></video>`
+                      : `<img class="mt-2 h-44 w-auto max-w-full rounded border border-slate-700 object-cover" src="${escapeHtml(String(l.mediaUrl || '').trim() || toMediaUrl(l.mediaPath))}" alt="Routine media" />`
+                    : ''
+                }
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+      target.innerHTML = html;
+
+      const modalTitle = document.getElementById('calendar-day-modal-title');
+      const modalBody = document.getElementById('calendar-day-modal-body');
+      if (modalTitle) modalTitle.textContent = `${iso} • Routine details`;
+      if (modalBody) modalBody.innerHTML = html;
+    }
+
+    function openCalendarDayModal() {
+      const m = document.getElementById('calendar-day-modal');
+      if (!m) return;
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeCalendarDayModal() {
+      const m = document.getElementById('calendar-day-modal');
+      if (!m) return;
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function renderCalendar(selectedIso) {
+      const title = document.getElementById('cal-month-title');
+      const grid = document.getElementById('cal-grid');
+      if (!title || !grid) return;
+      const year = calendarCursor.getFullYear();
+      const month = calendarCursor.getMonth();
+      const first = new Date(year, month, 1);
+      const firstWeekday = first.getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayIso = formatLocalISO(new Date());
+      const byDate = logsByDateMap(logsCache);
+      const monthLabel = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+      title.textContent = monthLabel;
+
+      const cells = [];
+      for (let i = 0; i < firstWeekday; i += 1) {
+        cells.push('<div class="h-16 rounded-md border border-transparent"></div>');
+      }
+      for (let d = 1; d <= daysInMonth; d += 1) {
+        const iso = formatLocalISO(new Date(year, month, d));
+        const count = (byDate.get(iso) || []).length;
+        const isToday = iso === todayIso;
+        const isSelected = selectedIso && iso === selectedIso;
+        cells.push(`
+          <button type="button" data-cal-day="${iso}"
+            class="h-16 rounded-md border px-1 py-1 text-left transition ${
+              isSelected
+                ? 'border-violet-400 bg-violet-600/20'
+                : isToday
+                  ? 'border-cyan-500/50 bg-cyan-500/10'
+                  : 'border-slate-700 bg-slate-900/40 hover:bg-slate-700/40'
+            }">
+            <div class="flex items-start justify-between">
+              <span class="text-xs ${isSelected ? 'text-violet-100' : 'text-slate-300'}">${d}</span>
+              ${count ? `<span class="rounded-full bg-emerald-600/30 px-1.5 py-0.5 text-[10px] text-emerald-200">${count}</span>` : ''}
+            </div>
+          </button>
+        `);
+      }
+      grid.innerHTML = cells.join('');
+
+      const defaultIso = selectedIso || selectedCalendarIso || todayIso;
+      const defaultLogs = byDate.get(defaultIso) || [];
+      renderSelectedDay(defaultIso, defaultLogs);
+      selectedCalendarIso = defaultIso;
+
+      grid.querySelectorAll('[data-cal-day]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const iso = btn.getAttribute('data-cal-day');
+          selectedCalendarIso = iso;
+          renderCalendar(iso);
+          openCalendarDayModal();
+        });
+      });
+    }
+
+    async function loadProgress() {
+      try {
+        const data = await api('/routine/progress?weeks=4');
+        const summary = document.getElementById('progress-summary');
+        if (data.summary && data.summary.length > 0) {
+          let html = '<div class="space-y-2">';
+          data.summary.forEach(s => {
+            html += `<div class="flex justify-between items-center"><span class="text-slate-300">Week ${s.week}</span><span class="text-violet-400">${s.count} activities</span></div>`;
+          });
+          html += '</div>';
+          summary.innerHTML = html;
+        } else {
+          summary.innerHTML = '<p class="text-slate-400">Start logging routines to see progress.</p>';
+        }
+      } catch (err) {
+        console.error('Progress load error:', err);
+      }
+    }
+
+    async function loadBillingStatus() {
+      try {
+        const data = await api('/billing/status');
+        billingStatus = data.status || {};
+        applyMediaPlanGate();
+        const box = document.getElementById('tracker-pro-status');
+        const analyticsUpgrade = document.getElementById('advanced-analytics-upgrade');
+        const reminderUpgrade = document.getElementById('reminder-upgrade');
+        const reminderList = document.getElementById('reminder-list');
+        box.classList.remove('hidden');
+        if (billingStatus.isPro) {
+          box.className = 'mb-6 rounded-xl border border-emerald-700/40 bg-emerald-900/20 p-4 text-sm text-emerald-100';
+          box.textContent = `Pro Active: ${billingStatus.planName || 'Pro'} - advanced analytics and enhanced reminders enabled.`;
+          if (analyticsUpgrade) analyticsUpgrade.classList.add('hidden');
+          if (reminderUpgrade) reminderUpgrade.classList.add('hidden');
+        } else {
+          box.className = 'mb-6 rounded-xl border border-violet-700/40 bg-violet-900/20 p-4 text-sm text-violet-100';
+          box.innerHTML = 'You are on Free plan. <a href="/pricing.html" class="underline">Upgrade to Pro</a> for advanced analytics and full reminder intelligence.';
+          if (analyticsUpgrade) analyticsUpgrade.classList.remove('hidden');
+          if (reminderUpgrade) reminderUpgrade.classList.remove('hidden');
+          if (reminderList) {
+            reminderList.className = 'bg-slate-800/50 rounded-xl p-6 border border-slate-700 text-slate-400 text-sm';
+            reminderList.innerHTML = 'Upgrade to <a href="/pricing.html" class="underline text-violet-300">Pro</a> to unlock enhanced reminders.';
+          }
+        }
+        const flash = localStorage.getItem('hairvelous_plan_flash');
+        if (flash === 'pro' && billingStatus.isPro) {
+          showToast('Pro plan activated successfully.', 'success');
+          localStorage.removeItem('hairvelous_plan_flash');
+        } else if (flash === 'free' && !billingStatus.isPro) {
+          showToast('Switched to Free plan.', 'info');
+          localStorage.removeItem('hairvelous_plan_flash');
+        }
+      } catch (_err) {}
+    }
+
+    function applyMediaPlanGate() {
+      const input = document.getElementById('media');
+      const hint = document.getElementById('media-plan-hint');
+      const blurWrap = document.getElementById('blur-video-face')?.closest('label');
+      if (!input || !hint) return;
+      const canUploadVideo = hasRoutineVideoAccess();
+      if (canUploadVideo) {
+        input.setAttribute('accept', 'image/*,video/mp4,video/webm,video/quicktime');
+        hint.innerHTML = 'Pro feature enabled: you can upload images and videos.';
+        hint.className = 'mt-1 text-[11px] text-emerald-300';
+        if (blurWrap) blurWrap.classList.remove('hidden');
+      } else {
+        input.setAttribute('accept', 'image/*');
+        hint.innerHTML = 'Free plan supports image uploads only. <a href="/pricing.html" class="underline text-violet-300 hover:text-violet-200">Upgrade to Pro</a> to upload videos.';
+        hint.className = 'mt-1 text-[11px] text-amber-300';
+        if (blurWrap) blurWrap.classList.add('hidden');
+      }
+    }
+
+    async function loadReminders() {
+      if (!(billingStatus && billingStatus.isPro)) {
+        return;
+      }
+      try {
+        const data = await api('/routine/reminders');
+        const reminders = data.reminders || [];
+        const target = document.getElementById('reminder-list');
+        target.innerHTML = reminders.length
+          ? `<ul class="space-y-2">${reminders.map((r) => `<li>• ${escapeHtml(r)}</li>`).join('')}</ul>`
+          : 'No reminders for now.';
+      } catch (err) {
+        document.getElementById('reminder-list').textContent = err.error || 'Failed to load reminders';
+      }
+    }
+
+    async function loadAdvancedAnalytics() {
+      const target = document.getElementById('advanced-analytics');
+      try {
+        const data = await api('/routine/analytics');
+        const analytics = data.analytics || {};
+        const top = analytics.topActivities || [];
+        const c = analytics.monthlyConsistency || {};
+        target.className = 'bg-slate-800/50 rounded-xl p-6 border border-slate-700 text-slate-200 text-sm';
+        target.innerHTML = `
+          <p class="text-slate-300 mb-2">Last 60 days top activities:</p>
+          <ul class="space-y-1 mb-3">${top.map((t) => `<li>• ${escapeHtml(t.activityType)}: ${Number(t.total || 0)} logs</li>`).join('') || '<li>• No activity data yet.</li>'}</ul>
+          <p class="text-slate-300">30-day consistency: <span class="text-violet-300">${Number(c.activeDays || 0)} active days</span>, <span class="text-violet-300">${Number(c.totalLogs || 0)} total logs</span>.</p>
+        `;
+      } catch (_err) {
+        target.className = 'bg-slate-800/50 rounded-xl p-6 border border-slate-700 text-slate-400 text-sm';
+        target.innerHTML = 'Upgrade to <a href="/pricing.html" class="underline text-violet-300">Pro</a> to unlock advanced analytics.';
+      }
+    }
+
+    document.getElementById('log-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const activityType = document.getElementById('activityType').value.trim();
+        const dateLogged = document.getElementById('dateLogged').value;
+        if (!activityType) {
+          showToast('Activity type is required.', 'info');
+          return;
+        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateLogged || ''))) {
+          showToast('Please select a valid date.', 'info');
+          return;
+        }
+        const notesText = document.getElementById('notes').value.trim();
+        const hairFeel = document.getElementById('hairFeel').value;
+        const notes = hairFeel ? `${notesText ? notesText + ' ' : ''}[Hair feel: ${hairFeel}]` : notesText;
+        const media = document.getElementById('media').files[0];
+        const blurToggle = document.getElementById('blur-video-face');
+        let uploadMedia = media || null;
+        const canUploadVideo = hasRoutineVideoAccess();
+
+        if (uploadMedia && (uploadMedia.type || '').startsWith('video/') && !canUploadVideo) {
+          showToast('Video uploads are available on Pro plan only.', 'info');
+          return;
+        }
+
+        if (uploadMedia && (uploadMedia.type || '').startsWith('video/') && blurToggle && blurToggle.checked) {
+          showToast('Applying face blur to video...', 'info');
+          try {
+            const result = await blurFacesInVideoFile(uploadMedia);
+            uploadMedia = result.file;
+            if (result.applied) {
+              showToast('Face blur applied before upload.', 'success');
+            } else if (result.reason === 'unsupported') {
+              showToast('Face blur is not supported on this browser. Uploading original video.', 'info');
+            } else {
+              showToast('Could not blur this video. Uploading original file.', 'info');
+            }
+          } catch (_err) {
+            showToast('Face blur failed. Uploading original file.', 'info');
+            uploadMedia = media;
+          }
+        }
+
+        if (uploadMedia) {
+          const formData = new FormData();
+          formData.append('activityType', activityType);
+          formData.append('dateLogged', dateLogged);
+          if (notes) formData.append('notes', notes);
+          formData.append('media', uploadMedia, uploadMedia.name);
+          await apiForm('/routine/logs/media', formData, 'POST');
+        } else {
+          await api('/routine/logs', {
+            method: 'POST',
+            body: JSON.stringify({
+              activityType,
+              dateLogged,
+              notes: notes || undefined,
+            }),
+          });
+        }
+        showToast('Log added', 'success');
+        document.getElementById('log-form').reset();
+        document.getElementById('media-preview-wrap').classList.add('hidden');
+        document.getElementById('media-preview').innerHTML = '';
+        const nameEl = document.getElementById('media-filename');
+        if (nameEl) nameEl.textContent = 'No file selected';
+        closeLogModal();
+        loadLogs();
+        loadProgress();
+      } catch (err) {
+        showToast(err.error || 'Failed', 'error');
+      }
+    });
+
+    window.deleteLog = async (id) => {
+      if (!confirm('Delete this log?')) return;
+      try {
+        await api('/routine/logs/' + id, { method: 'DELETE' });
+        showToast('Log deleted', 'success');
+        loadLogs();
+        loadProgress();
+      } catch (err) {
+        showToast(err.error || 'Failed', 'error');
+      }
+    };
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function renderSelectedMediaPreview(file) {
+      const wrap = document.getElementById('media-preview-wrap');
+      const target = document.getElementById('media-preview');
+      if (!file) {
+        wrap.classList.add('hidden');
+        target.innerHTML = '';
+        return;
+      }
+      const isVideo = (file.type || '').startsWith('video/');
+      const url = URL.createObjectURL(file);
+      wrap.classList.remove('hidden');
+      target.innerHTML = isVideo
+        ? `<video controls class="w-full max-h-56 rounded-lg border border-slate-700 bg-black" src="${url}"></video>`
+        : `<img class="w-full max-h-56 object-cover rounded-lg border border-slate-700" src="${url}" alt="Preview" />`;
+    }
+
+    function supportsVideoFaceBlur() {
+      return (
+        typeof window !== 'undefined' &&
+        'FaceDetector' in window &&
+        'MediaRecorder' in window &&
+        typeof document.createElement('canvas').captureStream === 'function'
+      );
+    }
+
+    function pickRecorderMimeType() {
+      const candidates = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+      for (const c of candidates) {
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c)) {
+          return c;
+        }
+      }
+      return '';
+    }
+
+    async function blurFacesInVideoFile(file) {
+      if (!supportsVideoFaceBlur()) {
+        return { file, applied: false, reason: 'unsupported' };
+      }
+
+      const objectUrl = URL.createObjectURL(file);
+      const video = document.createElement('video');
+      video.src = objectUrl;
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+
+      try {
+        await new Promise((resolve, reject) => {
+          video.onloadedmetadata = () => resolve();
+          video.onerror = () => reject(new Error('Unable to read selected video'));
+        });
+
+        const srcW = video.videoWidth || 0;
+        const srcH = video.videoHeight || 0;
+        if (!srcW || !srcH) return { file, applied: false, reason: 'invalid_video' };
+
+        const maxW = 960;
+        const scale = srcW > maxW ? maxW / srcW : 1;
+        const outW = Math.max(1, Math.round(srcW * scale));
+        const outH = Math.max(1, Math.round(srcH * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = outW;
+        canvas.height = outH;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        if (!ctx) throw new Error('Canvas is not available');
+
+        const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 5 });
+        const scaleX = outW / srcW;
+        const scaleY = outH / srcH;
+        let latestFaces = [];
+        let detectBusy = false;
+        let stopped = false;
+
+        const detectLoop = async () => {
+          if (stopped) return;
+          if (!detectBusy && !video.paused && !video.ended && video.readyState >= 2) {
+            detectBusy = true;
+            try {
+              const faces = await detector.detect(video);
+              latestFaces = (faces || []).map((f) => {
+                const b = f.boundingBox || {};
+                return {
+                  x: Math.max(0, Math.round((b.x || 0) * scaleX)),
+                  y: Math.max(0, Math.round((b.y || 0) * scaleY)),
+                  w: Math.max(1, Math.round((b.width || 0) * scaleX)),
+                  h: Math.max(1, Math.round((b.height || 0) * scaleY)),
+                };
+              });
+            } catch (_e) {
+              latestFaces = [];
+            } finally {
+              detectBusy = false;
+            }
+          }
+          setTimeout(detectLoop, 260);
+        };
+
+        const stream = canvas.captureStream(15);
+        const mimeType = pickRecorderMimeType();
+        const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        const chunks = [];
+        recorder.ondataavailable = (evt) => {
+          if (evt.data && evt.data.size > 0) chunks.push(evt.data);
+        };
+
+        const done = new Promise((resolve, reject) => {
+          recorder.onerror = () => reject(new Error('Could not encode blurred video'));
+          recorder.onstop = () => {
+            try {
+              resolve(new Blob(chunks, { type: mimeType || 'video/webm' }));
+            } catch (e) {
+              reject(e);
+            }
+          };
+        });
+
+        let rafId = 0;
+        const draw = () => {
+          ctx.drawImage(video, 0, 0, outW, outH);
+          if (latestFaces.length) {
+            ctx.save();
+            ctx.filter = 'blur(18px)';
+            latestFaces.forEach((f) => {
+              const x = Math.max(0, Math.min(outW - 1, f.x));
+              const y = Math.max(0, Math.min(outH - 1, f.y));
+              const w = Math.max(1, Math.min(outW - x, f.w));
+              const h = Math.max(1, Math.min(outH - y, f.h));
+              ctx.drawImage(canvas, x, y, w, h, x, y, w, h);
+            });
+            ctx.restore();
+          }
+          if (!video.ended) {
+            rafId = requestAnimationFrame(draw);
+          }
+        };
+
+        recorder.start(250);
+        await video.play();
+        detectLoop();
+        draw();
+
+        await new Promise((resolve) => {
+          video.onended = () => resolve();
+        });
+
+        stopped = true;
+        cancelAnimationFrame(rafId);
+        if (recorder.state !== 'inactive') recorder.stop();
+        const blurredBlob = await done;
+        stream.getTracks().forEach((t) => t.stop());
+
+        if (!blurredBlob || blurredBlob.size === 0) {
+          return { file, applied: false, reason: 'encode_failed' };
+        }
+
+        const outName = file.name.replace(/\.[^.]+$/, '') + '-blurred.webm';
+        const outFile = new File([blurredBlob], outName, { type: blurredBlob.type || 'video/webm' });
+        return { file: outFile, applied: true };
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
+    }
+
+    document.getElementById('media').addEventListener('change', (e) => {
+      const file = e.target.files[0] || null;
+      const canUploadVideo = hasRoutineVideoAccess();
+      if (file && (file.type || '').startsWith('video/') && !canUploadVideo) {
+        e.target.value = '';
+        renderSelectedMediaPreview(null);
+        const nameElLocked = document.getElementById('media-filename');
+        if (nameElLocked) nameElLocked.textContent = 'No file selected';
+        showToast('Free plan allows images only. Upgrade to Pro for video uploads.', 'info');
+        return;
+      }
+      renderSelectedMediaPreview(file);
+      const nameEl = document.getElementById('media-filename');
+      if (nameEl) nameEl.textContent = file ? file.name : 'No file selected';
+    });
+
+    (function initFaceBlurHint() {
+      const hint = document.getElementById('blur-video-hint');
+      const toggle = document.getElementById('blur-video-face');
+      if (!hint || !toggle) return;
+      if (!supportsVideoFaceBlur()) {
+        toggle.checked = false;
+        toggle.disabled = true;
+        hint.textContent = 'Automatic face blur is not supported in this browser/device. Use latest Chrome/Edge on localhost or HTTPS, or upload without blur.';
+      }
+    })();
+    applyMediaPlanGate();
+    function clearSelectedMedia() {
+      const input = document.getElementById('media');
+      input.value = '';
+      renderSelectedMediaPreview(null);
+      const nameEl = document.getElementById('media-filename');
+      if (nameEl) nameEl.textContent = 'No file selected';
+    }
+    document.getElementById('clear-media').addEventListener('click', clearSelectedMedia);
+    document.getElementById('clear-media-inline')?.addEventListener('click', clearSelectedMedia);
+    document.querySelectorAll('.quick-tag').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.getElementById('activityType').value = btn.textContent.trim().toLowerCase();
+      });
+    });
+    document.getElementById('cal-prev-month')?.addEventListener('click', () => {
+      calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
+      renderCalendar();
+    });
+    document.getElementById('cal-next-month')?.addEventListener('click', () => {
+      calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
+      renderCalendar();
+    });
+    document.getElementById('open-log-modal-btn')?.addEventListener('click', () => openLogModal(selectedCalendarIso || parseDateToISO(new Date())));
+    document.getElementById('log-modal-close')?.addEventListener('click', closeLogModal);
+    document.getElementById('log-modal-cancel')?.addEventListener('click', closeLogModal);
+    document.getElementById('log-modal-backdrop')?.addEventListener('click', closeLogModal);
+    document.getElementById('calendar-day-modal-close')?.addEventListener('click', closeCalendarDayModal);
+    document.getElementById('calendar-day-modal-backdrop')?.addEventListener('click', closeCalendarDayModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeLogModal();
+        closeCalendarDayModal();
+      }
+    });
+
+    loadBillingStatus().then(loadReminders);
+    loadLogs();
+    loadProgress();
+    loadAdvancedAnalytics();
+  </script>
+</body>
+</html>

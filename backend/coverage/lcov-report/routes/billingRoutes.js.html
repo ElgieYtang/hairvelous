@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for routes/billingRoutes.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="..\prettify.css" />
+    <link rel="stylesheet" href="..\base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(..\sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="..\index.html">All files</a> / <a href="index.html">routes</a> billingRoutes.js
+    </h1>
+    <div class='clearfix'>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33</td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = <span class="cstat-no" title="statement not covered" >require('express');</span>
+const { requireAuth, requireAdmin } = <span class="cstat-no" title="statement not covered" >require('../middleware/auth');</span>
+const upload = <span class="cstat-no" title="statement not covered" >require('../config/upload');</span>
+const billingController = <span class="cstat-no" title="statement not covered" >require('../controllers/billingController');</span>
+&nbsp;
+const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >router.get('/plans', requireAuth, <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt; <span class="cstat-no" title="statement not covered" >billingController.listPlans(req, res, next))</span>;</span>
+<span class="cstat-no" title="statement not covered" >router.get('/status', requireAuth, <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt; <span class="cstat-no" title="statement not covered" >billingController.status(req, res, next))</span>;</span>
+<span class="cstat-no" title="statement not covered" >router.post('/gcash/submit', requireAuth, upload.single('receipt'), <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >  billingController.submitGcash(req, res, next</span>)
+);
+<span class="cstat-no" title="statement not covered" >router.post('/card/submit', requireAuth, upload.single('receipt'), <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >  billingController.submitCard(req, res, next</span>)
+);
+<span class="cstat-no" title="statement not covered" >router.post('/activate-pro', requireAuth, <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >  billingController.activateProDirect(req, res, next</span>)
+);
+<span class="cstat-no" title="statement not covered" >router.post('/activate-free', requireAuth, <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >  billingController.activateFreeDirect(req, res, next</span>)
+);
+<span class="cstat-no" title="statement not covered" >router.get('/report/export', requireAuth, <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt; <span class="cstat-no" title="statement not covered" >billingController.exportProgressReport(req, res, next))</span>;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >router.get('/payments', requireAuth, requireAdmin, <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt; <span class="cstat-no" title="statement not covered" >billingController.listPayments(req, res, next))</span>;</span>
+<span class="cstat-no" title="statement not covered" >router.patch('/payments/:paymentId/approve', requireAuth, requireAdmin, <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >  billingController.approvePayment(req, res, next</span>)
+);
+<span class="cstat-no" title="statement not covered" >router.patch('/payments/:paymentId/reject', requireAuth, requireAdmin, <span class="fstat-no" title="function not covered" >(r</span>eq, res, next) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >  billingController.rejectPayment(req, res, next</span>)
+);
+&nbsp;
+<span class="cstat-no" title="statement not covered" >module.exports = router;</span>
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Sat Apr 18 2026 19:45:13 GMT+0800 (Singapore Standard Time)
+</div>
+</div>
+<script src="..\prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="..\sorter.js"></script>
+</body>
+</html>

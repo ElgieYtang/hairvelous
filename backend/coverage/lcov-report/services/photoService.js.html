@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for services/photoService.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="..\prettify.css" />
+    <link rel="stylesheet" href="..\base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(..\sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="..\index.html">All files</a> / <a href="index.html">services</a> photoService.js
+    </h1>
+    <div class='clearfix'>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
+ * Photo Service
+ * Location: backend/services/photoService.js
+ * Purpose: Business logic for hair photo uploads
+ */
+const pool = <span class="cstat-no" title="statement not covered" >require('../config/db');</span>
+const path = <span class="cstat-no" title="statement not covered" >require('path');</span>
+const fs = <span class="cstat-no" title="statement not covered" >require('fs').promises;</span>
+const hairAiService = <span class="cstat-no" title="statement not covered" >require('./hairAiService');</span>
+&nbsp;
+class PhotoService {
+  /**
+   * Upload photo
+   */
+<span class="fstat-no" title="function not covered" >  as</span>ync uploadPhoto(userId, filePath, fileName, aiResult = <span class="branch-0 cbranch-no" title="branch not covered" >null)</span> {
+    const relativePath = <span class="cstat-no" title="statement not covered" >path</span>
+      .relative(path.join(__dirname, '..', '..'), filePath)
+      .replace(/\\/g, '/');
+&nbsp;
+    let finalAiResult = <span class="cstat-no" title="statement not covered" >aiResult;</span>
+<span class="cstat-no" title="statement not covered" >    if (!finalAiResult) {</span>
+<span class="cstat-no" title="statement not covered" >      try {</span>
+        const absolutePath = <span class="cstat-no" title="statement not covered" >path.isAbsolute(filePath)</span>
+          ? filePath
+          : path.join(__dirname, '..', '..', filePath);
+<span class="cstat-no" title="statement not covered" >        finalAiResult = await hairAiService.analyzePhoto(userId, absolutePath);</span>
+      } catch (err) {
+<span class="cstat-no" title="statement not covered" >        console.warn('[photoService] Hair AI analysis failed:', err.message);</span>
+      }
+    }
+&nbsp;
+    const storedAi = <span class="cstat-no" title="statement not covered" >finalAiResult || 'AI analysis unavailable. This is for awareness only, not a medical diagnosis.';</span>
+&nbsp;
+    // Skip DB when running without a database (testing / demo mode)
+<span class="cstat-no" title="statement not covered" >    if (process.env.SKIP_DB_FOR_TESTING === 'true') {</span>
+<span class="cstat-no" title="statement not covered" >      return {</span>
+        photoId: null,
+        imagePath: relativePath,
+        aiResult: storedAi,
+      };
+    }
+&nbsp;
+    const [result] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'INSERT INTO hair_photos (user_id, image_path, ai_result) VALUES (?, ?, ?)',
+      [userId, relativePath, storedAi]
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      photoId: result.insertId,
+      imagePath: relativePath,
+      aiResult: storedAi,
+    };
+  }
+&nbsp;
+  /**
+   * Get user's photos
+   */
+<span class="fstat-no" title="function not covered" >  as</span>ync getUserPhotos(userId) {
+<span class="cstat-no" title="statement not covered" >    if (process.env.SKIP_DB_FOR_TESTING === 'true') {</span>
+<span class="cstat-no" title="statement not covered" >      return [];</span>
+    }
+&nbsp;
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'SELECT photo_id, image_path, ai_result, date_uploaded FROM hair_photos WHERE user_id = ? ORDER BY date_uploaded DESC',
+      [userId]
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return rows.map(<span class="fstat-no" title="function not covered" >r </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
+      photoId: r.photo_id,
+      imagePath: r.image_path,
+      aiResult: r.ai_result,
+      dateUploaded: r.date_uploaded,
+    }));
+  }
+&nbsp;
+  /**
+   * Replace photo (delete old, upload new)
+   */
+<span class="fstat-no" title="function not covered" >  as</span>ync replacePhoto(photoId, userId, newFilePath, newFileName) {
+    // Verify ownership
+    const [existing] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'SELECT image_path FROM hair_photos WHERE photo_id = ? AND user_id = ?',
+      [photoId, userId]
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (existing.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('Photo not found');</span>
+    }
+&nbsp;
+    // Delete old file
+    const oldPath = <span class="cstat-no" title="statement not covered" >path.join(__dirname, '..', '..', existing[0].image_path);</span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      await fs.unlink(oldPath);</span>
+    } catch (err) {
+<span class="cstat-no" title="statement not covered" >      console.warn('Could not delete old file:', err.message);</span>
+    }
+&nbsp;
+    // Update database
+    const relativePath = <span class="cstat-no" title="statement not covered" >path.relative(path.join(__dirname, '..', '..'), newFilePath).replace(/\\/g, '/');</span>
+<span class="cstat-no" title="statement not covered" >    await pool.query(</span>
+      'UPDATE hair_photos SET image_path = ? WHERE photo_id = ?',
+      [relativePath, photoId]
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return { photoId, imagePath: relativePath };</span>
+  }
+&nbsp;
+  /**
+   * Delete photo
+   */
+<span class="fstat-no" title="function not covered" >  as</span>ync deletePhoto(photoId, userId) {
+    const [existing] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'SELECT image_path FROM hair_photos WHERE photo_id = ? AND user_id = ?',
+      [photoId, userId]
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (existing.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('Photo not found');</span>
+    }
+&nbsp;
+    // Delete file
+    const filePath = <span class="cstat-no" title="statement not covered" >path.join(__dirname, '..', '..', existing[0].image_path);</span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      await fs.unlink(filePath);</span>
+    } catch (err) {
+<span class="cstat-no" title="statement not covered" >      console.warn('Could not delete file:', err.message);</span>
+    }
+&nbsp;
+    // Delete from database
+<span class="cstat-no" title="statement not covered" >    await pool.query('DELETE FROM hair_photos WHERE photo_id = ?', [photoId]);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return { message: 'Photo deleted' };</span>
+  }
+}
+&nbsp;
+<span class="cstat-no" title="statement not covered" >module.exports = new PhotoService();</span>
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Sat Apr 18 2026 19:45:13 GMT+0800 (Singapore Standard Time)
+</div>
+</div>
+<script src="..\prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="..\sorter.js"></script>
+</body>
+</html>

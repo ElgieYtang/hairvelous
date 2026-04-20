@@ -1,0 +1,1641 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for services/recommendationService.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="..\prettify.css" />
+    <link rel="stylesheet" href="..\base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(..\sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="..\index.html">All files</a> / <a href="index.html">services</a> recommendationService.js
+    </h1>
+    <div class='clearfix'>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420
+421
+422
+423
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438
+439
+440
+441
+442
+443
+444
+445
+446
+447
+448
+449
+450
+451
+452
+453
+454
+455
+456
+457
+458
+459
+460
+461
+462
+463
+464
+465
+466
+467
+468
+469
+470
+471
+472
+473
+474
+475
+476
+477
+478
+479
+480
+481
+482
+483
+484
+485
+486
+487
+488
+489
+490
+491
+492
+493
+494
+495
+496
+497
+498
+499
+500
+501
+502
+503
+504
+505
+506
+507
+508
+509
+510
+511
+512
+513
+514
+515
+516
+517
+518
+519
+520
+521
+522
+523
+524
+525
+526
+527
+528
+529
+530
+531
+532
+533</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
+ * Recommendation Service - Rule-Based Engine
+ * Location: backend/services/recommendationService.js
+ * Purpose: Comprehensive rule-based product recommendations with routine plans
+ */
+const pool = require('../config/db');
+&nbsp;
+class RecommendationService {
+  /**
+   * Generate comprehensive recommendations based on user profile and preferences
+   * @param {Object} profile - User hair profile
+   * @param {Object} preferences - User preferences (budget, productType)
+   * @returns {Object} Recommendations with products, routine plan, warnings, DIY guides
+   */
+<span class="fstat-no" title="function not covered" >as</span>ync generateRecommendations(profile, preferences = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
+  const {
+    hairType = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span>
+    scalpCondition = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span>
+    issues = <span class="branch-0 cbranch-no" title="branch not covered" >[],</span>
+  } = <span class="cstat-no" title="statement not covered" >profile;</span>
+&nbsp;
+  const {
+    budget = <span class="branch-0 cbranch-no" title="branch not covered" >'medium',</span> // low, medium, high
+    productType = <span class="branch-0 cbranch-no" title="branch not covered" >'all',</span> // shampoo, conditioner, serum, mask, all
+  } = <span class="cstat-no" title="statement not covered" >preferences;</span>
+&nbsp;
+  // Handle thinning issue (non-medical advice only)
+  const hasThinning = <span class="cstat-no" title="statement not covered" >issues.some(<span class="fstat-no" title="function not covered" >i </span>=&gt; <span class="cstat-no" title="statement not covered" >i.toLowerCase().includes('thinning'))</span>;</span>
+<span class="cstat-no" title="statement not covered" >  if (hasThinning) {</span>
+<span class="cstat-no" title="statement not covered" >    return this.generateThinningAdvice(profile, preferences);</span>
+  }
+&nbsp;
+  // Map issues to categories
+  const categoryMap = <span class="cstat-no" title="statement not covered" >this.getCategoryMap();</span>
+  const targetCategories = <span class="cstat-no" title="statement not covered" >this.getTargetCategories(issues, categoryMap);</span>
+&nbsp;
+  // Get all products with categories
+  const [allProducts] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+    `SELECT p.product_id, p.name, p.brand, p.description, p.price,
+            p.image_url,
+            GROUP_CONCAT(DISTINCT pc.category_name) as categories
+     FROM products p
+     LEFT JOIN product_categories pc ON p.product_id = pc.product_id
+     GROUP BY p.product_id`
+  );
+&nbsp;
+  // Score and filter products
+  const scoredProducts = <span class="cstat-no" title="statement not covered" >allProducts.map(<span class="fstat-no" title="function not covered" >pr</span>oduct =&gt; {</span>
+    const categories = <span class="cstat-no" title="statement not covered" >product.categories ? product.categories.split(',') : [];</span>
+    const score = <span class="cstat-no" title="statement not covered" >this.scoreProduct(product, {</span>
+      categories,
+      targetCategories,
+      hairType,
+      scalpCondition,
+      issues,
+      budget,
+      productType,
+    });
+<span class="cstat-no" title="statement not covered" >    return { ...product, score, categories };</span>
+  });
+&nbsp;
+  // Sort by score and take top 5-10
+<span class="cstat-no" title="statement not covered" >  scoredProducts.sort(<span class="fstat-no" title="function not covered" >(a</span>, b) =&gt; <span class="cstat-no" title="statement not covered" >b.score - a.score)</span>;</span>
+  const topProducts = <span class="cstat-no" title="statement not covered" >scoredProducts.slice(0, 10).filter(<span class="fstat-no" title="function not covered" >p </span>=&gt; <span class="cstat-no" title="statement not covered" >p.score &gt; 0)</span>;</span>
+&nbsp;
+  // Generate recommendations with reasons (include categories for frontend filtering)
+  const recommendations = <span class="cstat-no" title="statement not covered" >topProducts.map(<span class="fstat-no" title="function not covered" >pr</span>oduct =&gt; {</span>
+    const catList = <span class="cstat-no" title="statement not covered" >product.categories ? product.categories.split(',').map(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c.trim())</span> : [];</span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      productId: product.product_id,
+      name: product.name,
+      brand: product.brand,
+      description: product.description,
+      price: parseFloat(product.price),
+      imageUrl: product.image_url || null,
+      reason: this.generateReason(product, { hairType, scalpCondition, issues, categories: product.categories }),
+      matchScore: product.score,
+      categories: catList,
+    };
+  });
+&nbsp;
+  // Generate routine plan
+  const routinePlan = <span class="cstat-no" title="statement not covered" >this.generateRoutinePlan({ hairType, scalpCondition, issues, recommendations });</span>
+&nbsp;
+  // Get DIY guide suggestions
+  const diyGuides = <span class="cstat-no" title="statement not covered" >await this.getMatchingDIYGuides(issues);</span>
+&nbsp;
+  // Generate warnings
+  const warnings = <span class="cstat-no" title="statement not covered" >this.generateWarnings(issues, scalpCondition);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  return {</span>
+    recommendations: recommendations.slice(0, 10), // Max 10 products
+    routinePlan,
+    warnings,
+    diyGuides,
+  };
+}
+&nbsp;
+  /**
+   * Get category mapping for issues
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>tCategoryMap() {
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      'dryness': { primary: 'moisturizing', secondary: null },
+      'frizz': { primary: 'anti-frizz', secondary: 'moisturizing' },
+      'flaking': { primary: 'anti-dandruff', secondary: null },
+      'dandruff': { primary: 'anti-dandruff', secondary: null },
+      'oiliness': { primary: 'clarifying/oily scalp', secondary: null },
+      'oily': { primary: 'clarifying/oily scalp', secondary: null },
+    };
+  }
+&nbsp;
+  /**
+   * Get target categories based on issues
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>tTargetCategories(issues, categoryMap) {
+    const categories = <span class="cstat-no" title="statement not covered" >new Set();</span>
+<span class="cstat-no" title="statement not covered" >    issues.forEach(<span class="fstat-no" title="function not covered" >is</span>sue =&gt; {</span>
+      const normalized = <span class="cstat-no" title="statement not covered" >issue.toLowerCase().trim();</span>
+      const mapping = <span class="cstat-no" title="statement not covered" >categoryMap[normalized];</span>
+<span class="cstat-no" title="statement not covered" >      if (mapping) {</span>
+<span class="cstat-no" title="statement not covered" >        if (mapping.primary) <span class="cstat-no" title="statement not covered" >categories.add(mapping.primary);</span></span>
+<span class="cstat-no" title="statement not covered" >        if (mapping.secondary) <span class="cstat-no" title="statement not covered" >categories.add(mapping.secondary);</span></span>
+      }
+    });
+<span class="cstat-no" title="statement not covered" >    return Array.from(categories);</span>
+  }
+&nbsp;
+  /**
+   * Score a product based on multiple factors
+   */
+<span class="fstat-no" title="function not covered" >  sc</span>oreProduct(product, context) {
+    const { categories, targetCategories, hairType, scalpCondition, issues, budget, productType } = <span class="cstat-no" title="statement not covered" >context;</span>
+    let score = <span class="cstat-no" title="statement not covered" >0;</span>
+&nbsp;
+    // Category matching (primary: +5, secondary: +3)
+    const categoryMap = <span class="cstat-no" title="statement not covered" >this.getCategoryMap();</span>
+<span class="cstat-no" title="statement not covered" >    issues.forEach(<span class="fstat-no" title="function not covered" >is</span>sue =&gt; {</span>
+      const normalized = <span class="cstat-no" title="statement not covered" >issue.toLowerCase().trim();</span>
+      const mapping = <span class="cstat-no" title="statement not covered" >categoryMap[normalized];</span>
+<span class="cstat-no" title="statement not covered" >      if (mapping) {</span>
+<span class="cstat-no" title="statement not covered" >        if (categories.includes(mapping.primary)) <span class="cstat-no" title="statement not covered" >score += 5;</span></span>
+<span class="cstat-no" title="statement not covered" >        if (mapping.secondary &amp;&amp; categories.includes(mapping.secondary)) <span class="cstat-no" title="statement not covered" >score += 3;</span></span>
+      }
+    });
+&nbsp;
+    // Hair type compatibility
+<span class="cstat-no" title="statement not covered" >    if (hairType) {</span>
+      const hairCompatibility = <span class="cstat-no" title="statement not covered" >this.getHairTypeCompatibility(product, hairType, scalpCondition);</span>
+<span class="cstat-no" title="statement not covered" >      score += hairCompatibility;</span>
+    }
+&nbsp;
+    // Scalp condition compatibility
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition) {</span>
+      const scalpCompatibility = <span class="cstat-no" title="statement not covered" >this.getScalpCompatibility(product, scalpCondition, categories);</span>
+<span class="cstat-no" title="statement not covered" >      score += scalpCompatibility;</span>
+    }
+&nbsp;
+    // Product type preference
+    const productTypeMatch = <span class="cstat-no" title="statement not covered" >this.getProductTypeMatch(product.name, productType);</span>
+<span class="cstat-no" title="statement not covered" >    score += productTypeMatch;</span>
+&nbsp;
+    // Budget filtering (penalize if outside budget, but don't exclude)
+    const budgetMatch = <span class="cstat-no" title="statement not covered" >this.getBudgetMatch(parseFloat(product.price), budget);</span>
+<span class="cstat-no" title="statement not covered" >    score += budgetMatch;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return score;</span>
+  }
+&nbsp;
+  /**
+   * Get hair type compatibility score
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>tHairTypeCompatibility(product, hairType, scalpCondition) {
+    const name = <span class="cstat-no" title="statement not covered" >product.name.toLowerCase();</span>
+    const description = <span class="cstat-no" title="statement not covered" >(product.description || '').toLowerCase();</span>
+    const text = <span class="cstat-no" title="statement not covered" >name + ' ' + description;</span>
+&nbsp;
+    let score = <span class="cstat-no" title="statement not covered" >0;</span>
+&nbsp;
+    // Straight hair + oily scalp: prefer clarifying, lightweight
+<span class="cstat-no" title="statement not covered" >    if (hairType === 'straight' &amp;&amp; scalpCondition === 'oily') {</span>
+<span class="cstat-no" title="statement not covered" >      if (text.includes('clarifying') || text.includes('lightweight')) <span class="cstat-no" title="statement not covered" >score += 2;</span></span>
+<span class="cstat-no" title="statement not covered" >      if (text.includes('heavy') || text.includes('rich')) <span class="cstat-no" title="statement not covered" >score -= 1;</span></span>
+    }
+&nbsp;
+    // Curly/Coily + dry scalp: prefer moisturizing, avoid clarifying
+<span class="cstat-no" title="statement not covered" >    if ((hairType === 'curly' || hairType === 'coily') &amp;&amp; scalpCondition === 'dry') {</span>
+<span class="cstat-no" title="statement not covered" >      if (text.includes('moisturizing') || text.includes('hydrating')) <span class="cstat-no" title="statement not covered" >score += 2;</span></span>
+<span class="cstat-no" title="statement not covered" >      if (text.includes('clarifying') &amp;&amp; !text.includes('gentle')) <span class="cstat-no" title="statement not covered" >score -= 2;</span></span>
+    }
+&nbsp;
+    // Wavy: balanced approach
+<span class="cstat-no" title="statement not covered" >    if (hairType === 'wavy') {</span>
+<span class="cstat-no" title="statement not covered" >      score += 1; </span>// Neutral bonus
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return score;</span>
+  }
+&nbsp;
+  /**
+   * Get scalp condition compatibility score
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>tScalpCompatibility(product, scalpCondition, categories) {
+    const name = <span class="cstat-no" title="statement not covered" >product.name.toLowerCase();</span>
+    const description = <span class="cstat-no" title="statement not covered" >(product.description || '').toLowerCase();</span>
+    const text = <span class="cstat-no" title="statement not covered" >name + ' ' + description;</span>
+&nbsp;
+    let score = <span class="cstat-no" title="statement not covered" >0;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition === 'sensitive') {</span>
+<span class="cstat-no" title="statement not covered" >      if (text.includes('gentle') || text.includes('sensitive') || text.includes('soothing')) <span class="cstat-no" title="statement not covered" >score += 2;</span></span>
+<span class="cstat-no" title="statement not covered" >      if (text.includes('harsh') || text.includes('strong')) <span class="cstat-no" title="statement not covered" >score -= 2;</span></span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition === 'oily') {</span>
+<span class="cstat-no" title="statement not covered" >      if (categories.includes('clarifying/oily scalp')) <span class="cstat-no" title="statement not covered" >score += 2;</span></span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition === 'dry') {</span>
+<span class="cstat-no" title="statement not covered" >      if (categories.includes('moisturizing')) <span class="cstat-no" title="statement not covered" >score += 2;</span></span>
+<span class="cstat-no" title="statement not covered" >      if (categories.includes('clarifying/oily scalp')) <span class="cstat-no" title="statement not covered" >score -= 1;</span></span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return score;</span>
+  }
+&nbsp;
+  /**
+   * Get product type match score
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>tProductTypeMatch(productName, preferredType) {
+<span class="cstat-no" title="statement not covered" >    if (preferredType === 'all') <span class="cstat-no" title="statement not covered" >return 0; </span></span>// No preference bonus
+&nbsp;
+    const name = <span class="cstat-no" title="statement not covered" >productName.toLowerCase();</span>
+    const typeMap = <span class="cstat-no" title="statement not covered" >{</span>
+      'shampoo': ['shampoo', 'cleanser'],
+      'conditioner': ['conditioner'],
+      'serum': ['serum', 'oil'],
+      'mask': ['mask', 'treatment'],
+    };
+&nbsp;
+    const keywords = <span class="cstat-no" title="statement not covered" >typeMap[preferredType] || [];</span>
+<span class="cstat-no" title="statement not covered" >    return keywords.some(<span class="fstat-no" title="function not covered" >kw</span> =&gt; <span class="cstat-no" title="statement not covered" >name.includes(kw))</span> ? 1 : 0;</span>
+  }
+&nbsp;
+  /**
+   * Get budget match score
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>tBudgetMatch(price, budget) {
+    const ranges = <span class="cstat-no" title="statement not covered" >{</span>
+      low: { min: 0, max: 15 },
+      medium: { min: 15, max: 25 },
+      high: { min: 25, max: Infinity },
+    };
+&nbsp;
+    const range = <span class="cstat-no" title="statement not covered" >ranges[budget] || ranges.medium;</span>
+<span class="cstat-no" title="statement not covered" >    if (price &gt;= range.min &amp;&amp; price &lt;= range.max) <span class="cstat-no" title="statement not covered" >return 1;</span></span>
+<span class="cstat-no" title="statement not covered" >    if (price &lt; range.min) <span class="cstat-no" title="statement not covered" >return 0.5; </span></span>// Close to budget
+<span class="cstat-no" title="statement not covered" >    if (price &gt; range.max &amp;&amp; price &lt;= range.max * 1.5) <span class="cstat-no" title="statement not covered" >return 0.3; </span></span>// Slightly over
+<span class="cstat-no" title="statement not covered" >    return -0.5; </span>// Way over budget
+  }
+&nbsp;
+  /**
+   * Generate reason text for recommendation
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>nerateReason(product, context) {
+    const { hairType, scalpCondition, issues, categories } = <span class="cstat-no" title="statement not covered" >context;</span>
+    const reasons = <span class="cstat-no" title="statement not covered" >[];</span>
+&nbsp;
+    // Issue-based reasons
+<span class="cstat-no" title="statement not covered" >    if (issues.length &gt; 0) {</span>
+      const issueText = <span class="cstat-no" title="statement not covered" >issues.join(', ');</span>
+<span class="cstat-no" title="statement not covered" >      reasons.push(`Addresses: ${issueText}`);</span>
+    }
+&nbsp;
+    // Category-based
+<span class="cstat-no" title="statement not covered" >    if (categories &amp;&amp; categories.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >      reasons.push(`Category: ${categories.join(', ')}`);</span>
+    }
+&nbsp;
+    // Hair type
+<span class="cstat-no" title="statement not covered" >    if (hairType) {</span>
+<span class="cstat-no" title="statement not covered" >      reasons.push(`Suitable for ${hairType} hair`);</span>
+    }
+&nbsp;
+    // Scalp condition
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition) {</span>
+<span class="cstat-no" title="statement not covered" >      reasons.push(`For ${scalpCondition} scalp`);</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return reasons.join('. ') || 'Recommended based on your profile';</span>
+  }
+&nbsp;
+  /**
+   * Generate routine plan (daily/weekly)
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>nerateRoutinePlan(context) {
+    const { hairType, scalpCondition, issues, recommendations } = <span class="cstat-no" title="statement not covered" >context;</span>
+&nbsp;
+    // Determine wash frequency based on scalp condition
+    let washFrequency = <span class="cstat-no" title="statement not covered" >'2-3 times per week';</span>
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition === 'oily') <span class="cstat-no" title="statement not covered" >washFrequency = '3-4 times per week';</span></span>
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition === 'dry') <span class="cstat-no" title="statement not covered" >washFrequency = '1-2 times per week';</span></span>
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition === 'normal') <span class="cstat-no" title="statement not covered" >washFrequency = '2-3 times per week';</span></span>
+&nbsp;
+    // Categorize recommended products
+    const shampoos = <span class="cstat-no" title="statement not covered" >recommendations.filter(<span class="fstat-no" title="function not covered" >p </span>=&gt; <span class="cstat-no" title="statement not covered" >p.name.toLowerCase().includes('shampoo'))</span>;</span>
+    const conditioners = <span class="cstat-no" title="statement not covered" >recommendations.filter(<span class="fstat-no" title="function not covered" >p </span>=&gt; <span class="cstat-no" title="statement not covered" >p.name.toLowerCase().includes('conditioner'))</span>;</span>
+    const serums = <span class="cstat-no" title="statement not covered" >recommendations.filter(<span class="fstat-no" title="function not covered" >p </span>=&gt; <span class="cstat-no" title="statement not covered" >p.name.toLowerCase().includes('serum') || p.name.toLowerCase().includes('oil'))</span>;</span>
+    const masks = <span class="cstat-no" title="statement not covered" >recommendations.filter(<span class="fstat-no" title="function not covered" >p </span>=&gt; <span class="cstat-no" title="statement not covered" >p.name.toLowerCase().includes('mask') || p.name.toLowerCase().includes('treatment'))</span>;</span>
+&nbsp;
+    const daily = <span class="cstat-no" title="statement not covered" >[];</span>
+    const weekly = <span class="cstat-no" title="statement not covered" >[];</span>
+&nbsp;
+    // Daily routine
+<span class="cstat-no" title="statement not covered" >    if (serums.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >      daily.push({</span>
+        time: 'Morning',
+        step: 'Apply lightweight serum or oil',
+        product: serums[0].name,
+        note: 'Focus on ends and mid-lengths',
+      });
+    }
+&nbsp;
+    // Weekly routine
+<span class="cstat-no" title="statement not covered" >    weekly.push({</span>
+      step: 'Wash hair',
+      frequency: washFrequency,
+      products: shampoos.slice(0, 1).map(<span class="fstat-no" title="function not covered" >p </span>=&gt; <span class="cstat-no" title="statement not covered" >p.name)</span>,
+      note: 'Use lukewarm water, focus on scalp',
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (conditioners.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >      weekly.push({</span>
+        step: 'Condition',
+        frequency: 'After every wash',
+        products: conditioners.slice(0, 1).map(<span class="fstat-no" title="function not covered" >p </span>=&gt; <span class="cstat-no" title="statement not covered" >p.name)</span>,
+        note: 'Apply to mid-lengths and ends, avoid roots',
+      });
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (masks.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >      weekly.push({</span>
+        step: 'Deep treatment mask',
+        frequency: 'Once per week',
+        products: masks.slice(0, 1).map(<span class="fstat-no" title="function not covered" >p </span>=&gt; <span class="cstat-no" title="statement not covered" >p.name)</span>,
+        note: 'Leave on for 15-30 minutes, then rinse',
+      });
+    }
+&nbsp;
+    // Clarifying treatment (if oily scalp)
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition === 'oily') {</span>
+<span class="cstat-no" title="statement not covered" >      weekly.push({</span>
+        step: 'Clarifying treatment',
+        frequency: 'Once per month',
+        note: 'Use a clarifying shampoo to remove buildup',
+      });
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      daily,
+      weekly,
+      notes: [
+        'Adjust frequency based on your hair\'s response',
+        'Always use products as directed',
+        'Patch test new products before full use',
+      ],
+    };
+  }
+&nbsp;
+  /**
+   * Get matching DIY guides based on issues
+   */
+<span class="fstat-no" title="function not covered" >  as</span>ync getMatchingDIYGuides(issues) {
+<span class="cstat-no" title="statement not covered" >    if (!issues || issues.length === 0) <span class="cstat-no" title="statement not covered" >return [];</span></span>
+&nbsp;
+    const issueMap = <span class="cstat-no" title="statement not covered" >{</span>
+      'dryness': ['moisturizing', 'dry'],
+      'frizz': ['frizz', 'smoothing'],
+      'flaking': ['scalp', 'dandruff'],
+      'oiliness': ['clarifying', 'oily'],
+    };
+&nbsp;
+    const searchTerms = <span class="cstat-no" title="statement not covered" >[];</span>
+<span class="cstat-no" title="statement not covered" >    issues.forEach(<span class="fstat-no" title="function not covered" >is</span>sue =&gt; {</span>
+      const normalized = <span class="cstat-no" title="statement not covered" >issue.toLowerCase().trim();</span>
+      const terms = <span class="cstat-no" title="statement not covered" >issueMap[normalized];</span>
+<span class="cstat-no" title="statement not covered" >      if (terms) <span class="cstat-no" title="statement not covered" >searchTerms.push(...terms);</span></span>
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (searchTerms.length === 0) <span class="cstat-no" title="statement not covered" >return [];</span></span>
+&nbsp;
+    // Search guides by title/summary/content
+    const [guides] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT guide_id, title, summary 
+       FROM diy_guides 
+       WHERE is_published = 1 
+         AND (title LIKE ? OR summary LIKE ? OR content LIKE ?)
+       LIMIT 3`,
+      [`%${searchTerms[0]}%`, `%${searchTerms[0]}%`, `%${searchTerms[0]}%`]
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return guides.map(<span class="fstat-no" title="function not covered" >g </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
+      guideId: g.guide_id,
+      title: g.title,
+      summary: g.summary,
+    }));
+  }
+&nbsp;
+  /**
+   * Generate warnings and disclaimers
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>nerateWarnings(issues, scalpCondition) {
+    const warnings = <span class="cstat-no" title="statement not covered" >[</span>
+      'Always patch test new products on a small area of skin first (behind ear or inner arm)',
+      'Stop use immediately if you experience irritation, redness, or discomfort',
+      'Consult a healthcare professional for severe or persistent symptoms',
+    ];
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (scalpCondition === 'sensitive') {</span>
+<span class="cstat-no" title="statement not covered" >      warnings.unshift('You have a sensitive scalp - start with gentle products and monitor for reactions');</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (issues.some(<span class="fstat-no" title="function not covered" >i </span>=&gt; <span class="cstat-no" title="statement not covered" >i.toLowerCase().includes('flaking'))</span>) {</span>
+<span class="cstat-no" title="statement not covered" >      warnings.push('If flaking persists or worsens, consult a dermatologist');</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return warnings;</span>
+  }
+&nbsp;
+  /**
+   * Generate advice for thinning issue (non-medical only)
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>nerateThinningAdvice(profile, preferences) {
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      recommendations: [],
+      routinePlan: {
+        daily: [
+          {
+            time: 'Daily',
+            step: 'Gentle hair care',
+            note: 'Handle hair gently, avoid tight hairstyles and harsh chemicals',
+          },
+        ],
+        weekly: [
+          {
+            step: 'Gentle washing',
+            frequency: '2-3 times per week',
+            note: 'Use mild, sulfate-free products',
+          },
+        ],
+        notes: [
+          'Avoid excessive heat styling',
+          'Use wide-tooth comb instead of brush',
+          'Protect hair from sun damage',
+        ],
+      },
+      warnings: [
+        'Hair loss concerns require professional evaluation',
+        'Consult a healthcare provider or dermatologist for proper diagnosis',
+        'This system provides preventive awareness only, not medical advice',
+        'Early consultation can help identify underlying causes',
+      ],
+      diyGuides: [],
+      medicalAdvice: 'For hair loss concerns, we recommend consulting a healthcare professional or dermatologist. They can help identify underlying causes and recommend appropriate treatments.',
+    };
+  }
+&nbsp;
+  /**
+   * Generate recommendations from user ID (backward compatibility)
+   */
+<span class="fstat-no" title="function not covered" >  as</span>ync generateRecommendationsFromUserId(userId, preferences = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
+<span class="cstat-no" title="statement not covered" >    if (process.env.SKIP_DB_FOR_TESTING === 'true') {</span>
+<span class="cstat-no" title="statement not covered" >      return { recommendations: [], message: 'Database not available in testing mode' };</span>
+    }
+&nbsp;
+    const [profileRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'SELECT hair_type, scalp_condition, issues_detected FROM hair_profiles WHERE user_id = ?',
+      [userId]
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (profileRows.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >      return {</span>
+        recommendations: [],
+        message: 'Complete an assessment to get recommendations',
+      };
+    }
+&nbsp;
+    const profile = <span class="cstat-no" title="statement not covered" >profileRows[0];</span>
+    const issues = <span class="cstat-no" title="statement not covered" >profile.issues_detected ? profile.issues_detected.split(', ') : [];</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return this.generateRecommendations(</span>
+      {
+        hairType: profile.hair_type,
+        scalpCondition: profile.scalp_condition,
+        issues,
+      },
+      preferences
+    );
+  }
+&nbsp;
+  /**
+   * Get user's saved recommendations
+   */
+<span class="fstat-no" title="function not covered" >  as</span>ync getUserRecommendations(userId) {
+<span class="cstat-no" title="statement not covered" >    if (process.env.SKIP_DB_FOR_TESTING === 'true') {</span>
+<span class="cstat-no" title="statement not covered" >      return [];</span>
+    }
+&nbsp;
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT r.rec_id, r.reason, r.date_recommended,
+              p.product_id, p.name, p.brand, p.description, p.price
+       FROM recommendations r
+       JOIN products p ON r.product_id = p.product_id
+       WHERE r.user_id = ?
+       ORDER BY r.date_recommended DESC`,
+      [userId]
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return rows.map(<span class="fstat-no" title="function not covered" >r </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
+      recId: r.rec_id,
+      productId: r.product_id,
+      name: r.name,
+      brand: r.brand,
+      description: r.description,
+      price: parseFloat(r.price),
+      reason: r.reason,
+      dateRecommended: r.date_recommended,
+    }));
+  }
+}
+&nbsp;
+module.exports = new RecommendationService();
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Tue Apr 14 2026 14:58:41 GMT+0800 (Singapore Standard Time)
+</div>
+</div>
+<script src="..\prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="..\sorter.js"></script>
+</body>
+</html>

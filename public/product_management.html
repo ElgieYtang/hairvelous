@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Management – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold text-white mb-1">Product <span class="text-violet-400">Management</span></h1>
+        <p class="text-slate-400 text-sm">Products added here appear in recommendations and product lists.</p>
+      </div>
+      <button type="button" onclick="showAddForm()" class="shrink-0 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+        <span>+</span> Add Product
+      </button>
+    </div>
+
+    <!-- Add/Edit form -->
+    <div id="add-form" class="hidden bg-slate-800/50 rounded-xl p-6 border border-slate-700 mb-6">
+      <h2 id="form-title" class="text-lg font-semibold text-white mb-4">Add New Product</h2>
+      <form id="product-form" class="space-y-4">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Name *</label>
+            <input type="text" id="p-name" required class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500" />
+          </div>
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Brand</label>
+            <input type="text" id="p-brand" class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-300 mb-1">Description</label>
+          <textarea id="p-description" rows="3" class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-300 mb-1">Image URL</label>
+          <input type="text" id="p-image-url" placeholder="https://..." class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500" />
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Expiry Type</label>
+            <select id="p-expiry-type" class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500">
+              <option value="not_applicable">Not applicable</option>
+              <option value="date">Exact expiry date</option>
+              <option value="period_after_opening">Period after opening (months)</option>
+            </select>
+          </div>
+          <div id="p-expiry-date-wrap" class="hidden">
+            <label class="block text-sm text-slate-300 mb-1">Expiry Date</label>
+            <input type="date" id="p-expiry-date" class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500" />
+          </div>
+          <div id="p-expiry-months-wrap" class="hidden">
+            <label class="block text-sm text-slate-300 mb-1">Use Within (Months)</label>
+            <input type="number" id="p-expiry-months" min="1" max="120" class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500" />
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Price (₱) *</label>
+            <input type="number" id="p-price" step="0.01" min="0" required class="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-300 mb-2">Applicable To</label>
+            <p class="text-slate-500 text-xs mb-3">Select all that apply (hair types + concerns).</p>
+            <div id="applicability-pills" class="flex flex-wrap gap-2 mb-2"></div>
+            <input type="hidden" id="p-categories" />
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button type="submit" class="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-lg">Save</button>
+          <button type="button" onclick="hideAddForm()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+      <aside class="lg:w-64 shrink-0">
+        <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-5 sticky top-24">
+          <h2 class="text-lg font-semibold text-white mb-1">Filters</h2>
+          <p class="text-slate-400 text-sm mb-6">Filter products by category or brand.</p>
+
+          <h3 class="text-sm font-medium text-slate-300 mb-3">Categories</h3>
+          <div id="categories-list" class="space-y-1.5 mb-6">
+            <button type="button" data-category="" class="category-btn w-full text-left px-3 py-2 rounded-lg text-sm bg-slate-700/80 text-white border border-slate-600">All</button>
+          </div>
+
+          <h3 class="text-sm font-medium text-slate-300 mb-3">Brands</h3>
+          <div id="brands-list" class="space-y-2">
+            <p class="text-slate-500 text-sm">Loading...</p>
+          </div>
+        </div>
+      </aside>
+
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+          <div class="relative flex-1">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </span>
+            <input type="text" id="search-products" placeholder="Search products..." class="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 text-sm" />
+          </div>
+          <select id="sort-products" class="rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500">
+            <option value="name">Name A–Z</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+          </select>
+        </div>
+        <p id="showing-count" class="text-slate-400 text-sm mb-4">Showing 0 products</p>
+
+        <div id="products-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        <p id="no-products" class="text-slate-500 py-8 hidden">No products yet. Add one to get started.</p>
+        <p id="no-match" class="text-slate-500 py-8 hidden">No products match the selected filters.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth()) { /* redirects */ }
+    (function enforceRole() {
+      const u = getUser();
+      const role = u && (u.roleName || u.role);
+      if (role !== 'admin' && role !== 'seller') {
+        window.location.href = '/dashboard.html';
+      }
+    })();
+
+    const APPLICABILITY_TAGS = [
+      'straight',
+      'wavy',
+      'curly',
+      'coily',
+      'dandruff',
+      'dryness',
+      'frizz',
+      'oiliness',
+      'breakage',
+      'sensitive-scalp',
+      'thinning',
+      'colored-hair'
+    ];
+
+    let allProducts = [];
+    let selectedCategory = '';
+    let selectedBrands = new Set();
+    let selectedApplicability = new Set();
+    let editingId = null;
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function formatCategory(name) {
+      if (!name) return '';
+      return name.split(/[\s\/-]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+
+    function expiryText(p) {
+      if (p.expiryType === 'date' && p.expiryDate) return 'Expires: ' + p.expiryDate;
+      if (p.expiryType === 'period_after_opening' && p.expiryPeriodMonths) return 'Use within ' + p.expiryPeriodMonths + ' months';
+      return 'Expiry: N/A';
+    }
+
+    function updateExpiryInputs() {
+      const type = document.getElementById('p-expiry-type').value;
+      document.getElementById('p-expiry-date-wrap').classList.toggle('hidden', type !== 'date');
+      document.getElementById('p-expiry-months-wrap').classList.toggle('hidden', type !== 'period_after_opening');
+    }
+
+    function renderApplicabilityPills() {
+      const container = document.getElementById('applicability-pills');
+      if (!container) return;
+
+      container.innerHTML = APPLICABILITY_TAGS.map(tag => {
+        const active = selectedApplicability.has(tag);
+        return `
+          <button
+            type="button"
+            class="app-pill px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+              active
+                ? 'bg-violet-600/30 border-violet-500 text-violet-200'
+                : 'bg-slate-700/40 border-slate-600 text-slate-300 hover:bg-slate-700'
+            }"
+            data-tag="${tag}"
+          >
+            ${escapeHtml(tag.replace('-', ' '))}
+          </button>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.app-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tag = btn.dataset.tag;
+          if (selectedApplicability.has(tag)) selectedApplicability.delete(tag);
+          else selectedApplicability.add(tag);
+
+          document.getElementById('p-categories').value = [...selectedApplicability].join(', ');
+          renderApplicabilityPills();
+        });
+      });
+    }
+
+    function setSelectedApplicability(list) {
+      selectedApplicability = new Set(
+        (list || []).map(v => String(v).trim().toLowerCase()).filter(Boolean)
+      );
+      document.getElementById('p-categories').value = [...selectedApplicability].join(', ');
+      renderApplicabilityPills();
+    }
+
+    function buildFilters() {
+      const categories = new Set();
+      const brands = new Set();
+      allProducts.forEach(p => {
+        (p.categories || []).forEach(c => categories.add(typeof c === 'string' ? c.trim() : c));
+        if (p.brand) brands.add(p.brand);
+      });
+
+      const catList = document.getElementById('categories-list');
+      catList.innerHTML =
+        '<button type="button" data-category="" class="category-btn w-full text-left px-3 py-2 rounded-lg text-sm ' +
+        (selectedCategory === ''
+          ? 'bg-slate-700/80 text-white border border-slate-600'
+          : 'text-slate-300 hover:bg-slate-700/50 border border-transparent') +
+        '">All</button>';
+
+      [...categories].sort().forEach(cat => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.category = cat;
+        btn.className =
+          'category-btn w-full text-left px-3 py-2 rounded-lg text-sm ' +
+          (selectedCategory === cat
+            ? 'bg-slate-700/80 text-white border border-slate-600'
+            : 'text-slate-300 hover:bg-slate-700/50 border border-transparent');
+        btn.textContent = formatCategory(cat);
+        catList.appendChild(btn);
+      });
+
+      const brandList = document.getElementById('brands-list');
+      if (brands.size === 0) {
+        brandList.innerHTML = '<p class="text-slate-500 text-sm">No brands yet.</p>';
+      } else {
+        brandList.innerHTML = '';
+        [...brands].sort().forEach(brand => {
+          const label = document.createElement('label');
+          label.className = 'flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white text-sm';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'rounded border-violet-500 bg-slate-800 text-violet-500 focus:ring-violet-500';
+          cb.dataset.brand = brand;
+          cb.checked = selectedBrands.has(brand);
+          cb.addEventListener('change', () => {
+            if (cb.checked) selectedBrands.add(brand);
+            else selectedBrands.delete(brand);
+            renderProducts();
+          });
+          label.appendChild(cb);
+          label.appendChild(document.createTextNode(brand));
+          brandList.appendChild(label);
+        });
+      }
+    }
+
+    function getFilteredAndSorted() {
+      let items = allProducts.filter(p => {
+        if (selectedCategory) {
+          const cats = (p.categories || []).map(c => typeof c === 'string' ? c.trim() : c);
+          if (!cats.includes(selectedCategory)) return false;
+        }
+        if (selectedBrands.size > 0 && (!p.brand || !selectedBrands.has(p.brand))) return false;
+        const q = (document.getElementById('search-products')?.value || '').trim().toLowerCase();
+        if (q && !(p.name && p.name.toLowerCase().includes(q)) && !(p.brand && p.brand.toLowerCase().includes(q))) return false;
+        return true;
+      });
+
+      const sort = document.getElementById('sort-products')?.value || 'name';
+      if (sort === 'name') items = [...items].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      if (sort === 'price-asc') items = [...items].sort((a, b) => (a.price || 0) - (b.price || 0));
+      if (sort === 'price-desc') items = [...items].sort((a, b) => (b.price || 0) - (a.price || 0));
+      return items;
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('products-grid');
+      const noProducts = document.getElementById('no-products');
+      const noMatch = document.getElementById('no-match');
+      const showingCount = document.getElementById('showing-count');
+
+      const items = getFilteredAndSorted();
+
+      noProducts.classList.add('hidden');
+      noMatch.classList.add('hidden');
+
+      if (allProducts.length === 0) {
+        noProducts.classList.remove('hidden');
+        grid.innerHTML = '';
+        showingCount.textContent = 'Showing 0 products';
+        return;
+      }
+
+      if (items.length === 0) {
+        noMatch.classList.remove('hidden');
+        grid.innerHTML = '';
+        showingCount.textContent = 'Showing 0 products';
+        return;
+      }
+
+      showingCount.textContent = 'Showing ' + items.length + ' product' + (items.length !== 1 ? 's' : '');
+
+      grid.innerHTML = items.map(p => `
+        <div class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden hover:border-violet-500/40 transition-colors flex flex-col">
+          <div class="aspect-[4/3] bg-slate-700/50 flex items-center justify-center text-slate-500 overflow-hidden">
+            ${p.imageUrl
+              ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" class="w-full h-full object-cover" />`
+              : `<svg class="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`
+            }
+          </div>
+          <div class="p-4 flex flex-col flex-1">
+            ${p.brand ? '<div class="text-slate-400 text-xs mb-0.5">' + escapeHtml(p.brand) + '</div>' : ''}
+            <h3 class="font-semibold text-white mb-1 line-clamp-2">${escapeHtml(p.name)}</h3>
+            <div class="text-slate-400 text-xs mb-2">${escapeHtml(expiryText(p))}</div>
+            <div class="flex flex-wrap gap-1 mb-3">
+              ${(p.categories || []).slice(0, 6).map(c =>
+                `<span class="px-2 py-0.5 rounded text-xs bg-violet-600/20 text-violet-200 border border-violet-500/30">${escapeHtml(String(c).replace('-', ' '))}</span>`
+              ).join('')}
+            </div>
+            <div class="text-xl font-bold text-violet-400 mt-auto">₱${Number(p.price).toFixed(2)}</div>
+            <div class="flex gap-3 mt-3">
+              <button type="button" onclick="editProduct(${p.productId})" class="flex-1 text-center py-2 rounded-lg border border-violet-500/50 text-violet-400 hover:bg-violet-500/20 text-sm font-medium">Edit</button>
+              <button type="button" onclick="deleteProduct(${p.productId})" class="flex-1 text-center py-2 rounded-lg border border-red-500/50 text-red-400 hover:bg-red-500/20 text-sm font-medium">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadProducts() {
+      try {
+        const data = await api('/products');
+        allProducts = (data.products || []).map(p => ({
+          ...p,
+          categories: Array.isArray(p.categories)
+            ? p.categories.map(c => (typeof c === 'string' ? c.trim() : c))
+            : (typeof p.categories === 'string'
+              ? p.categories.split(',').map(c => c.trim())
+              : []),
+        }));
+        selectedCategory = '';
+        selectedBrands = new Set();
+        buildFilters();
+        renderProducts();
+      } catch (err) {
+        showToast(err.error || 'Failed to load products', 'error');
+      }
+    }
+
+    function showAddForm() {
+      editingId = null;
+      document.getElementById('form-title').textContent = 'Add New Product';
+      document.getElementById('add-form').classList.remove('hidden');
+      document.getElementById('product-form').reset();
+
+      document.getElementById('p-image-url').value = '';
+      document.getElementById('p-expiry-type').value = 'not_applicable';
+      document.getElementById('p-expiry-date').value = '';
+      document.getElementById('p-expiry-months').value = '';
+      setSelectedApplicability([]);
+      updateExpiryInputs();
+    }
+
+    function hideAddForm() {
+      document.getElementById('add-form').classList.add('hidden');
+    }
+
+    document.getElementById('p-expiry-type').addEventListener('change', updateExpiryInputs);
+
+    document.getElementById('product-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const payload = {
+        name: document.getElementById('p-name').value.trim(),
+        brand: document.getElementById('p-brand').value.trim() || undefined,
+        description: document.getElementById('p-description').value.trim() || undefined,
+        imageUrl: document.getElementById('p-image-url').value.trim() || undefined,
+        price: parseFloat(document.getElementById('p-price').value),
+        expiryType: document.getElementById('p-expiry-type').value,
+        expiryDate: document.getElementById('p-expiry-date').value || undefined,
+        expiryPeriodMonths: document.getElementById('p-expiry-months').value
+          ? parseInt(document.getElementById('p-expiry-months').value, 10)
+          : undefined,
+        categories: [...selectedApplicability],
+      };
+
+      try {
+        if (editingId) {
+          await api('/products/' + editingId, { method: 'PATCH', body: JSON.stringify(payload) });
+          showToast('Product updated.', 'success');
+        } else {
+          await api('/products', { method: 'POST', body: JSON.stringify(payload) });
+          showToast('Product added.', 'success');
+        }
+        hideAddForm();
+        await loadProducts();
+      } catch (err) {
+        showToast(err.error || err.message || 'Failed to save', 'error');
+      }
+    });
+
+    window.editProduct = async function(id) {
+      try {
+        const data = await api('/products/' + id);
+        const p = data.product;
+        editingId = id;
+
+        document.getElementById('form-title').textContent = 'Edit Product';
+        document.getElementById('p-name').value = p.name || '';
+        document.getElementById('p-brand').value = p.brand || '';
+        document.getElementById('p-description').value = p.description || '';
+        document.getElementById('p-image-url').value = p.imageUrl || '';
+        document.getElementById('p-price').value = p.price ?? '';
+
+        document.getElementById('p-expiry-type').value = p.expiryType || 'not_applicable';
+        document.getElementById('p-expiry-date').value = p.expiryDate || '';
+        document.getElementById('p-expiry-months').value = p.expiryPeriodMonths || '';
+        updateExpiryInputs();
+
+        setSelectedApplicability((p.categories || []).map(c => String(c).trim().toLowerCase()));
+
+        document.getElementById('add-form').classList.remove('hidden');
+      } catch (err) {
+        showToast(err.error || 'Failed to load product', 'error');
+      }
+    };
+
+    window.deleteProduct = async function(id) {
+      if (!confirm('Delete this product?')) return;
+      try {
+        await api('/products/' + id, { method: 'DELETE' });
+        showToast('Product deleted.', 'success');
+        await loadProducts();
+      } catch (err) {
+        showToast(err.error || 'Failed to delete', 'error');
+      }
+    };
+
+    document.getElementById('categories-list').addEventListener('click', (e) => {
+      const btn = e.target.closest('.category-btn');
+      if (!btn) return;
+
+      selectedCategory = btn.dataset.category || '';
+      document.querySelectorAll('.category-btn').forEach(b => {
+        const cat = b.dataset.category || '';
+        b.className = 'category-btn w-full text-left px-3 py-2 rounded-lg text-sm border ' +
+          (cat === selectedCategory
+            ? 'bg-slate-700/80 text-white border-slate-600'
+            : 'text-slate-300 hover:bg-slate-700/50 border-transparent');
+      });
+      renderProducts();
+    });
+
+    document.getElementById('search-products').addEventListener('input', renderProducts);
+    document.getElementById('sort-products').addEventListener('change', renderProducts);
+
+    updateExpiryInputs();
+    renderApplicabilityPills();
+    loadProducts();
+  </script>
+</body>
+</html>

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your profile – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-2xl mx-auto px-4 pb-10 pt-6 md:pt-0">
+    <h1 class="text-3xl font-bold text-white mb-2">Your profile</h1>
+    <p class="text-slate-400 mb-2">Upload a photo and edit your basic details. Only you can edit this profile.</p>
+    <p class="text-slate-500 text-sm mb-8">Changes are saved to your account only.</p>
+
+    <form id="profile-form" class="space-y-8">
+      <!-- Profile photo -->
+      <section class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+        <h2 class="text-lg font-semibold text-white mb-4">Profile photo</h2>
+        <div class="flex flex-wrap items-start gap-6">
+          <div class="w-28 h-28 rounded-xl bg-slate-700/50 border border-slate-600 overflow-hidden flex items-center justify-center shrink-0">
+            <img id="profile-photo-preview" src="" alt="Profile" class="w-full h-full object-cover hidden" />
+            <span id="profile-photo-placeholder" class="text-4xl text-slate-500">👤</span>
+          </div>
+          <div>
+            <input
+              type="file"
+              id="profile-photo-input"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+              class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-violet-600 file:text-white file:font-medium hover:file:bg-violet-500"
+            />
+            <p class="text-slate-500 text-sm mt-2">JPG, PNG, GIF or WebP. Max 5MB.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="specialist-verification-section" class="hidden bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-white">Specialist ID verification</h2>
+            <p class="text-slate-400 text-sm mt-1">Upload valid IDs or credentials so admins can verify your specialist account.</p>
+            <p class="text-xs text-slate-500 mt-2">Status: <span id="specialist-verification-status"></span></p>
+          </div>
+          <button id="open-verification-modal" type="button" class="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3v18M3 12h18" />
+            </svg>
+            Verify ID
+          </button>
+        </div>
+      </section>
+
+      <!-- Basic details -->
+      <section class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+        <h2 class="text-lg font-semibold text-white mb-4">Basic details</h2>
+        <div class="grid gap-4">
+          <div>
+            <label for="name" class="block text-sm font-medium text-slate-300 mb-1">Name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              class="w-full rounded-lg bg-slate-700/50 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label for="email" class="block text-sm font-medium text-slate-300 mb-1">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="w-full rounded-lg bg-slate-700/50 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div id="field-specialty">
+            <label for="specialty" class="block text-sm font-medium text-slate-300 mb-1">Specialty (optional)</label>
+            <input
+              type="text"
+              id="specialty"
+              name="specialty"
+              placeholder="e.g. Trichology, Hair care"
+              class="w-full rounded-lg bg-slate-700/50 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label for="location" class="block text-sm font-medium text-slate-300 mb-1">Location (optional)</label>
+            <input
+              type="text"
+              id="location"
+              name="location"
+              placeholder="City or region"
+              class="w-full rounded-lg bg-slate-700/50 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            />
+          </div>
+
+          <div id="field-consultation-rate">
+            <label for="consultation_rate" class="block text-sm font-medium text-slate-300 mb-1">Consultation rate (optional)</label>
+            <input
+              type="number"
+              id="consultation_rate"
+              name="consultation_rate"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              class="w-full rounded-lg bg-slate-700/50 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            />
+          </div>
+
+          <!-- New demographic fields -->
+          <div>
+            <label for="sex" class="block text-sm font-medium text-slate-300 mb-1">Sex</label>
+            <select
+              id="sex"
+              name="sex"
+              class="w-full rounded-lg bg-slate-700/50 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            >
+              <option value="">Prefer not to say</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="non_binary">Non-binary</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="birthdate" class="block text-sm font-medium text-slate-300 mb-1">Birthdate</label>
+            <input
+              type="date"
+              id="birthdate"
+              name="birthdate"
+              class="w-full rounded-lg bg-slate-700/50 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label for="race" class="block text-sm font-medium text-slate-300 mb-1">Race / ethnicity (optional)</label>
+            <select
+              id="race"
+              name="race"
+              class="w-full rounded-lg bg-slate-700/50 border border-slate-600 text-white px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            >
+              <option value="">Prefer not to say</option>
+              <option value="Asian">Asian</option>
+              <option value="Black or African descent">Black or African descent</option>
+              <option value="Hispanic or Latino">Hispanic or Latino</option>
+              <option value="Middle Eastern or North African">Middle Eastern or North African</option>
+              <option value="Native American or Alaska Native">Native American or Alaska Native</option>
+              <option value="Pacific Islander">Pacific Islander</option>
+              <option value="White">White</option>
+              <option value="Mixed / Multiracial">Mixed / Multiracial</option>
+              <option value="Other">Other</option>
+            </select>
+            <p class="text-xs text-slate-500 mt-1">Choose the option that fits you best.</p>
+          </div>
+          <!-- end demographic fields -->
+        </div>
+      </section>
+
+      <div class="flex gap-4">
+        <button type="submit" class="px-6 py-3 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium">
+          Save profile
+        </button>
+        <a href="/dashboard.html" class="px-6 py-3 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </main>
+
+  <div id="verification-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+    <div id="verification-modal-backdrop" class="absolute inset-0"></div>
+    <div class="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
+        <h3 class="text-lg font-semibold text-white inline-flex items-center gap-2">
+          <svg class="h-5 w-5 text-violet-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2l8 4v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10V6l8-4z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+          Specialist ID verification
+        </h3>
+        <button id="close-verification-modal" type="button" class="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-white">✕</button>
+      </div>
+
+      <form id="verification-upload-form" class="border-b border-slate-700 px-5 py-4">
+        <p class="text-sm text-slate-400 mb-3">Accepted files: PDF, JPG, PNG, GIF, WebP. Auto-checks verify real file format and reject invalid or tiny files.</p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600 bg-slate-800/70 px-3 py-2 text-sm text-slate-100 hover:border-violet-400">
+            <svg class="h-4 w-4 text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 16V4" />
+              <path d="m7 9 5-5 5 5" />
+              <rect x="4" y="16" width="16" height="4" rx="1" />
+            </svg>
+            Choose documents
+            <input id="verification-files" type="file" name="documents" accept=".pdf,image/*" multiple class="hidden" />
+          </label>
+          <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+            Upload
+          </button>
+        </div>
+        <p id="verification-selected-files" class="mt-2 text-xs text-slate-500"></p>
+      </form>
+
+      <div class="px-5 py-4">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <div>
+            <h4 class="text-sm font-semibold text-slate-200">Uploaded documents</h4>
+            <p class="mt-1 text-xs text-slate-500">Status: <span id="verification-status-badge"></span></p>
+          </div>
+          <span id="verification-doc-count" class="text-xs text-slate-500">0 files</span>
+        </div>
+        <div id="verification-doc-list" class="max-h-64 space-y-2 overflow-y-auto pr-1"></div>
+        <div class="mt-4 flex justify-end">
+          <button id="verification-submit-btn" type="button" class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-500">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 13l4 4L19 7" />
+            </svg>
+            Submit for review
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="id-preview-lightbox" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/90 p-4">
+    <div id="id-preview-backdrop" class="absolute inset-0"></div>
+    <div class="relative z-10 w-full max-w-5xl rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-2xl">
+      <div class="mb-2 flex items-center justify-between">
+        <p id="id-preview-title" class="truncate text-sm text-slate-300">ID Preview</p>
+        <button id="id-preview-close" type="button" class="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-white">✕</button>
+      </div>
+      <div class="flex max-h-[80vh] items-center justify-center overflow-auto rounded-lg bg-slate-950 p-2">
+        <img id="id-preview-image" src="" alt="ID Preview" class="max-h-[76vh] w-auto max-w-full object-contain" />
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth()) { /* redirects */ }
+
+    // Hide professional-only fields for normal users
+    const currentUser = getUser();
+    const role = currentUser && (currentUser.roleName || currentUser.role);
+    if (role !== 'admin' && role !== 'seller' && role !== 'specialist') {
+      const specEl = document.getElementById('field-specialty');
+      const rateEl = document.getElementById('field-consultation-rate');
+      if (specEl) specEl.style.display = 'none';
+      if (rateEl) rateEl.style.display = 'none';
+    }
+    if (role === 'specialist') {
+      const verifySection = document.getElementById('specialist-verification-section');
+      if (verifySection) verifySection.classList.remove('hidden');
+    }
+
+    let profile = null;
+    const verificationModal = document.getElementById('verification-modal');
+    const verificationDocList = document.getElementById('verification-doc-list');
+    const verificationDocCount = document.getElementById('verification-doc-count');
+    const verificationSelected = document.getElementById('verification-selected-files');
+    const verificationFileInput = document.getElementById('verification-files');
+    const verificationStatusBadge = document.getElementById('verification-status-badge');
+    const specialistVerificationStatus = document.getElementById('specialist-verification-status');
+    const verificationSubmitBtn = document.getElementById('verification-submit-btn');
+    const idPreviewLightbox = document.getElementById('id-preview-lightbox');
+    const idPreviewImage = document.getElementById('id-preview-image');
+    const idPreviewTitle = document.getElementById('id-preview-title');
+
+    async function loadProfile() {
+      try {
+        profile = await api('/profile');
+
+        document.getElementById('name').value = profile.name || '';
+        document.getElementById('email').value = profile.email || '';
+        document.getElementById('specialty').value = profile.specialty || '';
+        document.getElementById('location').value = profile.location || '';
+        document.getElementById('consultation_rate').value =
+          profile.consultationRate != null ? profile.consultationRate : '';
+
+        document.getElementById('sex').value = profile.sex || '';
+        document.getElementById('birthdate').value = profile.birthdate || '';
+        const raceSel = document.getElementById('race');
+        const savedRace = profile.race || '';
+        raceSel.value = savedRace;
+        if (savedRace && !Array.from(raceSel.options).some((o) => o.value === savedRace)) {
+          const opt = document.createElement('option');
+          opt.value = savedRace;
+          opt.textContent = savedRace + ' (saved)';
+          raceSel.appendChild(opt);
+          raceSel.value = savedRace;
+        }
+
+        const preview = document.getElementById('profile-photo-preview');
+        const placeholder = document.getElementById('profile-photo-placeholder');
+        if (profile.profilePhotoUrl) {
+          preview.src = profile.profilePhotoUrl;
+          preview.classList.remove('hidden');
+          placeholder.classList.add('hidden');
+          if (typeof window.HairvelousUpdateAccountAvatar === 'function') {
+            const u = getUser();
+            if (u) setUser({ ...u, profilePhotoUrl: profile.profilePhotoUrl });
+            window.HairvelousUpdateAccountAvatar(profile.profilePhotoUrl);
+          }
+        } else {
+          preview.classList.add('hidden');
+          placeholder.classList.remove('hidden');
+        }
+        renderVerificationDocs();
+      } catch (err) {
+        console.error('Load profile error:', err);
+        showToast(err.error || 'Failed to load profile', 'error');
+      }
+    }
+
+    function fileTypeIcon(name) {
+      const lower = String(name || '').toLowerCase();
+      const isPdf = lower.endsWith('.pdf');
+      if (isPdf) {
+        return '<svg class="h-4 w-4 text-rose-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+      }
+      return '<svg class="h-4 w-4 text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+    }
+
+    function isImageDoc(name) {
+      const lower = String(name || '').toLowerCase();
+      return (
+        lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.webp')
+      );
+    }
+
+    function statusBadgeHtml(status) {
+      const st = String(status || 'not_submitted');
+      if (st === 'verified') return '<span class="rounded border border-emerald-500/40 bg-emerald-600/20 px-1.5 py-0.5 text-[11px] text-emerald-300">Verified</span>';
+      if (st === 'rejected') return '<span class="rounded border border-rose-500/40 bg-rose-600/20 px-1.5 py-0.5 text-[11px] text-rose-300">Rejected</span>';
+      if (st === 'pending_review') return '<span class="rounded border border-amber-500/40 bg-amber-600/20 px-1.5 py-0.5 text-[11px] text-amber-300">Pending review</span>';
+      return '<span class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 text-[11px] text-slate-300">Not submitted</span>';
+    }
+
+    function renderVerificationDocs() {
+      if (!verificationDocList || !verificationDocCount) return;
+      const docs = (profile && profile.credentialDocuments) || [];
+      const status = profile && profile.idVerificationStatus;
+      if (verificationStatusBadge) verificationStatusBadge.innerHTML = statusBadgeHtml(status);
+      if (specialistVerificationStatus) specialistVerificationStatus.innerHTML = statusBadgeHtml(status);
+      verificationDocCount.textContent = docs.length + (docs.length === 1 ? ' file' : ' files');
+      if (verificationSubmitBtn) {
+        const canSubmit = docs.length > 0 && status !== 'pending_review' && status !== 'verified';
+        verificationSubmitBtn.disabled = !canSubmit;
+        verificationSubmitBtn.className = canSubmit
+          ? 'inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-500'
+          : 'inline-flex items-center gap-2 rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed';
+      }
+      if (!docs.length) {
+        verificationDocList.innerHTML =
+          '<div class="rounded-lg border border-dashed border-slate-700 bg-slate-800/40 px-3 py-4 text-xs text-slate-500">No documents uploaded yet.</div>';
+        return;
+      }
+      verificationDocList.innerHTML = docs
+        .map((d) => {
+          const name = d.originalName || 'Document';
+          const imagePreview = isImageDoc(name)
+            ? `
+                <button type="button" data-doc-preview="${d.filePath}" data-doc-name="${escapeHtml(name)}" class="block shrink-0">
+                  <img src="${d.filePath}" alt="${escapeHtml(name)}" class="h-14 w-20 rounded-md border border-slate-700 object-cover hover:border-violet-400" />
+                </button>
+              `
+            : `
+                <a href="${d.filePath}" target="_blank" rel="noopener" class="flex h-14 w-20 shrink-0 items-center justify-center rounded-md border border-slate-700 bg-slate-800 text-[11px] text-slate-300 hover:border-violet-400">
+                  PDF
+                </a>
+              `;
+          return `
+            <div class="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/40 px-3 py-2">
+              <div class="flex min-w-0 items-center gap-3">
+                ${imagePreview}
+                <a href="${d.filePath}" target="_blank" rel="noopener" class="min-w-0 inline-flex items-center gap-2 text-sm text-slate-200 hover:text-white">
+                  ${fileTypeIcon(name)}
+                  <span class="truncate">${escapeHtml(name)}</span>
+                </a>
+              </div>
+              <button type="button" data-doc-delete="${d.id}" class="inline-flex items-center gap-1 rounded-md border border-rose-500/40 px-2 py-1 text-xs text-rose-200 hover:bg-rose-500/15">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18" />
+                  <path d="M8 6V4h8v2" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                </svg>
+                Remove
+              </button>
+            </div>
+          `;
+        })
+        .join('');
+
+      verificationDocList.querySelectorAll('[data-doc-delete]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const docId = Number(btn.getAttribute('data-doc-delete'));
+          if (!docId) return;
+          try {
+            await api('/profile/documents/' + docId, { method: 'DELETE' });
+            profile = await api('/profile');
+            renderVerificationDocs();
+            showToast('Document removed', 'success');
+          } catch (err) {
+            showToast(err.error || 'Could not remove document', 'error');
+          }
+        });
+      });
+
+      verificationDocList.querySelectorAll('[data-doc-preview]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const src = btn.getAttribute('data-doc-preview');
+          const name = btn.getAttribute('data-doc-name') || 'ID Preview';
+          if (!src || !idPreviewLightbox || !idPreviewImage) return;
+          idPreviewImage.src = src;
+          if (idPreviewTitle) idPreviewTitle.textContent = name;
+          idPreviewLightbox.classList.remove('hidden');
+          idPreviewLightbox.classList.add('flex');
+        });
+      });
+    }
+
+    document.getElementById('profile-photo-input').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('photo', file);
+      try {
+        const updated = await apiForm('/profile/photo', fd);
+        profile = updated;
+        const preview = document.getElementById('profile-photo-preview');
+        const placeholder = document.getElementById('profile-photo-placeholder');
+        preview.src = updated.profilePhotoUrl || preview.src;
+        preview.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        if (typeof window.HairvelousUpdateAccountAvatar === 'function' && updated.profilePhotoUrl) {
+          const u = getUser();
+          if (u) setUser({ ...u, profilePhotoUrl: updated.profilePhotoUrl });
+          window.HairvelousUpdateAccountAvatar(updated.profilePhotoUrl);
+        }
+        showToast('Profile photo updated', 'success');
+      } catch (err) {
+        showToast(err.error || 'Photo upload failed', 'error');
+      }
+      e.target.value = '';
+    });
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        specialty: document.getElementById('specialty').value.trim() || undefined,
+        location: document.getElementById('location').value.trim() || undefined,
+        consultationRate: document.getElementById('consultation_rate').value
+          ? parseFloat(document.getElementById('consultation_rate').value)
+          : undefined,
+        sex: document.getElementById('sex').value || null,
+        birthdate: document.getElementById('birthdate').value || null,
+        race: document.getElementById('race').value || null,
+      };
+      try {
+        await api('/profile', { method: 'PATCH', body: JSON.stringify(payload) });
+        showToast('Profile saved', 'success');
+      } catch (err) {
+        showToast(
+          err.error || (err.errors && err.errors[0] && err.errors[0].msg) || 'Save failed',
+          'error'
+        );
+      }
+    });
+
+    function openVerificationModal() {
+      if (!verificationModal) return;
+      verificationModal.classList.remove('hidden');
+      verificationModal.classList.add('flex');
+      renderVerificationDocs();
+    }
+
+    function closeVerificationModal() {
+      if (!verificationModal) return;
+      verificationModal.classList.add('hidden');
+      verificationModal.classList.remove('flex');
+    }
+
+    document.getElementById('open-verification-modal')?.addEventListener('click', openVerificationModal);
+    document.getElementById('close-verification-modal')?.addEventListener('click', closeVerificationModal);
+    document.getElementById('verification-modal-backdrop')?.addEventListener('click', closeVerificationModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeVerificationModal();
+    });
+
+    function closeIdPreview() {
+      if (!idPreviewLightbox) return;
+      idPreviewLightbox.classList.add('hidden');
+      idPreviewLightbox.classList.remove('flex');
+      if (idPreviewImage) idPreviewImage.src = '';
+    }
+
+    document.getElementById('id-preview-close')?.addEventListener('click', closeIdPreview);
+    document.getElementById('id-preview-backdrop')?.addEventListener('click', closeIdPreview);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeIdPreview();
+    });
+
+    verificationFileInput?.addEventListener('change', () => {
+      const files = Array.from(verificationFileInput.files || []);
+      if (!verificationSelected) return;
+      verificationSelected.textContent = files.length
+        ? files.map((f) => f.name).join(', ')
+        : '';
+    });
+
+    document.getElementById('verification-upload-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const files = Array.from((verificationFileInput && verificationFileInput.files) || []);
+      if (!files.length) {
+        showToast('Choose at least one file', 'error');
+        return;
+      }
+      const fd = new FormData();
+      files.forEach((file) => fd.append('documents', file));
+      try {
+        const updated = await apiForm('/profile/documents', fd, 'POST');
+        profile = updated;
+        renderVerificationDocs();
+        if (verificationFileInput) verificationFileInput.value = '';
+        if (verificationSelected) verificationSelected.textContent = '';
+        showToast('Verification documents uploaded', 'success');
+      } catch (err) {
+        showToast(err.error || 'Upload failed', 'error');
+      }
+    });
+
+    verificationSubmitBtn?.addEventListener('click', async () => {
+      const docs = (profile && profile.credentialDocuments) || [];
+      if (!docs.length) {
+        showToast('Upload at least one valid ID document first', 'error');
+        return;
+      }
+      try {
+        const updated = await api('/profile/documents/submit', { method: 'POST' });
+        profile = updated;
+        renderVerificationDocs();
+        showToast('Submitted. Status is now pending review.', 'success');
+      } catch (err) {
+        showToast(err.error || 'Could not submit for review', 'error');
+      }
+    });
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

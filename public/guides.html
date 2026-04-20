@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIY Guides – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="disclaimer-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <h1 class="text-3xl font-bold text-white mb-2 animation">DIY Hair Care Guides</h1>
+    <p class="text-slate-400 mb-6 animation">Discover home remedies and tips. For educational purposes only—not a substitute for professional advice.</p>
+
+    <div id="pro-guides-banner" class="hidden animation bg-violet-900/20 border border-violet-700/40 rounded-xl p-4 mb-4 text-sm text-violet-100"></div>
+    <div class="animation bg-slate-800/50 rounded-xl p-4 border border-slate-700 mb-6">
+      <div class="flex flex-wrap gap-4 items-center">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Filter by Category</label>
+          <select id="filter-category" class="rounded-lg bg-slate-700 border border-slate-600 text-white px-3 py-1.5 text-sm">
+            <option value="">All Categories</option>
+            <option value="mask">Mask</option>
+            <option value="oil">Oil</option>
+            <option value="rinse">Rinse</option>
+            <option value="growth">Growth</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Difficulty</label>
+          <select id="filter-difficulty" class="rounded-lg bg-slate-700 border border-slate-600 text-white px-3 py-1.5 text-sm">
+            <option value="">All Levels</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <button id="btn-filter" class="bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg text-sm mt-6">Filter</button>
+        <button id="btn-clear" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-lg text-sm mt-6">Clear</button>
+      </div>
+    </div>
+
+    <div id="guides-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animation-list"></div>
+    <p id="empty" class="text-slate-500 hidden text-center py-8">No guides found matching your filters.</p>
+
+    <div id="guide-detail" class="hidden mt-8">
+      <button type="button" id="back-to-list" class="text-violet-400 hover:underline mb-4">← Back to list</button>
+      <article class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 id="guide-title" class="text-xl font-semibold text-white mb-2"></h2>
+            <div class="flex gap-2 mb-2">
+              <span id="guide-category" class="px-2 py-1 rounded text-xs bg-violet-600/30 text-violet-300"></span>
+              <span id="guide-difficulty" class="px-2 py-1 rounded text-xs bg-slate-700 text-slate-300"></span>
+            </div>
+          </div>
+        </div>
+        <div id="guide-content" class="space-y-4">
+          <div id="guide-ingredients" class="hidden">
+            <h3 class="text-sm font-semibold text-slate-300 mb-1">Ingredients:</h3>
+            <p id="guide-ingredients-text" class="text-slate-300 whitespace-pre-wrap"></p>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-slate-300 mb-1">Steps:</h3>
+            <p id="guide-steps" class="text-slate-300 whitespace-pre-wrap"></p>
+          </div>
+          <div id="guide-caution" class="hidden bg-amber-900/20 border border-amber-700/50 rounded-lg p-3">
+            <h3 class="text-sm font-semibold text-amber-200 mb-1">⚠️ Caution:</h3>
+            <p id="guide-caution-text" class="text-amber-200 text-sm whitespace-pre-wrap"></p>
+          </div>
+        </div>
+        <p class="text-slate-500 text-xs mt-4" id="guide-date"></p>
+      </article>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    let guides = [];
+    let isPro = false;
+    let currentGuideId = null;
+
+    async function loadGuides() {
+      try {
+        const category = document.getElementById('filter-category').value;
+        const difficulty = document.getElementById('filter-difficulty').value;
+        
+        let url = '/guides';
+        const params = new URLSearchParams();
+        if (category) params.append('category', category);
+        if (difficulty) params.append('difficulty', difficulty);
+        if (params.toString()) url += '?' + params.toString();
+
+        const data = await api(url);
+        guides = data.guides || [];
+        renderList();
+      } catch (err) {
+        showToast(err.error || 'Failed to load guides', 'error');
+      }
+    }
+
+    function renderList() {
+      const container = document.getElementById('guides-list');
+      container.innerHTML = '';
+      
+      if (guides.length === 0) {
+        document.getElementById('empty').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('empty').classList.add('hidden');
+      
+      guides.forEach((g, index) => {
+        const card = document.createElement('div');
+        const locked = !!(g.isProOnly && !isPro);
+        card.className = `animation bg-slate-800/50 rounded-xl p-5 border border-slate-700 transition card-hover ${
+          locked ? 'hover:border-amber-500/50' : 'hover:border-violet-500/50'
+        }`;
+        card.style.setProperty('--i', index);
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-2">
+            <span class="font-medium text-white">${escapeHtml(g.title)}</span>
+            <span class="px-2 py-1 rounded text-xs bg-violet-600/30 text-violet-300">${g.category}</span>
+          </div>
+          ${g.isProOnly ? '<p class="text-[11px] mt-2 text-amber-300">Pro routine guide</p>' : ''}
+          ${
+            locked
+              ? '<p class="text-[11px] mt-1 text-amber-200/90">Free plan locked · <a href="/pricing.html" class="underline hover:text-amber-100">Upgrade to view</a></p>'
+              : ''
+          }
+          <div class="flex gap-2 mb-2">
+            <span class="px-2 py-0.5 rounded text-xs bg-slate-700 text-slate-300">${g.difficulty}</span>
+          </div>
+          ${g.ingredients ? '<p class="text-slate-400 text-sm mt-2 line-clamp-2">' + escapeHtml(g.ingredients.substring(0, 100)) + '</p>' : ''}
+        `;
+        card.addEventListener('click', () => {
+          if (locked) {
+            showToast('This guide is available on Pro plan.', 'info');
+            window.location.href = '/pricing.html';
+            return;
+          }
+          showGuide(g.guideId);
+        });
+        container.appendChild(card);
+      });
+      // Trigger animation
+      setTimeout(() => {
+        document.body.classList.add('active');
+      }, 50);
+    }
+
+    async function showGuide(guideId) {
+      currentGuideId = guideId;
+      try {
+        const data = await api('/guides/' + guideId);
+        const g = data.guide;
+        document.getElementById('guides-list').classList.add('hidden');
+        document.getElementById('empty').classList.add('hidden');
+        document.getElementById('guide-detail').classList.remove('hidden');
+        
+        document.getElementById('guide-title').textContent = g.title;
+        document.getElementById('guide-category').textContent = g.category;
+        document.getElementById('guide-difficulty').textContent = g.difficulty;
+        document.getElementById('guide-steps').textContent = g.steps || '';
+        
+        if (g.ingredients) {
+          document.getElementById('guide-ingredients').classList.remove('hidden');
+          document.getElementById('guide-ingredients-text').textContent = g.ingredients;
+        } else {
+          document.getElementById('guide-ingredients').classList.add('hidden');
+        }
+        
+        if (g.caution) {
+          document.getElementById('guide-caution').classList.remove('hidden');
+          document.getElementById('guide-caution-text').textContent = g.caution;
+        } else {
+          document.getElementById('guide-caution').classList.add('hidden');
+        }
+        
+        const date = new Date(g.dateCreated);
+        document.getElementById('guide-date').textContent = 'Created: ' + date.toLocaleDateString();
+      } catch (err) {
+        showToast(err.error || 'Failed to load guide', 'error');
+      }
+    }
+
+    document.getElementById('back-to-list').addEventListener('click', () => {
+      document.getElementById('guide-detail').classList.add('hidden');
+      document.getElementById('guides-list').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-filter').addEventListener('click', loadGuides);
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      document.getElementById('filter-category').value = '';
+      document.getElementById('filter-difficulty').value = '';
+      loadGuides();
+    });
+
+    // Check for hash anchor
+    const hash = location.hash.slice(1);
+    if (hash) {
+      showGuide(parseInt(hash));
+    }
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    async function loadProBanner() {
+      try {
+        const { status } = await api('/billing/status');
+        isPro = !!(status && status.isPro);
+        const banner = document.getElementById('pro-guides-banner');
+        if (!isPro) {
+          banner.classList.remove('hidden');
+          banner.innerHTML = 'Some advanced routines are Pro-only. <a href="/pricing.html" class="underline">Upgrade to Pro</a> to unlock complete guide access.';
+        }
+      } catch (_err) {}
+    }
+
+    loadProBanner();
+    loadGuides();
+  </script>
+</body>
+</html>

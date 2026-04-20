@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hair Assessment – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="disclaimer-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-3xl mx-auto px-4 py-10">
+    <h1 class="text-3xl font-bold text-white mb-2">Hair Assessment</h1>
+    <p class="text-slate-400 mb-8">Answer a few questions to get a personalized hair profile and product recommendations.</p>
+
+    <div id="quiz-container" class="space-y-8">
+      <div id="quiz-questions" class="space-y-6"></div>
+      <!-- Photo upload: shown only as the last step after all questions -->
+      <div id="photo-upload-section" class="hidden bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+        <h2 class="text-lg font-semibold text-white mb-2">AI Hair Identifier (Optional)</h2>
+        <p class="text-slate-400 text-sm mb-3">
+          In this last step, you can upload a hair/scalp photo so our <span class="text-violet-300 font-medium">HairAI</span>
+          assistant can combine your assessment answers with the image to suggest likely hair/scalp conditions and product types.
+          This is for awareness only and is <span class="font-semibold">not a medical diagnosis</span>. You can skip this and still finish the assessment.
+        </p>
+        <div class="mb-4">
+          <label for="photo" class="block text-sm text-slate-300 mb-2">Choose image</label>
+          <input type="file" id="photo" accept="image/jpeg,image/png,image/gif,image/webp" class="text-slate-300 text-sm" />
+        </div>
+        <div id="photo-preview-wrap" class="mb-4 hidden rounded-lg border border-slate-600 bg-slate-900/50 p-3">
+          <p class="mb-2 text-xs text-slate-500">Preview</p>
+          <img id="photo-preview-img" src="" alt="Selected photo preview" class="mx-auto max-h-52 w-full rounded-md object-contain" />
+        </div>
+        <div class="bg-slate-900/50 rounded-lg p-4 text-sm text-slate-400">
+          <p class="font-medium text-slate-300 mb-2">Tips for best photo quality:</p>
+          <ul class="list-disc list-inside space-y-1">
+            <li>Use natural lighting</li>
+            <li>Take photo from multiple angles (front, side, back)</li>
+            <li>Ensure hair is clean and dry</li>
+            <li>Avoid filters or heavy editing</li>
+            <li>Focus on hair texture and scalp visibility</li>
+          </ul>
+        </div>
+        <button type="button" id="btn-upload-photo" class="mt-4 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm">Upload Photo</button>
+      </div>
+      <div id="quiz-actions" class="flex gap-4">
+        <button type="button" id="btn-prev" class="hidden bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg">Previous</button>
+        <button type="button" id="btn-next" class="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-lg">Next</button>
+        <button type="button" id="btn-complete" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg">Complete assessment</button>
+      </div>
+    </div>
+
+    <div id="login-prompt" class="hidden text-center py-12 border border-dashed border-slate-600 rounded-xl mt-8">
+      <p class="text-slate-400 mb-4">Save your results and get personalized recommendations by signing in.</p>
+      <a href="/login.html?redirect=/assessment.html" class="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-lg inline-block">Login</a>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    // Static question set (frontend) – backend stores question text + answers
+    const questions = [
+      {
+        id: 1,
+        question_text: 'Which best describes your natural hair type?',
+        question_type: 'single',
+        options_json: [
+          'Straight',
+          'Wavy',
+          'Curly',
+          'Coily / Kinky',
+          'Other',
+        ],
+      },
+      {
+        id: 2,
+        question_text: 'How would you describe your scalp condition?',
+        question_type: 'single',
+        options_json: [
+          'Normal',
+          'Dry / Flaky',
+          'Oily',
+          'Combination (oily roots, dry ends)',
+          'Sensitive / Easily irritated',
+          'Severe eczema / dermatitis on scalp',
+          'Other',
+        ],
+      },
+      {
+        id: 3,
+        question_text: 'Which hair concerns or issues are you currently noticing?',
+        question_type: 'multiple',
+        options_json: [
+          'Dryness',
+          'Frizz',
+          'Visible flaking / dandruff',
+          'Oiliness / greasy quickly',
+          'Breakage or split ends',
+          'Hair feels rough or dull',
+          'Hair fall or thinning (non-medical awareness)',
+          'Other',
+        ],
+      },
+      {
+        id: 4,
+        question_text: 'How often do you usually wash your hair?',
+        question_type: 'single',
+        options_json: [
+          'Every day',
+          'Every 2–3 days',
+          'Twice a week',
+          'Once a week or less',
+          'Other',
+        ],
+      },
+      {
+        id: 5,
+        question_text: 'How often do you use heat styling tools (dryer, straightener, curler)?',
+        question_type: 'single',
+        options_json: [
+          'Almost every day',
+          'A few times a week',
+          'A few times a month',
+          'Rarely / never',
+          'Other',
+        ],
+      },
+    ];
+
+    let currentIndex = 0;
+    let responses = {};
+
+    function renderQuestion() {
+      const container = document.getElementById('quiz-questions');
+      const photoSection = document.getElementById('photo-upload-section');
+      const btnPrev = document.getElementById('btn-prev');
+      const btnNext = document.getElementById('btn-next');
+      const btnComplete = document.getElementById('btn-complete');
+
+      // Last step: show photo upload (optional), then Complete
+      if (currentIndex === questions.length) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        photoSection.classList.remove('hidden');
+        btnPrev.classList.remove('hidden');
+        btnNext.classList.add('hidden');
+        btnComplete.classList.remove('hidden');
+        return;
+      }
+
+      photoSection.classList.add('hidden');
+      container.classList.remove('hidden');
+      const q = questions[currentIndex];
+      if (!q) return;
+      container.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'bg-slate-800/50 rounded-xl p-6 border border-slate-700';
+      div.innerHTML = '<h3 class="text-lg font-medium text-white mb-4">' + (currentIndex + 1) + '. ' + escapeHtml(q.question_text) + '</h3>';
+      const opts = q.options_json ? (typeof q.options_json === 'string' ? JSON.parse(q.options_json) : q.options_json) : [];
+      if (q.question_type === 'scale' && typeof opts === 'object' && opts.min != null) {
+        const min = opts.min || 1, max = opts.max || 5;
+        let html = '<div class="flex flex-wrap gap-2">';
+        for (let i = min; i <= max; i++) {
+          html += '<label class="cursor-pointer px-3 py-2 rounded bg-slate-700 hover:bg-slate-600"><input type="radio" name="resp" value="' + i + '" class="mr-1"> ' + i + (i === min && opts.lowLabel ? ' (' + opts.lowLabel + ')' : '') + (i === max && opts.highLabel ? ' (' + opts.highLabel + ')' : '') + '</label>';
+        }
+        html += '</div>';
+        div.innerHTML += html;
+      } else if (Array.isArray(opts)) {
+        const hasOther = opts.some((o) => (typeof o === 'string' ? o : o.value || o.label) === 'Other');
+        opts.forEach(opt => {
+          const val = opt.value || opt;
+          const label = opt.label || opt;
+          const name = q.question_type === 'multiple' ? 'resp-' + q.id : 'resp';
+          const type = q.question_type === 'multiple' ? 'checkbox' : 'radio';
+          div.innerHTML += '<label class="flex items-center gap-2 cursor-pointer py-2 px-3 rounded bg-slate-700 hover:bg-slate-600"><input type="' + type + '" name="' + name + '" value="' + escapeHtml(val) + '" class="rounded"> ' + escapeHtml(label) + '</label>';
+        });
+        if (hasOther) {
+          div.innerHTML += '<div id="other-specify-wrap" class="mt-4 hidden rounded-lg border border-violet-500/30 bg-slate-900/60 p-4">' +
+            '<label for="other-specify" class="mb-2 block text-sm font-medium text-violet-200">Please specify (required if you chose Other)</label>' +
+            '<input type="text" id="other-specify" autocomplete="off" placeholder="Type your answer…" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/40" />' +
+            '</div>';
+        }
+      }
+      container.appendChild(div);
+
+      function toggleOtherSpecify() {
+        const wrap = document.getElementById('other-specify-wrap');
+        const inp = document.getElementById('other-specify');
+        if (!wrap || !inp) return;
+        let show = false;
+        if (q.question_type === 'multiple') {
+          const checked = document.querySelectorAll('input[name="resp-' + q.id + '"]:checked');
+          show = Array.from(checked).some((el) => el.value === 'Other');
+        } else {
+          const el = document.querySelector('input[name="resp"]:checked');
+          show = !!(el && el.value === 'Other');
+        }
+        wrap.classList.toggle('hidden', !show);
+        if (!show) inp.value = '';
+      }
+
+      div.addEventListener('change', toggleOtherSpecify);
+
+      const saved = responses[q.id];
+      if (saved != null && Array.isArray(opts) && opts.some((o) => (typeof o === 'string' ? o : o.value) === 'Other')) {
+        if (q.question_type === 'multiple') {
+          const arr = Array.isArray(saved) ? saved : [];
+          arr.forEach((item) => {
+            if (typeof item === 'object' && item && item.other) {
+              const cb = div.querySelector('input[name="resp-' + q.id + '"][value="Other"]');
+              if (cb) cb.checked = true;
+              const inp = document.getElementById('other-specify');
+              if (inp) inp.value = item.specify != null ? item.specify : '';
+            } else if (typeof item === 'string') {
+              if (item === 'Other') {
+                const cb = div.querySelector('input[name="resp-' + q.id + '"][value="Other"]');
+                if (cb) cb.checked = true;
+              } else {
+                div.querySelectorAll('input[name="resp-' + q.id + '"]').forEach((input) => {
+                  if (input.value === item) input.checked = true;
+                });
+              }
+            }
+          });
+        } else {
+          if (typeof saved === 'object' && saved && saved.other) {
+            const r = div.querySelector('input[name="resp"][value="Other"]');
+            if (r) r.checked = true;
+            const inp = document.getElementById('other-specify');
+            if (inp) inp.value = saved.specify != null ? saved.specify : '';
+          } else if (typeof saved === 'string') {
+            div.querySelectorAll('input[name="resp"]').forEach((input) => {
+              if (input.value === saved) input.checked = true;
+            });
+          }
+        }
+        toggleOtherSpecify();
+      }
+      btnPrev.classList.toggle('hidden', currentIndex === 0);
+      // Always show Next while we are still in the question steps.
+      // The photo/AI step (currentIndex === questions.length) hides Next.
+      btnNext.classList.remove('hidden');
+      btnComplete.classList.add('hidden');
+    }
+
+    function getCurrentResponse() {
+      const q = questions[currentIndex];
+      if (!q) return null;
+      const specifyEl = document.getElementById('other-specify');
+      const specify = specifyEl ? specifyEl.value.trim() : '';
+
+      if (q.question_type === 'multiple') {
+        const els = document.querySelectorAll('input[name="resp-' + q.id + '"]:checked');
+        const vals = Array.from(els).map((e) => e.value);
+        if (!vals.length) return [];
+        const out = [];
+        for (const v of vals) {
+          if (v === 'Other') out.push({ other: true, specify });
+          else out.push(v);
+        }
+        return out;
+      }
+      const el = document.querySelector('input[name="resp"]:checked');
+      if (!el) return null;
+      if (el.value === 'Other') return { other: true, specify };
+      return el.value;
+    }
+
+    function validateCurrentQuestion() {
+      const q = questions[currentIndex];
+      if (!q) return true;
+      const v = getCurrentResponse();
+      if (q.question_type === 'multiple') {
+        if (!Array.isArray(v) || v.length === 0) {
+          showToast('Please select at least one option', 'error');
+          return false;
+        }
+        for (let i = 0; i < v.length; i++) {
+          const item = v[i];
+          if (typeof item === 'object' && item && item.other && !String(item.specify || '').trim()) {
+            showToast('Please add a short note for Other', 'error');
+            return false;
+          }
+        }
+        return true;
+      }
+      if (v == null) {
+        showToast('Please select an option', 'error');
+        return false;
+      }
+      if (typeof v === 'object' && v.other && !String(v.specify || '').trim()) {
+        showToast('Please add a short note for Other', 'error');
+        return false;
+      }
+      return true;
+    }
+
+    async function saveResponse() {
+      const q = questions[currentIndex];
+      const val = getCurrentResponse();
+      if (!q || val === null) return;
+      responses[q.id] = val;
+    }
+
+    function next() {
+      if (!validateCurrentQuestion()) return;
+      saveResponse().then(() => {
+        if (currentIndex < questions.length - 1) {
+          currentIndex++;
+          renderQuestion();
+        } else if (currentIndex === questions.length - 1) {
+          currentIndex++;
+          renderQuestion();
+        }
+      });
+    }
+    function prev() {
+      if (currentIndex > 0) { currentIndex--; renderQuestion(); }
+    }
+
+    // Holds the saved assessmentId after complete() runs
+    let savedAssessmentId = null;
+
+    async function complete() {
+      await saveResponse();
+      if (!isLoggedIn()) {
+        document.getElementById('quiz-container').classList.add('hidden');
+        document.getElementById('login-prompt').classList.remove('hidden');
+        return;
+      }
+      try {
+        // Create assessment for this user
+        const created = await api('/assessments', { method: 'POST' });
+        savedAssessmentId = created.assessmentId;
+
+        // Build responses payload for backend: [{ question, answer }]
+        const payload = [];
+        questions.forEach(q => {
+          const val = responses[q.id];
+          if (val == null) return;
+          payload.push({
+            question: q.question_text,
+            answer: JSON.stringify(val),
+          });
+        });
+
+        await api('/assessments/' + savedAssessmentId + '/responses', {
+          method: 'POST',
+          body: JSON.stringify({ responses: payload }),
+        });
+
+        showToast('Assessment saved!', 'success');
+
+        // Check if a photo was selected – if so, upload + analyze before redirecting
+        const file = document.getElementById('photo').files[0];
+        if (file) {
+          await uploadAndAnalyzePhoto(file, savedAssessmentId);
+        } else {
+          window.location.href = '/hair-profile.html?assessmentId=' + savedAssessmentId;
+        }
+      } catch (err) {
+        showToast(err.error || 'Failed to complete', 'error');
+      }
+    }
+
+    async function uploadAndAnalyzePhoto(file, assessmentId) {
+      // Show loading state
+      const btn = document.getElementById('btn-complete');
+      const uploadBtn = document.getElementById('btn-upload-photo');
+      if (btn) { btn.disabled = true; btn.textContent = 'Analyzing photo…'; }
+      if (uploadBtn) { uploadBtn.disabled = true; }
+
+      try {
+        // Read file as base64 for AI analysis
+        const imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Upload photo to server
+        const formData = new FormData();
+        formData.append('photo', file);
+        await apiForm('/photos', formData);
+
+        showToast('Photo uploaded, running AI analysis…', 'info');
+
+        // Call AI analyze endpoint – assessment answers are already saved in DB,
+        // so the backend will automatically fetch them for context
+        const aiResult = await api('/hair-ai/analyze', {
+          method: 'POST',
+          body: JSON.stringify({ imageBase64 }),
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        // Store AI result in localStorage so results page can display it
+        localStorage.setItem('hairAiResult', JSON.stringify(aiResult));
+        showToast('AI analysis complete!', 'success');
+      } catch (err) {
+        console.error('Photo/AI error:', err);
+        showToast((err && err.error) || 'Photo analysis failed – continuing to results.', 'error');
+        // Clear any stale AI result so results page doesn't show old data
+        localStorage.removeItem('hairAiResult');
+      } finally {
+        window.location.href = '/results.html?assessmentId=' + assessmentId;
+      }
+    }
+
+    // "Upload Photo" button: standalone upload + AI analyze (before completing assessment)
+    document.getElementById('btn-upload-photo')?.addEventListener('click', async () => {
+      const file = document.getElementById('photo').files[0];
+      if (!file) { showToast('Select a file first', 'error'); return; }
+      if (!isLoggedIn()) { showToast('Please login first', 'error'); return; }
+
+      const btn = document.getElementById('btn-upload-photo');
+      btn.disabled = true;
+      btn.textContent = 'Uploading…';
+
+      try {
+        const imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const formData = new FormData();
+        formData.append('photo', file);
+        await apiForm('/photos', formData);
+
+        showToast('Photo uploaded, analyzing with AI…', 'info');
+        btn.textContent = 'Analyzing…';
+
+        // If assessment already saved, AI will use it; otherwise it uses whatever is in DB
+        const aiResult = await api('/hair-ai/analyze', {
+          method: 'POST',
+          body: JSON.stringify({ imageBase64 }),
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        localStorage.setItem('hairAiResult', JSON.stringify(aiResult));
+        showToast('AI analysis complete! Click "Complete assessment" to see results.', 'success');
+        btn.textContent = '✓ Analysis done';
+      } catch (err) {
+        console.error('Photo/AI error:', err);
+        showToast((err && err.error) || 'Upload/Analysis failed', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Upload Photo';
+      }
+    });
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    let assessmentPhotoPreviewUrl = '';
+    document.getElementById('photo').addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      const wrap = document.getElementById('photo-preview-wrap');
+      const img = document.getElementById('photo-preview-img');
+      if (assessmentPhotoPreviewUrl) {
+        URL.revokeObjectURL(assessmentPhotoPreviewUrl);
+        assessmentPhotoPreviewUrl = '';
+      }
+      if (!f || !/^image\//.test(f.type)) {
+        wrap.classList.add('hidden');
+        img.removeAttribute('src');
+        return;
+      }
+      assessmentPhotoPreviewUrl = URL.createObjectURL(f);
+      img.src = assessmentPhotoPreviewUrl;
+      wrap.classList.remove('hidden');
+    });
+
+    (function init() {
+      if (!questions.length) return;
+      renderQuestion();
+      document.getElementById('btn-next').onclick = next;
+      document.getElementById('btn-prev').onclick = prev;
+      document.getElementById('btn-complete').onclick = complete;
+    })();
+  </script>
+</body>
+</html>

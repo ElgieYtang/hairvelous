@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Specialist dashboard – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+    .panel {
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: linear-gradient(160deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.95));
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-7xl mx-auto px-6 py-8 space-y-6">
+    <header class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-cyan-400/90">Specialist workspace</p>
+        <h1 class="text-3xl font-bold text-white mt-1">Analytics &amp; clients</h1>
+        <p class="text-slate-400 text-sm mt-1 max-w-2xl">
+          Overview of consultations assigned to you. Password resets are handled by <strong class="text-slate-300">admin only</strong>—you cannot change user passwords here.
+        </p>
+      </div>
+      <a href="/consultations.html" class="inline-flex items-center justify-center rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-cyan-500">
+        Open consultations →
+      </a>
+    </header>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="panel p-5">
+        <p class="text-xs text-slate-400">Distinct clients</p>
+        <p id="kpi-clients" class="text-3xl font-bold text-cyan-300 mt-1">—</p>
+      </div>
+      <div class="panel p-5">
+        <p class="text-xs text-slate-400">Paid clients</p>
+        <p id="kpi-paid-clients" class="text-3xl font-bold text-emerald-300 mt-1">—</p>
+      </div>
+      <div class="panel p-5">
+        <p class="text-xs text-slate-400">Total consultations</p>
+        <p id="kpi-consults" class="text-3xl font-bold text-violet-300 mt-1">—</p>
+      </div>
+      <div class="panel p-5">
+        <p class="text-xs text-slate-400">By status</p>
+        <div id="status-chips" class="mt-2 flex flex-wrap gap-2 text-xs"></div>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+      <div class="panel p-5">
+        <h2 class="text-lg font-semibold text-white mb-1">Consultations (6 months)</h2>
+        <p class="text-slate-500 text-xs mb-4">New requests over time</p>
+        <div class="h-64">
+          <canvas id="chart-monthly"></canvas>
+        </div>
+      </div>
+      <div class="panel p-5">
+        <h2 class="text-lg font-semibold text-white mb-1">Status mix</h2>
+        <p class="text-slate-500 text-xs mb-4">All-time counts for your cases</p>
+        <div class="h-64 flex items-center justify-center">
+          <canvas id="chart-status"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-white">Clients (from your consultations)</h2>
+        <p class="text-xs text-slate-500">Data comes from the live database</p>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-slate-700/60">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-800/80 text-left text-xs uppercase tracking-wide text-slate-400">
+            <tr>
+              <th class="px-4 py-3">Name</th>
+              <th class="px-4 py-3">Email</th>
+              <th class="px-4 py-3">Cases</th>
+              <th class="px-4 py-3">Paid</th>
+              <th class="px-4 py-3">Client type</th>
+              <th class="px-4 py-3">Last consult</th>
+            </tr>
+          </thead>
+          <tbody id="clients-tbody" class="divide-y divide-slate-700/60"></tbody>
+        </table>
+      </div>
+      <p id="clients-empty" class="hidden text-slate-500 text-sm mt-4">No assigned consultations yet—clients will appear after they book you.</p>
+    </div>
+
+    <p class="text-slate-500 text-xs">
+      If counts look empty, your database may have been reset; placeholders in the UI are separate from stored rows. Run seeds or complete test bookings to repopulate.
+    </p>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth()) { /* redirects */ }
+    const u = getUser();
+    const role = u && (u.roleName || u.role);
+    if (role !== 'specialist') {
+      window.location.href = role === 'admin' ? '/admin_dashboard.html' : '/dashboard.html';
+    }
+
+    let chartMonthly = null;
+    let chartStatus = null;
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function fmtDate(v) {
+      if (!v) return '—';
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return String(v).slice(0, 16);
+      return d.toLocaleString();
+    }
+
+    async function load() {
+      const data = await api('/consultations/specialist/analytics');
+      document.getElementById('kpi-clients').textContent = String(data.totals?.distinctClients ?? 0);
+      document.getElementById('kpi-paid-clients').textContent = String(data.totals?.paidClients ?? 0);
+      document.getElementById('kpi-consults').textContent = String(data.totals?.totalConsultations ?? 0);
+
+      const chips = document.getElementById('status-chips');
+      chips.innerHTML = (data.statusCounts || [])
+        .map(
+          (s) =>
+            `<span class="rounded-full border border-slate-600 bg-slate-800/80 px-3 py-1 text-slate-200">${esc(s.status)}: <strong>${s.count}</strong></span>`
+        )
+        .join('') || '<span class="text-slate-500">No status data</span>';
+
+      const monthly = data.monthly || [];
+      const labels = monthly.length ? monthly.map((m) => m.month) : ['(no data)'];
+      const counts = monthly.length ? monthly.map((m) => m.count) : [0];
+      const ctxM = document.getElementById('chart-monthly');
+      if (chartMonthly) chartMonthly.destroy();
+      chartMonthly = new Chart(ctxM, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Consultations opened',
+              data: counts,
+              borderColor: 'rgb(34, 211, 238)',
+              backgroundColor: 'rgba(34, 211, 238, 0.15)',
+              fill: true,
+              tension: 0.25,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#e2e8f0' } } },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+            y: { ticks: { color: '#94a3b8', precision: 0 }, grid: { color: 'rgba(148,163,184,0.12)' }, beginAtZero: true },
+          },
+        },
+      });
+
+      const st = data.statusCounts || [];
+      const ctxS = document.getElementById('chart-status');
+      if (chartStatus) chartStatus.destroy();
+      const stLabels = st.length ? st.map((s) => s.status) : ['(none)'];
+      const stData = st.length ? st.map((s) => s.count) : [1];
+      chartStatus = new Chart(ctxS, {
+        type: 'doughnut',
+        data: {
+          labels: stLabels,
+          datasets: [
+            {
+              data: stData,
+              backgroundColor: [
+                'rgba(34, 211, 238, 0.75)',
+                'rgba(167, 139, 250, 0.75)',
+                'rgba(251, 191, 36, 0.75)',
+                'rgba(52, 211, 153, 0.75)',
+                'rgba(248, 113, 113, 0.75)',
+                'rgba(148, 163, 184, 0.75)',
+              ],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: '#e2e8f0' } } },
+        },
+      });
+
+      const tbody = document.getElementById('clients-tbody');
+      const clients = data.clients || [];
+      document.getElementById('clients-empty').classList.toggle('hidden', clients.length > 0);
+      tbody.innerHTML = clients
+        .map(
+          (c) => `
+        <tr class="bg-slate-900/40">
+          <td class="px-4 py-3 text-white font-medium">${esc(c.name)}</td>
+          <td class="px-4 py-3 text-slate-300">${esc(c.email)}</td>
+          <td class="px-4 py-3 text-slate-300">${esc(String(c.consultationCount))}</td>
+          <td class="px-4 py-3 text-slate-300">${esc(String(c.paidConsultationCount || 0))}</td>
+          <td class="px-4 py-3 text-xs">
+            ${
+              c.hasPaid
+                ? '<span class="rounded-full border border-emerald-500/40 bg-emerald-600/20 px-2 py-0.5 text-emerald-300">Paid client</span>'
+                : '<span class="rounded-full border border-slate-600 bg-slate-800/80 px-2 py-0.5 text-slate-300">Registered only</span>'
+            }
+          </td>
+          <td class="px-4 py-3 text-slate-400 text-xs">${esc(fmtDate(c.lastConsultAt))}</td>
+        </tr>`
+        )
+        .join('');
+    }
+
+    load().catch((err) => {
+      console.error(err);
+      showToast(err.error || 'Could not load specialist analytics', 'error');
+    });
+  </script>
+</body>
+</html>

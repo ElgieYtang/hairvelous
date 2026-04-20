@@ -1,0 +1,2834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consultations - Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+    .chat-scroll::-webkit-scrollbar { width: 8px; }
+    .chat-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 999px; }
+    /* Same overlay pattern as recommendations (product modal) */
+    .pv-backdrop {
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 240ms ease;
+    }
+    .pv-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .pv-modal {
+      transform: translateY(10px) scale(0.985);
+      opacity: 0;
+      transition: transform 320ms cubic-bezier(.2,.9,.2,1), opacity 240ms ease;
+    }
+    .pv-backdrop.open .pv-modal {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    #consultMessengerBackdrop {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #consultMessengerShell.open #consultMessengerBackdrop {
+      opacity: 1;
+    }
+    /* Right-side drawer (aligned with chat icon); slides in from the right */
+    #consultMessengerPanel {
+      transform: translateX(calc(100% + 1rem));
+      transition: transform 0.3s ease;
+    }
+    #consultMessengerShell.open #consultMessengerPanel {
+      transform: translateX(0);
+    }
+    /*
+      Drawer / workspace: three columns (list | chat | detail) from 768px up.
+      Tailwind CDN loads after this block — utilities like grid-cols-1 override
+      non-!important grid-template-columns, which forced a single-column stack in
+      "My consultations". Scoped !important + removing grid-cols-* from markup fixes it.
+    */
+    #consultationsWorkspace.consult-shell {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    /* Drawer: stacked on phones; 3-column dashboard from md */
+    #drawerWorkspaceSlot #consultationsWorkspace {
+      display: flex !important;
+      flex-direction: column;
+      grid-template-columns: unset !important;
+      min-height: 0;
+      flex: 1 1 auto;
+      width: 100%;
+      overflow: hidden;
+    }
+    #drawerWorkspaceSlot #consultColList {
+      flex: 0 0 auto;
+      width: 100% !important;
+      max-height: min(32vh, 240px) !important;
+      min-height: 100px;
+    }
+    #drawerWorkspaceSlot #consultColChat {
+      flex: 1 1 0%;
+      min-height: 0 !important;
+      width: 100% !important;
+    }
+    #drawerWorkspaceSlot #consultColDetail {
+      flex: 0 0 auto;
+      max-height: min(28vh, 220px) !important;
+      width: 100% !important;
+      overflow-y: auto;
+    }
+    /* Moderator: approval queue only — full-width list; chat + inline details hidden */
+    #mainWorkspaceSlot #consultationsWorkspace.moderator-queue-layout {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) !important;
+      grid-template-rows: minmax(0, 1fr);
+      gap: 0 !important;
+      align-items: stretch;
+    }
+    #mainWorkspaceSlot #consultationsWorkspace.moderator-queue-layout #consultColChat,
+    #mainWorkspaceSlot #consultationsWorkspace.moderator-queue-layout #consultColDetail {
+      display: none !important;
+    }
+    #mainWorkspaceSlot #consultationsWorkspace.moderator-queue-layout #consultColList {
+      max-height: none !important;
+      min-height: 0;
+      border-right: none !important;
+    }
+
+    @media (min-width: 768px) {
+      /* Staff: inline workspace — same 3-col grid (was lg-only via Tailwind; grid-cols-1 won until 1024px) */
+      #mainWorkspaceSlot #consultationsWorkspace:not(.moderator-queue-layout) {
+        display: grid !important;
+        grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(260px, 340px) !important;
+        grid-template-rows: minmax(0, 1fr);
+        gap: 0 !important;
+        align-items: stretch;
+      }
+      #drawerWorkspaceSlot #consultationsWorkspace {
+        display: grid !important;
+        grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(220px, 300px) !important;
+        grid-template-rows: minmax(0, 1fr);
+        flex-direction: unset !important;
+        gap: 0 !important;
+        align-items: stretch;
+      }
+      #drawerWorkspaceSlot #consultColList,
+      #drawerWorkspaceSlot #consultColChat,
+      #drawerWorkspaceSlot #consultColDetail {
+        max-height: none !important;
+        height: 100%;
+        min-height: 0 !important;
+        width: auto !important;
+      }
+      #drawerWorkspaceSlot #consultColDetail {
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+    }
+    #drawerWorkspaceSlot #detailPanel {
+      max-height: none !important;
+      flex: 1 1 0%;
+      min-height: 0;
+    }
+    #drawerWorkspaceSlot #chatBlurWrap {
+      min-height: 0;
+      flex: 1 1 0%;
+    }
+    #chatKebabMenu:not(.hidden) {
+      animation: chatMenuIn 0.14s ease-out;
+    }
+    @keyframes chatMenuIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .tracker-step-line {
+      background: linear-gradient(to right, rgba(52, 211, 153, 0.45), rgba(139, 92, 246, 0.35));
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="nav-placeholder"></div>
+
+  <main
+    id="consultPageMain"
+    class="mx-auto flex w-full max-w-[min(100%,1680px)] flex-col overflow-x-hidden px-3 pb-6 pt-3 md:px-6 md:pb-8 md:pt-2"
+  >
+    <!-- Landing: specialist cards only for clients (workspace opens from FAB) -->
+    <section id="specialistBrowseSection" class="mb-5 w-full shrink-0 lg:mb-4">
+      <div class="w-full">
+        <header class="relative border-l-2 border-violet-500/70 pl-4 sm:pl-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-400/95">Specialists</p>
+          <h2 class="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Book a consultation</h2>
+        </header>
+        <div
+          id="specialistCards"
+          class="mt-6 grid w-full grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        ></div>
+      </div>
+    </section>
+
+    <!-- Client: order-style tracker while a consultation is in progress (replaces specialist cards) -->
+    <section id="consultationTrackerSection" class="mb-5 hidden w-full shrink-0 lg:mb-4">
+      <div class="w-full">
+        <header class="relative border-l-2 border-emerald-500/70 pl-4 sm:pl-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-400/95">Your booking</p>
+          <h2 class="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Consultation progress</h2>
+          <p class="mt-1 max-w-2xl text-sm text-slate-400">
+            Follow your request like a delivery — pay, wait for verification, then message your specialist.
+          </p>
+        </header>
+        <div
+          id="consultationTrackerRoot"
+          class="mt-6 rounded-2xl border border-slate-700/80 bg-slate-950/50 p-4 shadow-xl shadow-black/20 sm:p-6"
+        ></div>
+      </div>
+    </section>
+
+    <section id="specialistFeeSection" class="mb-5 hidden w-full shrink-0 lg:mb-4">
+      <div class="w-full rounded-2xl border border-slate-700/80 bg-slate-950/50 p-4 shadow-xl shadow-black/20 sm:p-6">
+        <header class="relative border-l-2 border-cyan-500/70 pl-4 sm:pl-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-400/95">Specialist settings</p>
+          <h2 class="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Consultation fee</h2>
+          <p class="mt-1 text-sm text-slate-400">Set your default fee shown to clients during booking.</p>
+        </header>
+        <form id="specialistFeeForm" class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div class="w-full sm:max-w-xs">
+            <label for="specialistFeeInput" class="mb-1 block text-xs font-medium text-slate-400">Fee (PHP)</label>
+            <input id="specialistFeeInput" type="number" min="1" step="1" placeholder="e.g. 500" class="w-full rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/40" />
+          </div>
+          <button type="submit" class="rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-500">
+            Save fee
+          </button>
+          <p id="specialistFeeHint" class="text-xs text-slate-500 sm:ml-2"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- Inline workspace slot (admin / specialist — list + detail stays on page) -->
+    <div id="mainWorkspaceSlot" class="hidden min-h-0 flex-1 flex-col overflow-hidden lg:min-h-0 lg:h-full"></div>
+  </main>
+
+  <!-- Clients: moved into #notification-root (top-right with Pro + Bell) via mountConsultMessengerFabInHeader -->
+  <button type="button" id="consultMessengerFab" hidden title="My consultations" aria-label="Open my consultations and messages">
+    💬
+  </button>
+
+  <!-- Slide-over: consultation list + detail + thread (clients) -->
+  <div id="consultMessengerShell" class="pointer-events-none fixed inset-0 z-[85] hidden">
+    <button
+      type="button"
+      id="consultMessengerBackdrop"
+      class="absolute inset-0 bg-slate-950/55 opacity-0 backdrop-blur-[2px] transition-opacity duration-300"
+      aria-label="Close"
+      tabindex="-1"
+    ></button>
+    <div
+      id="consultMessengerPanel"
+      class="absolute bottom-3 right-3 top-14 z-[2] flex w-[min(calc(100vw-1rem),1280px)] max-w-[min(98vw,1280px)] flex-col overflow-hidden rounded-2xl border border-slate-700/90 bg-slate-900 shadow-2xl sm:bottom-4 sm:right-4 sm:top-16 md:top-[4.5rem]"
+    >
+      <div class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-700/80 bg-slate-900/95 px-3 py-2.5">
+        <span class="text-sm font-semibold text-white">My consultations</span>
+        <button
+          type="button"
+          id="closeConsultMessengerBtn"
+          class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white"
+          aria-label="Close panel"
+        >
+          ✕
+        </button>
+      </div>
+      <div id="drawerWorkspaceSlot" class="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-0 sm:px-3 sm:pb-3"></div>
+    </div>
+  </div>
+
+  <!-- Three-column shell: conversations | chat | details (Hairvelous dark theme) -->
+  <div
+    id="consultationsWorkspace"
+    class="consult-shell grid h-full min-h-0 flex-1 gap-3 md:min-h-0 md:items-stretch md:gap-0 md:overflow-hidden md:rounded-2xl md:border md:border-slate-700/50 md:bg-slate-950/40 md:shadow-[inset_0_1px_0_0_rgba(148,163,184,0.06)]"
+  >
+      <aside
+        id="consultColList"
+        class="flex min-h-0 max-h-[min(42vh,340px)] flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/50 md:max-h-full md:rounded-none md:border-0 md:border-r md:border-slate-700/50"
+      >
+        <div class="shrink-0 border-b border-slate-700/60 px-3 py-2.5">
+          <p id="consultListSectionTitle" class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Conversations</p>
+          <p id="consultListSectionHint" class="mt-0.5 hidden text-[11px] leading-snug text-slate-500"></p>
+          <label class="sr-only" for="consultSearch">Search consultations</label>
+          <div class="relative mt-2">
+            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500" aria-hidden="true">🔍</span>
+            <input
+              id="consultSearch"
+              type="search"
+              placeholder="Search…"
+              class="w-full rounded-xl border border-slate-600/70 bg-slate-950/60 py-2 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-violet-500/45 focus:outline-none focus:ring-1 focus:ring-violet-500/35"
+            />
+          </div>
+        </div>
+        <div id="consultList" class="chat-scroll flex-1 overflow-y-auto p-2"></div>
+      </aside>
+
+      <section
+        id="consultColChat"
+        class="flex min-h-[min(52vh,420px)] min-w-0 flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/35 md:min-h-0 md:h-full md:max-h-full md:rounded-none md:border-0 md:border-r md:border-slate-700/50"
+      >
+        <header class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-700/60 bg-slate-900/40 px-3 py-2.5 md:px-4 md:py-3">
+          <div class="flex min-w-0 flex-1 items-center gap-2.5 md:gap-3">
+            <span class="hidden h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500/90 ring-2 ring-emerald-500/20 sm:block" title="Thread" aria-hidden="true"></span>
+            <div class="min-w-0 flex-1">
+              <div class="flex min-w-0 items-center gap-2">
+                <h2 id="chatTitle" class="min-w-0 truncate text-base font-semibold tracking-tight text-white md:text-lg">Consultation</h2>
+                <span id="chatMutedBadge" class="hidden shrink-0 rounded-md bg-slate-700/90 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-400" title="This thread is muted">Muted</span>
+              </div>
+              <p id="chatSubtitle" class="truncate text-xs text-slate-500 md:text-sm">Select a conversation on the left</p>
+            </div>
+          </div>
+          <div class="flex shrink-0 items-center gap-0.5">
+            <div id="chatKebabWrap" class="relative hidden">
+              <button
+                type="button"
+                id="chatKebabBtn"
+                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-label="Conversation options"
+                title="More options"
+              >
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+              </button>
+              <div
+                id="chatKebabMenu"
+                role="menu"
+                class="absolute right-0 top-full z-40 mt-1 hidden min-w-[13.5rem] rounded-xl border border-slate-600/90 bg-slate-900 py-1 shadow-xl shadow-black/40"
+              >
+                <p class="border-b border-slate-700/80 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">This conversation</p>
+                <button type="button" role="menuitem" id="chatMenuMuteBtn" class="flex w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800">
+                  Mute notifications
+                </button>
+                <button type="button" role="menuitem" id="chatMenuCopyLinkBtn" class="flex w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800">
+                  Copy link to this chat
+                </button>
+                <button type="button" role="menuitem" id="chatMenuDeleteConversationBtn" class="flex w-full px-3 py-2 text-left text-xs text-rose-200 hover:bg-slate-800">
+                  Delete this chat
+                </button>
+              </div>
+            </div>
+            <button type="button" id="closeChatBtn" class="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white md:hidden">
+              Clear
+            </button>
+          </div>
+        </header>
+
+        <div id="headerQuickCancel" class="hidden shrink-0 border-b border-slate-700/60 px-4 py-2"></div>
+
+        <div id="chatBlurWrap" class="relative flex min-h-0 flex-1 flex-col bg-slate-950/25">
+          <div id="chatLockedOverlay" class="absolute inset-0 z-20 hidden flex flex-col items-center justify-center gap-3 bg-slate-950/75 p-4 text-center backdrop-blur-sm">
+            <p id="chatLockedMsg" class="max-w-[280px] text-xs text-slate-300">Book a consultation to connect with a specialist.</p>
+            <button type="button" id="needConsultationBtn" class="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-violet-900/25 hover:bg-violet-500">
+              Need a consultation
+            </button>
+          </div>
+
+          <div id="chatMessages" class="chat-scroll min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4 md:px-5" aria-label="Consultation updates"></div>
+
+          <form id="chatForm" class="hidden shrink-0 border-t border-slate-700/60 bg-slate-900/40 p-3 md:p-4">
+            <div id="chatPhotoPreview" class="mb-2 hidden items-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 p-2.5">
+              <img id="chatPhotoPreviewImg" src="" alt="Pending attachment" class="h-11 w-11 rounded-md object-cover" />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-xs font-medium text-violet-100" id="chatPhotoPreviewName">Photo attached</p>
+                <p class="text-[11px] text-violet-200/80">Will send when you tap Send</p>
+              </div>
+              <button type="button" id="chatPhotoClearBtn" class="rounded-md border border-violet-400/30 px-2 py-1 text-[11px] text-violet-200 hover:bg-violet-500/20">
+                Remove
+              </button>
+            </div>
+            <div class="flex items-end gap-2">
+              <input id="chatPhotoInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/heic,.heic,.heif" class="hidden" />
+              <button type="button" id="chatPhotoBtn" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-600 bg-slate-800 text-lg leading-none text-slate-300 hover:border-violet-500/50 hover:bg-slate-700 hover:text-white disabled:opacity-40" title="Attach a photo (then tap Send)" aria-label="Attach photo">
+                📷
+              </button>
+              <input
+                id="chatInput"
+                type="text"
+                class="min-w-0 flex-1 rounded-2xl border border-slate-600/90 bg-slate-900/90 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-500/45 focus:outline-none focus:ring-2 focus:ring-violet-500/20 md:text-[15px]"
+                placeholder="Write a message…"
+                autocomplete="off"
+              />
+              <button type="submit" class="flex h-11 shrink-0 items-center justify-center rounded-2xl bg-violet-600 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-950/30 hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40">
+                Send
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <aside
+        id="consultColDetail"
+        class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/45 md:rounded-none md:border-0"
+      >
+        <div class="shrink-0 border-b border-slate-700/60 px-3 py-2.5 md:px-4">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Details</p>
+        </div>
+        <div id="detailPanel" class="chat-scroll min-h-0 flex-1 overflow-y-auto p-3 md:p-4">
+          <p class="text-xs text-slate-400">Select a consultation to see details.</p>
+        </div>
+        <button type="button" id="anotherConsultBtn" class="hidden shrink-0 border-t border-slate-700/60 px-3 py-2.5 text-left text-xs font-semibold text-violet-200 hover:bg-slate-800/80 md:px-4">
+          Browse specialists
+        </button>
+      </aside>
+  </div>
+
+  <!-- Request popup (aligned with product modal on recommendations.html) -->
+  <div id="consultation-request-backdrop" class="pv-backdrop fixed inset-0 z-[100] p-4 sm:p-6 md:p-10">
+    <div class="pv-modal mx-auto w-full max-w-lg md:max-h-[90vh] overflow-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+      <div class="flex items-start justify-between gap-3 border-b border-slate-700 p-4 sm:p-5">
+        <div class="min-w-0 flex-1">
+          <h3 class="text-base font-semibold text-white">Your consultation request</h3>
+          <p id="modalConsultSpecialistLine" class="mt-1 truncate text-sm text-violet-300">—</p>
+          <p id="modalConsultSpecialistMeta" class="mt-1 text-xs leading-relaxed text-slate-400"></p>
+        </div>
+        <button type="button" id="consultationRequestModalClose" class="shrink-0 text-sm text-slate-400 hover:text-white" aria-label="Close">Close ✕</button>
+      </div>
+      <form id="requestForm" class="space-y-3 p-4 sm:p-6">
+        <input type="hidden" id="selectedSpecialistUserId" value="" />
+        <div>
+          <label for="concernTitle" class="mb-1 block text-xs font-medium text-slate-400">Concern title</label>
+          <input
+            id="concernTitle"
+            class="w-full rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+            placeholder="e.g. Frizz, dryness, breakage"
+            required
+          />
+        </div>
+        <div>
+          <div class="mb-1 flex items-center justify-between gap-2">
+            <label for="preferredDate" class="text-xs font-medium text-slate-400">Preferred date</label>
+            <button
+              type="button"
+              id="preferredDatePickBtn"
+              class="rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-xs text-slate-300 hover:border-violet-500/50 hover:text-white"
+              title="Open calendar"
+            >
+              📅 Calendar
+            </button>
+          </div>
+          <input id="preferredDate" type="date" class="w-full rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-sm text-slate-100" />
+        </div>
+        <div>
+          <label for="concernMessage" class="mb-1 block text-xs font-medium text-slate-400">Describe your concern</label>
+          <textarea
+            id="concernMessage"
+            class="min-h-[120px] w-full rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+            placeholder="What would you like help with?"
+            required
+          ></textarea>
+        </div>
+        <button
+          type="submit"
+          id="requestSubmitBtn"
+          class="w-full rounded-lg bg-violet-600 py-3 text-sm font-semibold text-white shadow-md shadow-violet-900/25 hover:bg-violet-500"
+        >
+          Submit consultation request
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- After submitting a request: pay via PayMongo / QR Ph (icons); hair profile summary + preferred date -->
+  <div id="consultation-payment-backdrop" class="pv-backdrop fixed inset-0 z-[105] p-4 sm:p-6 md:p-10">
+    <div class="pv-modal mx-auto w-full max-w-lg overflow-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl md:max-h-[90vh]">
+      <div class="flex items-start justify-between gap-3 border-b border-slate-700 p-4 sm:p-5">
+        <div class="min-w-0 flex-1">
+          <h3 class="text-base font-semibold text-white">Complete payment</h3>
+          <p id="paymentModalSpecialistLine" class="mt-1 truncate text-sm text-violet-300">—</p>
+          <p class="mt-1 text-xs text-slate-500">Unlock messaging after payment is confirmed.</p>
+        </div>
+        <button type="button" id="consultationPaymentModalClose" class="shrink-0 text-sm text-slate-400 hover:text-white" aria-label="Close">Close ✕</button>
+      </div>
+      <div class="space-y-4 p-4 sm:p-6">
+        <div class="rounded-xl border border-slate-600/70 bg-slate-950/50 p-3">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Your hair profile</p>
+          <div id="paymentModalHairSummary" class="mt-2 text-sm text-slate-300">
+            <p class="text-xs text-slate-500">Loading…</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-600/60 bg-slate-800/40 px-3 py-2.5 text-sm">
+          <span class="text-xs font-medium text-slate-400">Preferred session date</span>
+          <span id="paymentModalPreferredDate" class="font-semibold text-white">—</span>
+        </div>
+        <div id="paymentModalFeeBlock" class="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2.5 text-xs text-slate-400"></div>
+        <div>
+          <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Pay</p>
+          <div class="flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              id="paymentIconPaymongo"
+              class="group flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-500/40 bg-cyan-500/10 text-cyan-100 transition hover:border-cyan-400/60 hover:bg-cyan-500/20"
+              title="Pay with PayMongo (cards, GCash, Maya, …)"
+              aria-label="Pay with PayMongo"
+            >
+              <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <path d="M2 10h20" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              id="paymentIconQrPh"
+              class="group flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-100 transition hover:border-emerald-400/60 hover:bg-emerald-500/20"
+              title="QR Ph — scan with GCash or bank app"
+              aria-label="Pay with QR Ph"
+            >
+              <svg class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h2v2h-2v-2zm-4 4h2v2h-2v-2zm2-2h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z" />
+              </svg>
+            </button>
+          </div>
+          <p id="paymentModalStubNote" class="mt-2 text-[11px] leading-relaxed text-slate-500">
+            Connect PayMongo keys on the server to enable live checkout. Icons stay available for integration.
+          </p>
+        </div>
+        <details class="rounded-lg border border-slate-600/50 bg-slate-950/40 px-3 py-2">
+          <summary class="cursor-pointer text-xs font-medium text-slate-400">Manual GCash proof (optional)</summary>
+          <form id="paymentModalProofForm" class="mt-3 space-y-2">
+            <input type="hidden" id="paymentModalConsultationId" value="" />
+            <input name="paymentReference" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2 py-1.5 text-xs" placeholder="GCash reference no." />
+            <input name="receipt" type="file" accept="image/jpeg,image/png,image/webp" class="block w-full text-[11px] text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-violet-600 file:px-2 file:py-1 file:text-xs file:text-white" />
+            <button type="submit" class="w-full rounded-md bg-violet-600 py-2 text-xs font-medium text-white hover:bg-violet-500">Submit proof</button>
+          </form>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <div id="chatImageViewer" class="fixed inset-0 z-[120] hidden items-center justify-center bg-slate-950/85 p-4">
+    <button type="button" id="chatImageViewerClose" class="absolute right-4 top-4 rounded-lg border border-slate-600 bg-slate-900/85 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800">Close</button>
+    <img id="chatImageViewerImg" src="" alt="Attachment preview" class="max-h-[88vh] max-w-[92vw] rounded-xl border border-slate-700 bg-slate-900 object-contain" />
+  </div>
+
+  <!-- Specialist snapshot (from directory / API) -->
+  <div id="specialistProfileModal" class="fixed inset-0 z-[125] hidden items-end justify-center bg-slate-950/75 p-3 sm:items-center sm:p-6">
+    <button type="button" id="specialistProfileModalBackdrop" class="absolute inset-0 cursor-default" aria-label="Close"></button>
+    <div class="relative z-[1] w-full max-w-md overflow-hidden rounded-2xl border border-slate-600/80 bg-slate-900 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700/80 px-4 py-3">
+        <h3 class="text-sm font-semibold text-white">Specialist profile</h3>
+        <button type="button" id="specialistProfileModalClose" class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">✕</button>
+      </div>
+      <div id="specialistProfileModalBody" class="max-h-[min(70vh,520px)] overflow-y-auto p-4"></div>
+    </div>
+  </div>
+
+  <!-- Client hair summary (specialist / moderator) -->
+  <div id="clientConsultModal" class="fixed inset-0 z-[125] hidden items-end justify-center bg-slate-950/75 p-3 sm:items-center sm:p-6">
+    <button type="button" id="clientConsultModalBackdrop" class="absolute inset-0 cursor-default" aria-label="Close"></button>
+    <div class="relative z-[1] w-full max-w-md overflow-hidden rounded-2xl border border-slate-600/80 bg-slate-900 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700/80 px-4 py-3">
+        <h3 class="text-sm font-semibold text-white">Client profile</h3>
+        <button type="button" id="clientConsultModalClose" class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">✕</button>
+      </div>
+      <div id="clientConsultModalBody" class="max-h-[min(70vh,520px)] overflow-y-auto p-4 text-sm text-slate-300"></div>
+    </div>
+  </div>
+
+  <!-- PayMongo QR Ph (scan with GCash / any QR Ph app) -->
+  <div id="paymongoQrModal" class="fixed inset-0 z-[126] hidden items-center justify-center bg-slate-950/85 p-4">
+    <div class="relative w-full max-w-sm rounded-2xl border border-slate-600/90 bg-slate-900 p-4 shadow-2xl">
+      <button
+        type="button"
+        id="paymongoQrClose"
+        class="absolute right-2 top-2 rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white"
+        aria-label="Close"
+      >
+        ✕
+      </button>
+      <p class="pr-8 text-sm font-semibold text-white">Scan to pay (QR Ph)</p>
+      <p class="mt-1 text-xs leading-relaxed text-slate-400">
+        Open <strong class="text-slate-300">GCash</strong>, your <strong class="text-slate-300">bank app</strong>, or any
+        <strong class="text-slate-300">QR Ph</strong> app and scan this code. Amount matches your consultation fee. Code expires in about
+        <strong class="text-slate-300">30 minutes</strong>.
+      </p>
+      <div id="paymongoQrImgWrap" class="mt-4 flex justify-center rounded-xl bg-white p-3">
+        <img id="paymongoQrImg" src="" alt="Payment QR" class="h-56 w-56 max-w-full object-contain" />
+      </div>
+      <p id="paymongoQrStatus" class="mt-3 text-center text-xs text-slate-500">Waiting for payment…</p>
+    </div>
+  </div>
+
+  <!-- Moderator: case detail + verify actions (replaces inline Details column) -->
+  <div id="adminApprovalModalBackdrop" class="pv-backdrop fixed inset-0 z-[108] p-4 sm:p-6 md:p-8">
+    <div class="pv-modal mx-auto flex max-h-[min(92dvh,880px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl md:max-w-xl">
+      <div class="flex shrink-0 items-start justify-between gap-3 border-b border-slate-700 p-4 sm:p-5">
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-400/90">Review payment proof</p>
+          <h3 id="adminApprovalModalTitle" class="mt-1 text-base font-semibold text-white">—</h3>
+          <p id="adminApprovalModalSubtitle" class="mt-1 truncate text-xs text-slate-400">—</p>
+        </div>
+        <button type="button" id="adminApprovalModalClose" class="shrink-0 rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">Close ✕</button>
+      </div>
+      <div id="adminApprovalModalBody" class="chat-scroll min-h-0 flex-1 overflow-y-auto p-4 sm:p-5"></div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth()) { /* redirects */ }
+    const user = getUser();
+    const role = user && (user.roleName || user.role);
+    const isReviewer = role === 'admin' || role === 'seller';
+    const isModerator = isReviewer;
+    const isSpecialist = role === 'specialist';
+    let specialistsForBooking = [];
+    let activeChatId = null;
+    let chatRefreshTimer = null;
+    let chatErrorNotified = false;
+    const consultationTitleById = new Map();
+    const consultationRowsCache = [];
+    const chatFromQuery = Number(new URLSearchParams(window.location.search).get('chat') || 0);
+    const chatLatestFromQuery = new URLSearchParams(window.location.search).get('chat_latest') === '1';
+    let queryChatOpened = false;
+    let didInitialChatSelect = false;
+    /** File picked for the next Send — send photo only, or photo + optional caption in the text field. */
+    let pendingChatPhoto = null;
+    let pendingChatPhotoPreviewUrl = '';
+    /** Revoked whenever chat HTML is replaced (polling) so blob previews don’t leak. */
+    const chatMessageBlobUrls = [];
+
+    function revokeChatMessageBlobUrls() {
+      while (chatMessageBlobUrls.length) {
+        const u = chatMessageBlobUrls.pop();
+        try {
+          URL.revokeObjectURL(u);
+        } catch (_) {}
+      }
+    }
+
+    const consultPageMain = document.getElementById('consultPageMain');
+    const mainWorkspaceSlot = document.getElementById('mainWorkspaceSlot');
+    const drawerWorkspaceSlot = document.getElementById('drawerWorkspaceSlot');
+    const consultationsWorkspaceEl = document.getElementById('consultationsWorkspace');
+    const consultMessengerFab = document.getElementById('consultMessengerFab');
+    const consultMessengerShell = document.getElementById('consultMessengerShell');
+    const consultMessengerBackdrop = document.getElementById('consultMessengerBackdrop');
+    const consultMessengerPanel = document.getElementById('consultMessengerPanel');
+    const closeConsultMessengerBtn = document.getElementById('closeConsultMessengerBtn');
+
+    function openConsultMessenger() {
+      if (isModerator || isSpecialist) return;
+      if (!consultMessengerShell) return;
+      consultMessengerShell.classList.remove('hidden');
+      void consultMessengerShell.offsetWidth;
+      consultMessengerShell.classList.add('open');
+      consultMessengerShell.style.pointerEvents = 'auto';
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeConsultMessenger() {
+      if (isModerator || isSpecialist) return;
+      if (!consultMessengerShell) return;
+      consultMessengerShell.classList.remove('open');
+      consultMessengerShell.style.pointerEvents = 'none';
+      window.setTimeout(() => {
+        consultMessengerShell.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }, 320);
+    }
+
+    if (isModerator || isSpecialist) {
+      if (mainWorkspaceSlot && consultationsWorkspaceEl) {
+        mainWorkspaceSlot.appendChild(consultationsWorkspaceEl);
+        mainWorkspaceSlot.classList.remove('hidden');
+        mainWorkspaceSlot.classList.add('flex');
+      }
+      if (isModerator && consultationsWorkspaceEl) {
+        consultationsWorkspaceEl.classList.add('moderator-queue-layout');
+        const listTitle = document.getElementById('consultListSectionTitle');
+        const listHint = document.getElementById('consultListSectionHint');
+        if (listTitle) listTitle.textContent = 'Pending payment approval';
+        if (listHint) {
+          listHint.textContent = 'Manual GCash proofs awaiting verification';
+          listHint.classList.remove('hidden');
+        }
+      }
+      consultPageMain?.classList.add(
+        'lg:h-[calc(100dvh-5rem)]',
+        'lg:max-h-[calc(100dvh-5rem)]',
+        'lg:min-h-0',
+        'lg:flex-1',
+        'lg:overflow-hidden'
+      );
+      consultMessengerFab?.setAttribute('hidden', '');
+    } else if (drawerWorkspaceSlot && consultationsWorkspaceEl) {
+      drawerWorkspaceSlot.appendChild(consultationsWorkspaceEl);
+      consultMessengerFab?.removeAttribute('hidden');
+    }
+
+    if (consultMessengerFab) {
+      consultMessengerFab.addEventListener('click', () => openConsultMessenger());
+    }
+    closeConsultMessengerBtn?.addEventListener('click', () => closeConsultMessenger());
+    consultMessengerBackdrop?.addEventListener('click', () => closeConsultMessenger());
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const adminBd = document.getElementById('adminApprovalModalBackdrop');
+      if (adminBd && adminBd.classList.contains('open')) {
+        closeChat();
+        return;
+      }
+      const qrModal = document.getElementById('paymongoQrModal');
+      if (qrModal && !qrModal.classList.contains('hidden')) {
+        closePaymongoQrModal();
+        return;
+      }
+      const spModal = document.getElementById('specialistProfileModal');
+      if (spModal && !spModal.classList.contains('hidden')) {
+        closeSpecialistProfileModal();
+        return;
+      }
+      const clModal = document.getElementById('clientConsultModal');
+      if (clModal && !clModal.classList.contains('hidden')) {
+        closeClientConsultModal();
+        return;
+      }
+      closeChatKebabMenu();
+      const payBd = document.getElementById('consultation-payment-backdrop');
+      if (payBd && payBd.classList.contains('open')) {
+        closeConsultationPaymentModal();
+        return;
+      }
+      if (!consultMessengerShell?.classList.contains('open')) return;
+      const reqBd = document.getElementById('consultation-request-backdrop');
+      if (reqBd && reqBd.classList.contains('open')) return;
+      closeConsultMessenger();
+    });
+
+    /** Place consultations FAB next to Pro + Bell (top-right), not floating bottom-left */
+    function mountConsultMessengerFabInHeader() {
+      const fab = document.getElementById('consultMessengerFab');
+      const root = document.getElementById('notification-root');
+      if (!fab || !root || isModerator || isSpecialist) return;
+      root.appendChild(fab);
+      fab.removeAttribute('hidden');
+      fab.className =
+        'relative shrink-0 flex h-11 w-11 items-center justify-center rounded-xl border border-violet-500/45 bg-violet-600 text-lg leading-none text-white shadow-[0_8px_24px_rgba(91,33,182,0.35)] transition-colors hover:border-violet-400/55 hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-400/45';
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', mountConsultMessengerFabInHeader);
+    } else {
+      mountConsultMessengerFabInHeader();
+    }
+
+    const specialistBrowseSection = document.getElementById('specialistBrowseSection');
+    const consultationTrackerSection = document.getElementById('consultationTrackerSection');
+    const consultationTrackerRoot = document.getElementById('consultationTrackerRoot');
+    const specialistFeeSection = document.getElementById('specialistFeeSection');
+    const specialistFeeForm = document.getElementById('specialistFeeForm');
+    const specialistFeeInput = document.getElementById('specialistFeeInput');
+    const specialistFeeHint = document.getElementById('specialistFeeHint');
+    let trackerPollTimer = null;
+    /** User explicitly opened specialist browse while a booking exists — keep cards visible until the booking ends or they submit again. */
+    let browseSpecialistsOverride = false;
+    const anotherConsultBtn = document.getElementById('anotherConsultBtn');
+    const chatLockedOverlay = document.getElementById('chatLockedOverlay');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatForm = document.getElementById('chatForm');
+    const needConsultationBtn = document.getElementById('needConsultationBtn');
+    const chatPhotoPreview = document.getElementById('chatPhotoPreview');
+    const chatPhotoPreviewImg = document.getElementById('chatPhotoPreviewImg');
+    const chatPhotoPreviewName = document.getElementById('chatPhotoPreviewName');
+
+    if (isModerator || isSpecialist) {
+      anotherConsultBtn.classList.add('hidden');
+    }
+
+    if (isSpecialist && !isModerator) {
+      if (specialistBrowseSection) specialistBrowseSection.classList.add('hidden');
+      if (specialistFeeSection) specialistFeeSection.classList.remove('hidden');
+      const listTitle = document.getElementById('consultListSectionTitle');
+      const listHint = document.getElementById('consultListSectionHint');
+      if (listTitle) listTitle.textContent = 'Your clients';
+      if (listHint) {
+        listHint.textContent =
+          'Accept or decline new requests. After an admin verifies payment, chat unlocks — use the icons to view the client or set a video link.';
+        listHint.classList.remove('hidden');
+      }
+    }
+
+    function starText(avg, count) {
+      const c = Number(count || 0);
+      if (!c || avg == null) return 'No ratings yet';
+      return `${Number(avg).toFixed(1)} ★ (${c})`;
+    }
+
+    function starsHtml(value) {
+      const v = Number(value || 0);
+      let out = '';
+      for (let i = 1; i <= 5; i += 1) {
+        out += i <= v ? '★' : '☆';
+      }
+      return out;
+    }
+
+    function esc(v) {
+      const d = document.createElement('div');
+      d.textContent = v || '';
+      return d.innerHTML;
+    }
+
+    function formatTime(v) {
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDay(v) {
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    function resolveChatImageUrl(message) {
+      const raw =
+        (message && (message.imageUrl || message.image_url || message.imagePath || message.image_path)) || '';
+      if (!raw) return '';
+      let s = String(raw).trim().replace(/\\/g, '/');
+      if (!s) return '';
+      if (/^https?:\/\//i.test(s)) return s;
+      const lower = s.toLowerCase();
+      const uploadsIdx = lower.indexOf('/uploads/');
+      if (uploadsIdx >= 0) {
+        s = s.slice(uploadsIdx + 1);
+      } else if (lower.startsWith('uploads/')) {
+        /* keep */
+      } else if (lower.includes('consultation-chat/')) {
+        const ci = lower.indexOf('consultation-chat/');
+        s = `uploads/${s.slice(ci)}`;
+      } else if (/^[a-zA-Z]:\//.test(s)) {
+        const idx = lower.indexOf('/uploads/');
+        s = idx >= 0 ? s.slice(idx + 1) : s;
+      } else {
+        s = s.replace(/^\/+/, '');
+      }
+      if (s.startsWith('uploads/')) return `/${s}`;
+      if (s.startsWith('consultation-chat/')) return `/uploads/${s}`;
+      if (!s.startsWith('/')) s = `/${s}`;
+      return s;
+    }
+
+    function isHeicHeifUrl(url) {
+      return /\.(heic|heif)(\?|#|$)/i.test(url || '');
+    }
+
+    function heic2anyLib() {
+      return typeof heic2any === 'function' ? heic2any : typeof window.heic2any === 'function' ? window.heic2any : null;
+    }
+
+    /** HEIC/HEIF: decode in-browser — Chrome/Edge often draws a blank box for raw HEIC in an img. */
+    async function decodeHeicBlob(blob) {
+      const lib = heic2anyLib();
+      if (!lib) throw new Error('heic2any unavailable');
+      const out = await lib({ blob, toType: 'image/jpeg', quality: 0.88 });
+      return Array.isArray(out) ? out[0] : out;
+    }
+
+    /** Wire error fallback; hydrate tries HEIC decode + fixes mislabeled HEIC saved as .jpg */
+    function wireChatMessageImages() {
+      chatMessages.querySelectorAll('img.chat-msg-img').forEach((img) => {
+        img.onerror = function handleChatImgErr() {
+          const url = img.dataset.origSrc || img.getAttribute('src') || '';
+          const shell = img.closest('[data-chat-img-wrap]');
+          if (!shell) return;
+          shell.innerHTML = `<a href="${esc(url)}" target="_blank" rel="noopener" class="block w-full px-3 py-4 text-center text-sm text-violet-100 underline-offset-2 hover:underline">Photo didn’t load — open or save</a>`;
+        };
+      });
+    }
+
+    async function hydrateChatMessageImages() {
+      const lib = heic2anyLib();
+      const imgs = Array.from(chatMessages.querySelectorAll('img.chat-msg-img'));
+
+      const applyBlobUrl = (img, jpegBlob) => {
+        const blobUrl = URL.createObjectURL(jpegBlob);
+        const prev = img.dataset.blobUrl;
+        if (prev) URL.revokeObjectURL(prev);
+        chatMessageBlobUrls.push(blobUrl);
+        img.dataset.blobUrl = blobUrl;
+        img.src = blobUrl;
+        const btn = img.closest('button[data-chat-image]');
+        if (btn) btn.setAttribute('data-chat-image', blobUrl);
+      };
+
+      const tryDecodeFromUrl = async (img, orig) => {
+        if (!lib || !orig) return false;
+        try {
+          const res = await fetch(orig, { credentials: 'same-origin' });
+          if (!res.ok) return false;
+          const blob = await res.blob();
+          const jpegBlob = await decodeHeicBlob(blob);
+          if (jpegBlob && jpegBlob.size) {
+            applyBlobUrl(img, jpegBlob);
+            return true;
+          }
+        } catch (_) {
+          /* not HEIC or decode failed */
+        }
+        return false;
+      };
+
+      const processOne = async (img) => {
+        const orig = img.dataset.origSrc || img.getAttribute('src');
+        if (!orig) return;
+
+        if (isHeicHeifUrl(orig)) {
+          await tryDecodeFromUrl(img, orig);
+          return;
+        }
+
+        const attemptIfBlank = async () => {
+          await new Promise((r) => requestAnimationFrame(() => r()));
+          if (img.naturalWidth > 0 && img.naturalHeight > 0) return;
+          await tryDecodeFromUrl(img, orig);
+        };
+
+        if (img.complete) {
+          await attemptIfBlank();
+          return;
+        }
+        await new Promise((resolve) => {
+          const done = () => resolve();
+          img.addEventListener(
+            'load',
+            () => {
+              attemptIfBlank().finally(done);
+            },
+            { once: true }
+          );
+          img.addEventListener(
+            'error',
+            () => {
+              tryDecodeFromUrl(img, orig).finally(done);
+            },
+            { once: true }
+          );
+        });
+      };
+
+      await Promise.all(imgs.map((img) => processOne(img)));
+    }
+
+    function statusBadge(status) {
+      const s = String(status || '');
+      const color =
+        s === 'completed'
+          ? 'bg-emerald-500/20 text-emerald-300'
+          : s === 'in_progress' || s === 'paid'
+            ? 'bg-sky-500/20 text-sky-300'
+            : s === 'awaiting_payment' || s === 'accepted'
+              ? 'bg-cyan-500/20 text-cyan-300'
+              : s === 'cancelled' || s === 'declined'
+                ? 'bg-red-500/20 text-red-300'
+                : 'bg-amber-500/20 text-amber-300';
+      return `<span class="rounded-full px-1.5 py-0.5 text-[9px] font-medium ${color}">${esc(s)}</span>`;
+    }
+
+    /** Staff list: second line so payment state is not confused with session status */
+    function paymentStaffListBadge(c) {
+      const pay = c.paymentStatus || 'unpaid';
+      if (pay === 'pending_review') {
+        return '<span class="rounded-full bg-amber-500/25 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-amber-100">Proof</span>';
+      }
+      if (pay === 'verified') {
+        return '<span class="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-emerald-200">Paid</span>';
+      }
+      return '<span class="rounded-full bg-slate-600/35 px-1.5 py-0.5 text-[8px] font-medium text-slate-400">Unpaid</span>';
+    }
+
+    function findConsultation(id) {
+      return consultationRowsCache.find((c) => Number(c.consultationId) === Number(id));
+    }
+
+    function chatAllowed(c) {
+      if (!c) return false;
+      if (isModerator) return true;
+      return !!c.chatUnlocked;
+    }
+
+    function composerInteractive() {
+      if (!activeChatId) return false;
+      if (isModerator) return true;
+      const c = findConsultation(activeChatId);
+      return chatAllowed(c);
+    }
+
+    function updateComposerDisabled() {
+      const photoBtn = document.getElementById('chatPhotoBtn');
+      const sendBtn = chatForm.querySelector('button[type="submit"]');
+      const allow = composerInteractive();
+      chatInput.disabled = !allow;
+      if (photoBtn) photoBtn.disabled = !allow;
+      if (sendBtn) sendBtn.disabled = !allow;
+    }
+
+    /** Composer only when a consultation is open and (mod/specialist) or payment verified for messaging. */
+    function updateComposerVisibility() {
+      if (!chatForm) return;
+      if (!activeChatId) {
+        chatForm.classList.add('hidden');
+        return;
+      }
+      if (isModerator) {
+        chatForm.classList.remove('hidden');
+        return;
+      }
+      const c = findConsultation(activeChatId);
+      chatForm.classList.toggle('hidden', !chatAllowed(c));
+    }
+
+    function setChatOverlayState() {
+      const needBtn = needConsultationBtn;
+      const msgEl = document.getElementById('chatLockedMsg');
+      if (isModerator) {
+        chatLockedOverlay.classList.add('hidden');
+        chatMessages.classList.remove('pointer-events-none', 'select-none', 'opacity-0');
+        return;
+      }
+      const noConsults = consultationRowsCache.length === 0;
+      if (noConsults) {
+        chatLockedOverlay.classList.add('hidden');
+        needBtn.classList.add('hidden');
+        chatMessages.classList.remove('pointer-events-none', 'select-none', 'opacity-0');
+        return;
+      }
+      const c = activeChatId ? findConsultation(activeChatId) : null;
+      if (!activeChatId || !c) {
+        chatLockedOverlay.classList.add('hidden');
+        chatMessages.classList.remove('pointer-events-none', 'select-none', 'opacity-0');
+        return;
+      }
+      if (chatAllowed(c)) {
+        chatLockedOverlay.classList.add('hidden');
+        chatMessages.classList.remove('pointer-events-none', 'select-none', 'opacity-0');
+        return;
+      }
+      /* Payment / verification: keep thread visually empty (no overlay copy or CTAs — use main-page tracker). */
+      chatLockedOverlay.classList.add('hidden');
+      needBtn.classList.add('hidden');
+      if (msgEl) msgEl.textContent = '';
+      chatMessages.classList.remove('pointer-events-none', 'select-none', 'opacity-0');
+    }
+
+    function setChatLocked() {
+      setChatOverlayState();
+      updateComposerDisabled();
+      updateComposerVisibility();
+    }
+
+    let selectedSpecialistUserId = '';
+
+    function syncSpecialistCardsVisual() {
+      const root = document.getElementById('specialistCards');
+      if (!root) return;
+      root.querySelectorAll('[data-specialist-id]').forEach((btn) => {
+        const id = btn.getAttribute('data-specialist-id');
+        const on = selectedSpecialistUserId && String(selectedSpecialistUserId) === String(id);
+        btn.classList.toggle('ring-2', on);
+        btn.classList.toggle('ring-violet-500', on);
+        btn.classList.toggle('ring-offset-2', on);
+        btn.classList.toggle('ring-offset-slate-900', on);
+        btn.classList.toggle('shadow-xl', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+
+    function openConsultationRequestModal(userId) {
+      const uid = Number(userId);
+      if (!Number.isFinite(uid) || uid <= 0) return;
+      const spec = specialistsForBooking.find((s) => Number(s.userId) === uid);
+      if (!spec) return;
+      setSelectedSpecialist(uid);
+      const rate =
+        spec.consultationRate != null && Number.isFinite(Number(spec.consultationRate))
+          ? `₱${Number(spec.consultationRate).toLocaleString()} · session`
+          : 'Rate on request';
+      const line = document.getElementById('modalConsultSpecialistLine');
+      if (line) line.textContent = `${spec.name || 'Specialist'} · ${rate}`;
+      const metaParts = [];
+      if (spec.specialty && String(spec.specialty).trim()) metaParts.push(String(spec.specialty).trim());
+      if (spec.location && String(spec.location).trim()) metaParts.push(String(spec.location).trim());
+      const meta = document.getElementById('modalConsultSpecialistMeta');
+      if (meta) meta.textContent = metaParts.join(' · ') || 'Hairvelous specialist';
+      const bd = document.getElementById('consultation-request-backdrop');
+      if (bd) bd.classList.add('open');
+      setTimeout(() => {
+        const ti = document.getElementById('concernTitle');
+        if (ti) ti.focus();
+      }, 80);
+    }
+
+    function closeConsultationRequestModal() {
+      const bd = document.getElementById('consultation-request-backdrop');
+      if (bd) bd.classList.remove('open');
+      const form = document.getElementById('requestForm');
+      if (form) form.reset();
+      setSelectedSpecialist('');
+    }
+
+    function setSelectedSpecialist(userId) {
+      selectedSpecialistUserId =
+        userId === '' || userId === null || userId === undefined ? '' : Number(userId);
+      const hid = document.getElementById('selectedSpecialistUserId');
+      if (hid) hid.value = selectedSpecialistUserId || '';
+      syncSpecialistCardsVisual();
+    }
+
+    function specialistInitials(name) {
+      const parts = String(name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      if (!parts.length) return '?';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function renderOneSpecialistCard(s) {
+      const rateNum =
+        s.consultationRate != null && Number.isFinite(Number(s.consultationRate))
+          ? Number(s.consultationRate)
+          : null;
+      const feePrimary = rateNum != null ? `₱${rateNum.toLocaleString()}` : 'On request';
+      const feeSub = rateNum != null ? 'per session' : '';
+      const ratingLabel = starText(s.ratingAvg, s.ratingCount);
+      const tags = Array.isArray(s.expertiseTags) ? s.expertiseTags : [];
+      const focusStat =
+        (tags[0] && String(tags[0]).trim()) ||
+        (s.specialty && String(s.specialty).trim().slice(0, 28)) ||
+        'Hair & scalp';
+      const category =
+        s.specialty && String(s.specialty).trim()
+          ? String(s.specialty).trim()
+          : 'Hair & scalp care';
+      const hook =
+        (tags.length > 1 && String(tags[1]).trim()) ||
+        (tags[0] && String(tags[0]).trim() && tags[0] !== category ? String(tags[0]).trim().slice(0, 48) : '') ||
+        'Personalized care for your hair goals.';
+      const loc =
+        s.location && String(s.location).trim() ? String(s.location).trim() : 'Philippines';
+      const bio = (s.bioSnippet && String(s.bioSnippet).trim()) || category;
+      const bannerImg = s.profilePhotoUrl
+        ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-full min-h-[6.5rem] w-full object-cover opacity-95" />`
+        : `<div class="flex h-full min-h-[6.5rem] w-full items-center justify-center bg-gradient-to-br from-violet-900/80 via-slate-900 to-slate-950"><span class="text-3xl font-bold text-violet-200/90">${esc(specialistInitials(s.name))}</span></div>`;
+      const avatarInner = s.profilePhotoUrl
+        ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-full w-full object-cover" />`
+        : `<span class="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-violet-900 text-base font-bold text-white">${esc(specialistInitials(s.name))}</span>`;
+      const tagPills = tags
+        .slice(0, 3)
+        .map(
+          (t) =>
+            `<span class="max-w-[7rem] truncate rounded-md border border-slate-600/80 bg-slate-900/60 px-2 py-0.5 text-[10px] font-medium text-slate-300">${esc(String(t))}</span>`
+        )
+        .join('');
+      return `
+    <button type="button" data-specialist-id="${s.userId}" aria-pressed="false"
+      class="specialist-card group flex h-full w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-700/90 bg-slate-800/50 text-left shadow-lg shadow-black/25 ring-1 ring-slate-700/50 transition hover:-translate-y-0.5 hover:border-violet-500/30 hover:shadow-xl hover:shadow-violet-950/25">
+      <div class="relative h-[6.25rem] w-full shrink-0 overflow-hidden bg-slate-950 sm:h-[6.75rem]">${bannerImg}</div>
+      <div class="relative flex flex-1 flex-col px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
+        <div class="relative -mt-9 mb-3 flex items-end gap-2.5 sm:-mt-10">
+          <div class="h-14 w-14 shrink-0 overflow-hidden rounded-full border-[3px] border-slate-800 bg-slate-900 shadow-lg ring-1 ring-slate-600/60 sm:h-[3.75rem] sm:w-[3.75rem]">${avatarInner}</div>
+          <span class="mb-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-600 text-[11px] font-bold text-white shadow ring-2 ring-slate-900" title="Hairvelous specialist">✓</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 border-b border-slate-700/80 pb-3">
+          <div>
+            <p class="text-[9px] font-semibold uppercase tracking-wide text-slate-500">Fee</p>
+            <p class="mt-1 text-base font-bold leading-tight text-emerald-400">${esc(feePrimary)}</p>
+            ${feeSub ? `<p class="mt-0.5 text-[10px] font-medium text-emerald-400/80">${esc(feeSub)}</p>` : ''}
+          </div>
+          <div>
+            <p class="text-[9px] font-semibold uppercase tracking-wide text-slate-500">Focus</p>
+            <p class="mt-1 line-clamp-2 text-xs font-bold leading-snug text-slate-100">${esc(focusStat)}</p>
+          </div>
+        </div>
+        <p class="mt-2 text-[11px] text-amber-300/90">${esc(ratingLabel)}</p>
+        <h3 class="mt-3 line-clamp-2 text-[15px] font-bold leading-snug text-white sm:text-base">
+          ${esc(s.name || 'Specialist')}<span class="font-normal text-slate-400"> · ${esc(hook.length > 48 ? hook.slice(0, 46) + '…' : hook)}</span>
+        </h3>
+        <p class="mt-1.5 line-clamp-1 text-xs font-medium leading-snug text-slate-400">${esc(category)}</p>
+        <p class="mt-2 flex items-start gap-1.5 text-xs leading-snug text-slate-400">
+          <span class="mt-0.5 shrink-0 text-violet-400/90" aria-hidden="true">📍</span>
+          <span class="line-clamp-1">${esc(loc)}</span>
+        </p>
+        <p class="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500">${esc(bio)}</p>
+        <div class="mt-3 flex min-h-[1.35rem] flex-wrap gap-1.5">${tagPills || '<span class="text-[10px] leading-relaxed text-slate-500">Routines · Picks</span>'}</div>
+        <div class="mt-4 flex items-center justify-between border-t border-slate-700/80 bg-slate-900/40 px-1 py-3">
+          <span class="text-sm font-semibold text-violet-300">Request</span>
+          <span class="text-base font-light text-violet-400/90 transition group-hover:translate-x-0.5" aria-hidden="true">→</span>
+        </div>
+      </div>
+    </button>`;
+    }
+
+    function showRequestForm() {
+      browseSpecialistsOverride = true;
+      closeConsultMessenger();
+      if (consultationTrackerSection) consultationTrackerSection.classList.add('hidden');
+      if (specialistBrowseSection) {
+        specialistBrowseSection.classList.remove('hidden');
+        specialistBrowseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function consultationIsTerminal(c) {
+      if (!c) return true;
+      const st = String(c.status || '');
+      return st === 'cancelled' || st === 'declined' || st === 'completed';
+    }
+
+    function pickPrimaryTrackedConsultation(rows) {
+      if (!rows || !rows.length) return null;
+      const active = rows.filter((c) => !consultationIsTerminal(c));
+      if (!active.length) return null;
+      active.sort((a, b) => {
+        const ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return tb - ta;
+      });
+      return active[0];
+    }
+
+    /** 0 = payment / pre-payment, 1 = admin verification, 2 = chat */
+    function getConsultationTrackerPhase(c) {
+      const pay = c.paymentStatus || 'unpaid';
+      const st = String(c.status || '');
+      if (pay === 'verified') {
+        return { currentStep: 2, awaitingSpecialist: false, needPayment: false };
+      }
+      if (pay === 'pending_review') {
+        return { currentStep: 1, awaitingSpecialist: false, needPayment: false };
+      }
+      const unpaid = pay === 'unpaid' || pay === 'rejected';
+      if (unpaid && st === 'pending') {
+        return { currentStep: 0, awaitingSpecialist: true, needPayment: false };
+      }
+      if (unpaid && st === 'awaiting_payment') {
+        return { currentStep: 0, awaitingSpecialist: false, needPayment: true };
+      }
+      return { currentStep: 0, awaitingSpecialist: false, needPayment: unpaid };
+    }
+
+    function trackerStepDotClass(i, currentStep) {
+      if (i < currentStep)
+        return 'border-emerald-400/80 bg-emerald-500/25 text-emerald-200 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]';
+      if (i === currentStep)
+        return 'border-violet-400 bg-violet-600 text-white shadow-[0_0_0_4px_rgba(139,92,246,0.25)] ring-2 ring-violet-400/50';
+      return 'border-slate-600 bg-slate-800/90 text-slate-500';
+    }
+
+    function renderConsultationTracker(c) {
+      if (!consultationTrackerRoot || !c) return;
+      const phase = getConsultationTrackerPhase(c);
+      const { currentStep, awaitingSpecialist, needPayment } = phase;
+      const id = Number(c.consultationId);
+      const spec = esc(c.specialistName || 'Your specialist');
+      const title = esc(c.concernTitle || 'Consultation');
+      const pref = c.preferredDate ? esc(String(c.preferredDate).slice(0, 10)) : '—';
+      const fee =
+        c.amountPhp != null ? `₱${Number(c.amountPhp).toLocaleString()}` : 'On request';
+
+      const s1Sub = awaitingSpecialist
+        ? 'Your specialist needs to accept this request before you can pay.'
+        : needPayment
+          ? 'Use PayMongo or QR Ph, or submit a manual GCash proof.'
+          : 'Payment phase';
+      const s2Sub = 'Our team confirms your payment (usually very quick).';
+      const s3Sub = 'Open messages and get guidance from your specialist.';
+
+      const paymentActionsEnabled = needPayment && currentStep === 0;
+      const payActions = `<div class="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-slate-700/50 pt-4 sm:justify-start">
+               <button type="button" data-tracker-paymongo="${id}" ${
+                 paymentActionsEnabled ? '' : 'disabled'
+               } class="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-500/40 ${
+                 paymentActionsEnabled
+                   ? 'bg-cyan-500/10 text-cyan-100 transition hover:bg-cyan-500/20'
+                   : 'cursor-not-allowed bg-slate-800/60 text-slate-500 opacity-70'
+               }" title="${
+                 paymentActionsEnabled ? 'Pay with PayMongo' : 'Available after specialist acceptance'
+               }" aria-label="Pay with PayMongo">
+                 <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+               </button>
+               <button type="button" data-tracker-qr="${id}" ${
+                 paymentActionsEnabled ? '' : 'disabled'
+               } class="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/40 ${
+                 paymentActionsEnabled
+                   ? 'bg-emerald-500/10 text-emerald-100 transition hover:bg-emerald-500/20'
+                   : 'cursor-not-allowed bg-slate-800/60 text-slate-500 opacity-70'
+               }" title="${
+                 paymentActionsEnabled ? 'QR Ph' : 'Available after specialist acceptance'
+               }" aria-label="Pay with QR Ph">
+                 <svg class="h-7 w-7" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h2v2h-2v-2zm-4 4h2v2h-2v-2zm2-2h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+               </button>
+               <button type="button" data-tracker-paymodal="${id}" class="rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:border-violet-500/45 hover:text-white">
+                 Full details
+               </button>
+             </div>
+             ${
+               paymentActionsEnabled
+                 ? ''
+                 : '<p class="w-full text-[11px] text-slate-500 sm:pl-0">Payment icons unlock when the specialist accepts your request.</p>'
+             }`;
+
+      const chatAction =
+        currentStep === 2
+          ? `<div class="mt-4 border-t border-slate-700/50 pt-4">
+               <button type="button" data-tracker-open-chat="${id}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-950/30 hover:bg-violet-500 sm:w-auto">
+                 <span>Open messages</span>
+                 <span aria-hidden="true">→</span>
+               </button>
+             </div>`
+          : '';
+
+      const d0 = trackerStepDotClass(0, currentStep);
+      const d1 = trackerStepDotClass(1, currentStep);
+      const d2 = trackerStepDotClass(2, currentStep);
+
+      consultationTrackerRoot.innerHTML = `
+        <div class="flex flex-col gap-2 border-b border-slate-700/60 pb-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="text-xs font-medium text-slate-400">With <span class="text-violet-300">${spec}</span></p>
+            <p class="mt-1 text-base font-semibold text-white">${title}</p>
+            <p class="mt-1 text-[11px] text-slate-500">Ref #${id} · Preferred ${pref} · ${fee}</p>
+          </div>
+          <button type="button" data-tracker-sync="${id}" class="shrink-0 self-start rounded-lg border border-slate-600 px-3 py-1.5 text-[11px] font-medium text-slate-400 hover:border-slate-500 hover:text-slate-200" title="Refresh status">
+            Refresh
+          </button>
+        </div>
+        <div class="relative mt-8 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-4">
+          <div aria-hidden="true" class="pointer-events-none absolute left-[8%] right-[8%] top-5 hidden h-0.5 tracker-step-line opacity-40 md:block"></div>
+          <div class="relative rounded-xl border border-slate-700/60 bg-slate-900/40 p-4 text-center sm:text-left">
+            <div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-bold sm:mx-0 ${d0}">1</div>
+            <p class="text-sm font-semibold text-white">Payment</p>
+            <p class="mt-1 text-xs leading-relaxed text-slate-500">${esc(s1Sub)}</p>
+            ${payActions}
+          </div>
+          <div class="relative rounded-xl border border-slate-700/60 bg-slate-900/40 p-4 text-center sm:text-left">
+            <div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-bold sm:mx-0 ${d1}">2</div>
+            <p class="text-sm font-semibold text-white">Verification</p>
+            <p class="mt-1 text-xs leading-relaxed text-slate-500">${esc(s2Sub)}</p>
+            ${
+              currentStep === 1
+                ? `<p class="mt-3 text-xs font-medium text-amber-200/90">Hang tight — we’re reviewing your proof or payment.</p>`
+                : ''
+            }
+          </div>
+          <div class="relative rounded-xl border border-slate-700/60 bg-slate-900/40 p-4 text-center sm:text-left">
+            <div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-bold sm:mx-0 ${d2}">3</div>
+            <p class="text-sm font-semibold text-white">Chat with specialist</p>
+            <p class="mt-1 text-xs leading-relaxed text-slate-500">${esc(s3Sub)}</p>
+            ${chatAction}
+          </div>
+        </div>
+      `;
+
+      consultationTrackerRoot.querySelectorAll('[data-tracker-paymongo]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const cid = Number(btn.getAttribute('data-tracker-paymongo'));
+          paymentModalConsultationId = cid;
+          const hid = document.getElementById('paymentModalConsultationId');
+          if (hid) hid.value = String(cid);
+          paymentModalPaymongoCheckout();
+        });
+      });
+      consultationTrackerRoot.querySelectorAll('[data-tracker-qr]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const cid = Number(btn.getAttribute('data-tracker-qr'));
+          paymentModalConsultationId = cid;
+          const hid = document.getElementById('paymentModalConsultationId');
+          if (hid) hid.value = String(cid);
+          paymentModalQrPh();
+        });
+      });
+      consultationTrackerRoot.querySelectorAll('[data-tracker-paymodal]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          openConsultationPaymentModal(Number(btn.getAttribute('data-tracker-paymodal')), { skipMessenger: true });
+        });
+      });
+      consultationTrackerRoot.querySelectorAll('[data-tracker-open-chat]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const cid = Number(btn.getAttribute('data-tracker-open-chat'));
+          const row = findConsultation(cid);
+          openConsultMessenger();
+          if (row) openChat(cid, row.concernTitle || '');
+        });
+      });
+      consultationTrackerRoot.querySelectorAll('[data-tracker-sync]').forEach((btn) => {
+        btn.addEventListener('click', () => loadConsultations());
+      });
+    }
+
+    function setTrackerPolling(on) {
+      if (trackerPollTimer) {
+        clearInterval(trackerPollTimer);
+        trackerPollTimer = null;
+      }
+      if (!on || isModerator || isSpecialist) return;
+      trackerPollTimer = setInterval(() => {
+        if (consultationTrackerSection && !consultationTrackerSection.classList.contains('hidden')) loadConsultations();
+      }, 9000);
+    }
+
+    function updateRequestUi(count) {
+      if (isModerator || isSpecialist) return;
+      const primary = pickPrimaryTrackedConsultation(consultationRowsCache);
+      if (!primary) browseSpecialistsOverride = false;
+      const showTracker = primary && !browseSpecialistsOverride;
+      if (showTracker && consultationTrackerSection && specialistBrowseSection) {
+        specialistBrowseSection.classList.add('hidden');
+        consultationTrackerSection.classList.remove('hidden');
+        renderConsultationTracker(primary);
+        setTrackerPolling(true);
+      } else {
+        if (consultationTrackerSection) consultationTrackerSection.classList.add('hidden');
+        if (specialistBrowseSection) specialistBrowseSection.classList.remove('hidden');
+        setTrackerPolling(false);
+      }
+      if (count > 0) anotherConsultBtn.classList.remove('hidden');
+      else anotherConsultBtn.classList.add('hidden');
+    }
+
+    function isMySpecialistCase(c) {
+      return isSpecialist && Number(c.specialistUserId) === Number(user.userId);
+    }
+
+    const CONSULT_MUTE_KEY = 'hairvelous:consultMute';
+    function isConsultMuted(consultationId) {
+      try {
+        const o = JSON.parse(localStorage.getItem(CONSULT_MUTE_KEY) || '{}');
+        return !!o[String(consultationId)];
+      } catch (_) {
+        return false;
+      }
+    }
+    function setConsultMuted(consultationId, muted) {
+      try {
+        const o = JSON.parse(localStorage.getItem(CONSULT_MUTE_KEY) || '{}');
+        if (muted) o[String(consultationId)] = true;
+        else delete o[String(consultationId)];
+        localStorage.setItem(CONSULT_MUTE_KEY, JSON.stringify(o));
+      } catch (_) {}
+    }
+
+    function updateChatHeaderMenu() {
+      const wrap = document.getElementById('chatKebabWrap');
+      const menu = document.getElementById('chatKebabMenu');
+      const btn = document.getElementById('chatKebabBtn');
+      const badge = document.getElementById('chatMutedBadge');
+      const muteBtn = document.getElementById('chatMenuMuteBtn');
+      if (!wrap) return;
+      if (!activeChatId) {
+        wrap.classList.add('hidden');
+        if (menu) menu.classList.add('hidden');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        if (badge) badge.classList.add('hidden');
+        return;
+      }
+      wrap.classList.remove('hidden');
+      const muted = isConsultMuted(activeChatId);
+      if (badge) badge.classList.toggle('hidden', !muted);
+      if (muteBtn) muteBtn.textContent = muted ? 'Unmute notifications' : 'Mute notifications';
+      const delConv = document.getElementById('chatMenuDeleteConversationBtn');
+      if (delConv) {
+        const row = activeChatId ? findConsultation(activeChatId) : null;
+        delConv.classList.toggle('hidden', isModerator || isSpecialist || !row || !canOwnerDeleteChat(row));
+      }
+    }
+
+    function closeChatKebabMenu() {
+      const menu = document.getElementById('chatKebabMenu');
+      const btn = document.getElementById('chatKebabBtn');
+      menu?.classList.add('hidden');
+      btn?.setAttribute('aria-expanded', 'false');
+    }
+
+    async function openSpecialistProfileModal(c) {
+      const modal = document.getElementById('specialistProfileModal');
+      const body = document.getElementById('specialistProfileModalBody');
+      if (!modal || !body || !c) return;
+      const uid = Number(c.specialistUserId);
+      if (!Number.isFinite(uid) || uid <= 0) {
+        showToast('No specialist on this thread yet.', 'error');
+        return;
+      }
+      let s = specialistsForBooking.find((x) => Number(x.userId) === uid);
+      if (!s) {
+        try {
+          const r = await api('/profile/consultation-specialists');
+          specialistsForBooking = r.specialists || [];
+          s = specialistsForBooking.find((x) => Number(x.userId) === uid);
+        } catch (_) {}
+      }
+      const name = esc(s?.name || c.specialistName || 'Specialist');
+      const specLine = esc(s?.specialty || 'Hair specialist');
+      const loc = esc(s?.location || '—');
+      let rateLabel = 'On request';
+      if (s && s.consultationRate != null && Number.isFinite(Number(s.consultationRate))) {
+        rateLabel = 'From ₱' + Number(s.consultationRate).toFixed(0);
+      }
+      const bio = esc(s?.bioSnippet || 'Hair and scalp specialist — book for tailored advice.');
+      const initials = listAvatarInitials(s?.name || c.specialistName || '');
+      const photo =
+        s?.profilePhotoUrl
+          ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-slate-600" />`
+          : `<div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-900 text-lg font-bold text-white ring-2 ring-slate-600">${esc(initials)}</div>`;
+      const tags = (s?.expertiseTags || [])
+        .slice(0, 8)
+        .map((t) => `<span class="rounded-md border border-slate-600 bg-slate-800/80 px-2 py-0.5 text-[10px] text-slate-300">${esc(String(t))}</span>`)
+        .join(' ');
+
+      body.innerHTML = `
+        <div class="flex gap-3">
+          ${photo}
+          <div class="min-w-0 flex-1">
+            <p class="text-base font-semibold text-white">${name}</p>
+            <p class="text-xs text-slate-400">${specLine}</p>
+            <p class="mt-1 text-xs font-medium text-violet-300/90">${esc(rateLabel)}</p>
+          </div>
+        </div>
+        <p class="mt-3 text-xs text-slate-400">📍 ${loc}</p>
+        <p class="mt-2 text-sm leading-relaxed text-slate-300">${bio}</p>
+        ${tags ? `<div class="mt-3 flex flex-wrap gap-1.5">${tags}</div>` : ''}`;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSpecialistProfileModal() {
+      const modal = document.getElementById('specialistProfileModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function closeClientConsultModal() {
+      const modal = document.getElementById('clientConsultModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function openClientConsultSummaryModal(consultationId) {
+      const id = Number(consultationId);
+      if (!Number.isFinite(id)) return;
+      const modal = document.getElementById('clientConsultModal');
+      const body = document.getElementById('clientConsultModalBody');
+      if (!modal || !body) return;
+      try {
+        const data = await api('/consultations/' + id + '/client-summary');
+        const cl = data.client || {};
+        const hp = data.hairProfile;
+        const issues = hp && hp.issuesDetected ? esc(String(hp.issuesDetected)) : '—';
+        body.innerHTML = `
+          <p class="text-white font-medium">${esc(cl.name)}</p>
+          <p class="text-xs text-slate-400 mt-1">${esc(cl.email)}</p>
+          <div class="mt-4 rounded-lg border border-slate-700 bg-slate-800/50 p-3 space-y-2 text-xs">
+            <p><span class="text-slate-500">Hair type:</span> <span class="text-slate-200">${hp ? esc(hp.hairType || '—') : '—'}</span></p>
+            <p><span class="text-slate-500">Scalp:</span> <span class="text-slate-200">${hp ? esc(hp.scalpCondition || '—') : '—'}</span></p>
+            <p><span class="text-slate-500">Indicators:</span> <span class="text-slate-200">${issues}</span></p>
+          </div>
+          <p class="mt-3 text-[11px] text-slate-500">Password resets are handled by admin only — you cannot change this client’s password here.</p>`;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } catch (e) {
+        showToast(e.error || 'Could not load client summary', 'error');
+      }
+    }
+
+    async function specialistSetMeetingUrl(c) {
+      const id = Number(c.consultationId);
+      if (!Number.isFinite(id)) return;
+      const current = (c.meetingUrl && String(c.meetingUrl).trim()) || '';
+      const url = window.prompt('Paste Google Meet / Zoom link (leave empty to clear):', current);
+      if (url === null) return;
+      try {
+        await api('/consultations/' + id, {
+          method: 'PATCH',
+          body: JSON.stringify({ meetingUrl: url.trim() }),
+        });
+        await loadConsultations();
+        showToast('Meeting link updated', 'success');
+      } catch (err) {
+        showToast(err.error || 'Could not update link', 'error');
+      }
+    }
+
+    async function requestMeetingFromSpecialist(consultationId) {
+      const id = Number(consultationId);
+      if (!Number.isFinite(id)) return;
+      try {
+        await api('/consultations/' + id, {
+          method: 'PATCH',
+          body: JSON.stringify({ action: 'request_meeting' }),
+        });
+        showToast('Your specialist was notified to add a video link.', 'success');
+      } catch (err) {
+        showToast(err.error || 'Could not send request', 'error');
+      }
+    }
+
+    let paymongoQrPollTimer = null;
+    let paymongoQrActiveCid = null;
+
+    function closePaymongoQrModal() {
+      if (paymongoQrPollTimer) {
+        clearInterval(paymongoQrPollTimer);
+        paymongoQrPollTimer = null;
+      }
+      paymongoQrActiveCid = null;
+      const m = document.getElementById('paymongoQrModal');
+      if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      }
+      const img = document.getElementById('paymongoQrImg');
+      if (img) img.removeAttribute('src');
+    }
+
+    function openPaymongoQrModal(qrImageUrl, consultationId) {
+      if (paymongoQrPollTimer) {
+        clearInterval(paymongoQrPollTimer);
+        paymongoQrPollTimer = null;
+      }
+      const m = document.getElementById('paymongoQrModal');
+      const img = document.getElementById('paymongoQrImg');
+      const st = document.getElementById('paymongoQrStatus');
+      if (!m || !img) return;
+      img.src = qrImageUrl;
+      if (st) st.textContent = 'Waiting for payment…';
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+      paymongoQrActiveCid = Number(consultationId);
+      paymongoQrPollTimer = setInterval(async () => {
+        if (!paymongoQrActiveCid) return;
+        try {
+          const r = await api('/consultations/' + paymongoQrActiveCid + '/paymongo/sync');
+          if (r.paid) {
+            const doneId = paymongoQrActiveCid;
+            closePaymongoQrModal();
+            await loadConsultations();
+            const row = findConsultation(doneId);
+            if (row) await openChat(doneId, row.concernTitle || '');
+            showToast('Payment confirmed', 'success');
+          }
+        } catch (_) {}
+      }, 4000);
+    }
+
+    let paymentModalConsultationId = null;
+
+    function closeConsultationPaymentModal() {
+      const bd = document.getElementById('consultation-payment-backdrop');
+      bd?.classList.remove('open');
+      paymentModalConsultationId = null;
+    }
+
+    async function openConsultationPaymentModal(consultationId, options) {
+      const { skipMessenger = false } = options || {};
+      const id = Number(consultationId);
+      if (!Number.isFinite(id) || id <= 0) return;
+      paymentModalConsultationId = id;
+      const c = findConsultation(id);
+      const bd = document.getElementById('consultation-payment-backdrop');
+      const specLine = document.getElementById('paymentModalSpecialistLine');
+      const hid = document.getElementById('paymentModalConsultationId');
+      const feeBlock = document.getElementById('paymentModalFeeBlock');
+      const dateEl = document.getElementById('paymentModalPreferredDate');
+      const sumEl = document.getElementById('paymentModalHairSummary');
+      if (hid) hid.value = String(id);
+      if (specLine && c) {
+        const rate =
+          c.amountPhp != null ? `Fee ₱${Number(c.amountPhp).toLocaleString()}` : 'Fee on request';
+        specLine.textContent = `${c.specialistName || 'Specialist'} · ${rate}`;
+      }
+      if (dateEl) {
+        dateEl.textContent = c && c.preferredDate ? String(c.preferredDate).slice(0, 10) : '—';
+      }
+      if (feeBlock) {
+        if (c && c.amountPhp != null) {
+          feeBlock.innerHTML = `Fee: <span class="text-slate-200">₱${esc(String(c.amountPhp))}</span> · Platform ${esc(String(c.platformFeePercent ?? ''))}% (₱${esc(String(c.platformFeePhp ?? '—'))}) · Specialist net ₱${esc(String(c.specialistNetPhp ?? '—'))}`;
+        } else {
+          feeBlock.textContent = '';
+        }
+      }
+      if (sumEl) sumEl.innerHTML = '<p class="text-xs text-slate-500">Loading profile…</p>';
+      bd?.classList.add('open');
+      if (!skipMessenger) openConsultMessenger();
+      try {
+        const prof = await api('/profile');
+        const hp = prof && prof.hairProfile;
+        if (hp && (hp.hairType || hp.scalpCondition || hp.issuesDetected)) {
+          const issues =
+            hp.issuesDetected != null && String(hp.issuesDetected).trim()
+              ? esc(String(hp.issuesDetected).slice(0, 280)) + (String(hp.issuesDetected).length > 280 ? '…' : '')
+              : '';
+          sumEl.innerHTML = `<ul class="space-y-1.5 text-xs leading-relaxed text-slate-300">
+            <li><span class="text-slate-500">Hair type</span> · ${esc(hp.hairType || '—')}</li>
+            <li><span class="text-slate-500">Scalp</span> · ${esc(hp.scalpCondition || '—')}</li>
+            ${issues ? `<li><span class="text-slate-500">Notes</span> · ${issues}</li>` : ''}
+          </ul>`;
+        } else if (sumEl) {
+          sumEl.innerHTML =
+            '<p class="text-xs leading-relaxed text-slate-400">No hair profile on file yet — complete your assessment or profile on the dashboard.</p>';
+        }
+      } catch (_e) {
+        if (sumEl) sumEl.innerHTML = '<p class="text-xs text-slate-400">Could not load your hair profile.</p>';
+      }
+    }
+
+    async function paymentModalPaymongoCheckout() {
+      const id = paymentModalConsultationId || Number(document.getElementById('paymentModalConsultationId')?.value);
+      if (!Number.isFinite(id) || id <= 0) return;
+      try {
+        const r = await api('/consultations/' + id + '/paymongo/checkout', {
+          method: 'POST',
+          body: '{}',
+        });
+        if (r.checkoutUrl) window.location.href = r.checkoutUrl;
+        else showToast('No checkout URL — configure PayMongo on the server', 'error');
+      } catch (err) {
+        showToast(err.error || err.message || 'PayMongo unavailable — add keys to enable checkout', 'error');
+      }
+    }
+
+    async function paymentModalQrPh() {
+      const id = paymentModalConsultationId || Number(document.getElementById('paymentModalConsultationId')?.value);
+      if (!Number.isFinite(id) || id <= 0) return;
+      try {
+        const r = await api('/consultations/' + id + '/paymongo/qr', {
+          method: 'POST',
+          body: '{}',
+        });
+        if (r.qrImageUrl) {
+          closeConsultationPaymentModal();
+          openPaymongoQrModal(r.qrImageUrl, id);
+        } else showToast('No QR returned — configure PayMongo', 'error');
+      } catch (err) {
+        showToast(err.error || err.message || 'QR Ph unavailable — add PayMongo keys', 'error');
+      }
+    }
+
+    function renderDetail(c, detailTargetEl) {
+      const el = detailTargetEl || document.getElementById('detailPanel');
+      if (!el) return;
+      if (!c) {
+        el.innerHTML =
+          el.id === 'adminApprovalModalBody'
+            ? ''
+            : '<p class="text-xs text-slate-400">Select a consultation to see details.</p>';
+        syncCancelRequestUi();
+        return;
+      }
+      const pay = c.paymentStatus || 'unpaid';
+      const paid = pay === 'verified';
+      const clientUser = !isModerator && !isSpecialist;
+      const clientAwaitingPaymentUi = clientUser && !paid;
+
+      const pro = c.isProUser ? '<span class="mt-1.5 inline-block rounded-full bg-violet-500/20 px-1.5 py-0.5 text-[9px] text-violet-300">Pro priority</span>' : '';
+      const feeLine =
+        c.amountPhp != null
+          ? `<p class="mt-2 text-[11px] text-slate-400">Fee: ₱${esc(String(c.amountPhp))} · Platform ${esc(String(c.platformFeePercent ?? ''))}% (₱${esc(String(c.platformFeePhp ?? '—'))}) · Specialist net ₱${esc(String(c.specialistNetPhp ?? '—'))}</p>`
+          : '';
+      const specialistUid =
+        c.specialistUserId != null && Number(c.specialistUserId) > 0 ? Number(c.specialistUserId) : null;
+      const meeting =
+        c.meetingUrl && String(c.meetingUrl).trim()
+          ? `<div class="mt-3 rounded-xl border border-cyan-500/30 bg-cyan-500/[0.07] p-3">
+               <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-300/90">Meeting link</p>
+               <a href="${esc(String(c.meetingUrl).trim())}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex break-all rounded-lg bg-slate-900/80 px-3 py-2 text-xs font-medium text-cyan-200 underline decoration-cyan-500/50 hover:text-white">
+                 Open video / meeting link
+               </a>
+               <p class="mt-2 text-[11px] leading-relaxed text-slate-500">Opens in a new tab — Hairvelous does not host video in the app.</p>
+             </div>`
+          : specialistUid && clientUser && paid
+            ? `<p class="mt-2 text-[11px] leading-relaxed text-slate-500">No meeting link yet. Tap the <strong class="font-medium text-slate-400">video</strong> icon above to notify your specialist; they’ll add a Meet or Zoom link when ready.</p>`
+            : isSpecialist && isMySpecialistCase(c) && paid
+              ? `<p class="mt-2 text-[11px] leading-relaxed text-slate-500">No meeting link yet. Use the <strong class="font-medium text-slate-400">video</strong> icon to paste a Google Meet or Zoom URL for your client.</p>`
+              : '';
+      const clientDetailActions =
+        clientUser && paid && specialistUid
+          ? `<div class="mt-3 flex flex-wrap items-center gap-2">
+               <button type="button" id="detailViewProfileBtn" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/40 bg-violet-600/20 text-violet-100 transition hover:bg-violet-600/35" title="View specialist profile" aria-label="View specialist profile">
+                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
+               </button>
+               <button type="button" id="detailRequestVideoBtn" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-500/35 bg-cyan-500/10 text-cyan-100 transition hover:bg-cyan-500/20" title="Request video chat" aria-label="Request video chat">
+                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+               </button>
+             </div>`
+          : '';
+      const specialistPaidActions =
+        isSpecialist && isMySpecialistCase(c) && paid
+          ? `<div class="mt-3 flex flex-wrap items-center gap-2">
+               <button type="button" id="detailViewClientBtn" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/40 bg-violet-600/20 text-violet-100 transition hover:bg-violet-600/35" title="View client profile & hair summary" aria-label="View client profile">
+                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
+               </button>
+               <button type="button" id="detailSetMeetingBtn" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-500/35 bg-cyan-500/10 text-cyan-100 transition hover:bg-cyan-500/20" title="Set video meeting link" aria-label="Set video meeting link">
+                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+               </button>
+             </div>`
+          : '';
+      const payBadge =
+        pay === 'verified'
+          ? '<span class="mt-1 inline-block rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-300">Paid (verified)</span>'
+          : pay === 'pending_review'
+            ? '<span class="mt-1 inline-block rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-200">Payment: pending review</span>'
+            : pay === 'rejected'
+              ? '<span class="mt-1 inline-block rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[9px] text-rose-200">Payment: rejected — resubmit</span>'
+              : '';
+      const canRate =
+        !isModerator &&
+        !isSpecialist &&
+        String(c.status || '') === 'completed' &&
+        Number(c.specialistUserId || 0) > 0;
+      const currentRating = c.feedbackRating != null ? Number(c.feedbackRating) : 0;
+      const specialistRatingLine = c.specialistRatingCount
+        ? `${Number(c.specialistRatingAvg || 0).toFixed(1)} ★ from ${Number(c.specialistRatingCount)} review(s)`
+        : 'No specialist reviews yet';
+      const feedbackBlock = canRate
+        ? `<div class="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] p-3">
+             <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-200">Specialist feedback</p>
+             <p class="mt-1 text-[11px] text-amber-100/80">${esc(specialistRatingLine)}</p>
+             <div class="mt-2 flex items-center gap-1" id="feedbackStarsWrap">
+               ${[1,2,3,4,5].map((n) =>
+                 `<button type="button" data-feedback-star="${n}" class="rounded px-1.5 py-0.5 text-lg leading-none ${
+                   currentRating >= n ? 'text-amber-300' : 'text-slate-500'
+                 }">★</button>`
+               ).join('')}
+               <span id="feedbackStarLabel" class="ml-1 text-[11px] text-slate-300">${currentRating ? `${currentRating}/5` : 'Tap stars'}</span>
+             </div>
+             <textarea id="feedbackTextInput" rows="2" class="mt-2 w-full rounded-lg border border-slate-600 bg-slate-900/70 px-2.5 py-2 text-xs text-white placeholder:text-slate-500 focus:border-amber-400/50 focus:outline-none" placeholder="Share your experience with this specialist...">${esc(c.feedbackText || '')}</textarea>
+             <div class="mt-2 flex justify-end">
+               <button type="button" id="submitFeedbackBtn" class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500">Save feedback</button>
+             </div>
+           </div>`
+        : c.feedbackRating != null
+          ? `<div class="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.05] p-3 text-xs text-amber-100/85">
+               Client feedback: ${esc(starsHtml(c.feedbackRating))}${c.feedbackText ? ` · ${esc(c.feedbackText)}` : ''}
+             </div>`
+          : '';
+
+      const modBtn = 'rounded-lg px-3 py-2 text-xs font-medium transition';
+      let staffActions = '';
+      if (isModerator) {
+        const verifyBlock =
+          pay === 'pending_review'
+            ? `<div class="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/[0.08] p-3">
+                 <p class="text-[11px] font-semibold text-amber-100">Manual GCash proof</p>
+                 <p class="mt-1 text-[11px] leading-relaxed text-amber-200/75">Check the receipt matches the fee below, then verify or ask the user to resubmit.</p>
+                 <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+                   <button type="button" data-verify="${c.consultationId}" class="${modBtn} flex-1 bg-emerald-600 text-white hover:bg-emerald-500">Verify payment</button>
+                   <button type="button" data-rejectpay="${c.consultationId}" class="${modBtn} flex-1 border border-rose-500/50 bg-rose-600/25 text-rose-100 hover:bg-rose-600/40">Reject proof</button>
+                 </div>
+               </div>`
+            : '';
+        staffActions = `<div class="mt-4 space-y-3">
+            <div>
+              <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Case</p>
+              <div class="flex flex-wrap gap-2">
+            ${
+              c.status === 'pending'
+                ? `<button type="button" data-act="accept" data-id="${c.consultationId}" class="${modBtn} bg-cyan-600/35 text-cyan-100 hover:bg-cyan-600/55">Accept</button>
+                   <button type="button" data-act="decline" data-id="${c.consultationId}" class="${modBtn} bg-orange-600/35 text-orange-100 hover:bg-orange-600/55">Decline</button>`
+                : ''
+            }
+            ${
+              c.status === 'in_progress'
+                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="${modBtn} bg-emerald-600/35 text-emerald-100 hover:bg-emerald-600/55">Complete</button>`
+                : ''
+            }
+                <button type="button" data-notes="${c.consultationId}" class="${modBtn} bg-violet-600/35 text-violet-100 hover:bg-violet-600/55">Notes</button>
+                <button type="button" data-act="cancelled" data-id="${c.consultationId}" class="${modBtn} bg-red-600/35 text-red-100 hover:bg-red-600/55">Cancel</button>
+              </div>
+            </div>
+          </div>${verifyBlock}`;
+      } else if (isMySpecialistCase(c)) {
+        staffActions = `<div class="mt-3 flex flex-wrap gap-1.5">
+            ${
+              c.status === 'pending'
+                ? `<button type="button" data-act="accept" data-id="${c.consultationId}" class="rounded-md bg-cyan-600/30 px-2 py-0.5 text-[10px] text-cyan-200 hover:bg-cyan-600/50">Accept</button>
+                   <button type="button" data-act="decline" data-id="${c.consultationId}" class="rounded-md bg-orange-600/30 px-2 py-0.5 text-[10px] text-orange-200 hover:bg-orange-600/50">Decline</button>`
+                : ''
+            }
+            ${
+              c.status === 'in_progress'
+                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="rounded-md bg-emerald-600/30 px-2 py-0.5 text-[10px] text-emerald-200 hover:bg-emerald-600/50">Complete</button>`
+                : ''
+            }
+            <button type="button" data-notes="${c.consultationId}" class="rounded-md bg-violet-600/30 px-2 py-0.5 text-[10px] text-violet-200 hover:bg-violet-600/50">Notes</button>
+          </div>`;
+      }
+
+      const concernBodyClient =
+        clientUser
+          ? `<p class="mt-2 text-xs leading-relaxed text-slate-300">${esc(c.concernMessage)}</p>`
+          : '';
+      const concernBodyStaff =
+        isModerator || isSpecialist
+          ? `<p class="mt-1.5 text-xs leading-relaxed text-slate-300">${esc(c.concernMessage)}</p>`
+          : '';
+
+      if (clientAwaitingPaymentUi) {
+        el.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <h3 class="text-sm font-semibold leading-tight text-white">${esc(c.concernTitle)}</h3>
+          ${statusBadge(c.status)}
+        </div>
+        <p class="mt-2 text-[11px] text-slate-400">Preferred date: ${c.preferredDate ? esc(String(c.preferredDate).slice(0, 10)) : '—'}</p>
+        ${concernBodyClient}
+        <p class="mt-3 text-[11px] leading-relaxed text-slate-500">Complete payment on the main page to unlock specialist profile, video requests, and messaging.</p>
+      `;
+      } else {
+        el.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <h3 class="text-sm font-semibold leading-tight text-white">${esc(c.concernTitle)}</h3>
+          ${statusBadge(c.status)}
+        </div>
+        ${payBadge}
+        ${pro}
+        ${clientDetailActions}
+        ${specialistPaidActions}
+        ${feeLine}
+        ${meeting}
+        <p class="mt-2 text-[11px] text-slate-400">Preferred: ${c.preferredDate ? esc(String(c.preferredDate).slice(0, 10)) : '—'}</p>
+        ${isModerator || isSpecialist ? concernBodyStaff : concernBodyClient}
+        ${isModerator || isSpecialist ? `<p class="mt-2 text-[11px] text-slate-500">${esc(c.userName)} · ${esc(c.userEmail)}</p>` : ''}
+        ${c.declineReason ? `<p class="mt-2 text-[11px] text-rose-300/90">Declined: ${esc(c.declineReason)}</p>` : ''}
+        ${c.finalRecommendation ? `<p class="mt-2 rounded-md bg-emerald-500/10 p-2 text-[11px] text-emerald-200"><strong>Final:</strong> ${esc(c.finalRecommendation)}</p>` : ''}
+        ${feedbackBlock}
+        ${staffActions}
+      `;
+      }
+
+      el.querySelectorAll('[data-act]').forEach((btn) => {
+        btn.addEventListener('click', () => patchConsultation(Number(btn.dataset.id), btn.dataset.act));
+      });
+      el.querySelectorAll('[data-verify]').forEach((btn) => {
+        btn.addEventListener('click', () => verifyPayment(Number(btn.dataset.verify)));
+      });
+      el.querySelectorAll('[data-rejectpay]').forEach((btn) => {
+        btn.addEventListener('click', () => rejectPayment(Number(btn.dataset.rejectpay)));
+      });
+      const notesBtn = el.querySelector('[data-notes]');
+      if (notesBtn) {
+        notesBtn.addEventListener('click', () => openReviewerPrompt(Number(notesBtn.dataset.notes)));
+      }
+      const dvp = el.querySelector('#detailViewProfileBtn');
+      const drv = el.querySelector('#detailRequestVideoBtn');
+      if (dvp) dvp.addEventListener('click', () => openSpecialistProfileModal(c));
+      if (drv) drv.addEventListener('click', () => requestMeetingFromSpecialist(c.consultationId));
+      const dvc = el.querySelector('#detailViewClientBtn');
+      const dsm = el.querySelector('#detailSetMeetingBtn');
+      if (dvc) dvc.addEventListener('click', () => openClientConsultSummaryModal(c.consultationId));
+      if (dsm) dsm.addEventListener('click', () => specialistSetMeetingUrl(c));
+      let chosenFeedbackStars = currentRating || 0;
+      const starButtons = el.querySelectorAll('[data-feedback-star]');
+      const starLabel = el.querySelector('#feedbackStarLabel');
+      const paintStars = () => {
+        starButtons.forEach((btn) => {
+          const v = Number(btn.getAttribute('data-feedback-star'));
+          btn.classList.toggle('text-amber-300', v <= chosenFeedbackStars);
+          btn.classList.toggle('text-slate-500', v > chosenFeedbackStars);
+        });
+        if (starLabel) starLabel.textContent = chosenFeedbackStars ? `${chosenFeedbackStars}/5` : 'Tap stars';
+      };
+      starButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          chosenFeedbackStars = Number(btn.getAttribute('data-feedback-star')) || 0;
+          paintStars();
+        });
+      });
+      paintStars();
+      const submitFeedbackBtn = el.querySelector('#submitFeedbackBtn');
+      if (submitFeedbackBtn) {
+        submitFeedbackBtn.addEventListener('click', async () => {
+          if (!chosenFeedbackStars) {
+            showToast('Please choose a star rating first.', 'error');
+            return;
+          }
+          const textEl = el.querySelector('#feedbackTextInput');
+          const feedbackText = textEl ? String(textEl.value || '').trim() : '';
+          try {
+            await api('/consultations/' + c.consultationId + '/feedback', {
+              method: 'POST',
+              body: JSON.stringify({
+                rating: chosenFeedbackStars,
+                feedbackText,
+              }),
+            });
+            showToast('Feedback saved. Thank you!', 'success');
+            await loadConsultations();
+          } catch (err) {
+            showToast(err.error || 'Could not save feedback', 'error');
+          }
+        });
+      }
+      syncCancelRequestUi();
+    }
+
+    /** Client can remove a chat from the list (hard delete), except an active paid in-progress session. */
+    function canOwnerDeleteChat(c) {
+      if (!c || isModerator || isSpecialist) return false;
+      const pay = c.paymentStatus || 'unpaid';
+      const st = String(c.status || '');
+      if (pay === 'verified' && st === 'in_progress') return false;
+      return true;
+    }
+
+    async function deleteConversationFromMenu() {
+      if (!activeChatId) {
+        showToast('Open a conversation first.', 'info');
+        return;
+      }
+      const row = findConsultation(activeChatId);
+      if (!canOwnerDeleteChat(row)) {
+        showToast('This chat can’t be deleted from here.', 'info');
+        return;
+      }
+      if (!confirm('Delete this chat? It will be removed from your list permanently.')) return;
+      closeChatKebabMenu();
+      const id = Number(row.consultationId);
+      try {
+        await api('/consultations/' + id + '/delete', { method: 'POST', body: '{}' });
+        await loadConsultations();
+        if (activeChatId === id) closeChat();
+        showToast('Chat removed', 'success');
+      } catch (err) {
+        const msg =
+          (err && (err.error || err.message)) ||
+          (err && err.status ? `Could not delete chat (HTTP ${err.status})` : '') ||
+          'Could not delete chat';
+        showToast(msg, 'error');
+      }
+    }
+
+    function syncCancelRequestUi() {
+      const bar = document.getElementById('headerQuickCancel');
+      if (!bar) return;
+      bar.classList.add('hidden');
+      bar.innerHTML = '';
+    }
+
+    async function verifyPayment(consultationId) {
+      try {
+        await api('/admin/consultations/' + consultationId + '/verify-payment', { method: 'POST', body: '{}' });
+        await loadConsultations();
+        if (activeChatId === consultationId) setChatLocked();
+        showToast('Payment verified', 'success');
+      } catch (err) {
+        showToast(err.error || 'Verify failed', 'error');
+      }
+    }
+
+    async function rejectPayment(consultationId) {
+      const note = prompt('Optional note to user:') || '';
+      try {
+        await api('/admin/consultations/' + consultationId + '/reject-payment', {
+          method: 'POST',
+          body: JSON.stringify({ note }),
+        });
+        await loadConsultations();
+        showToast('Proof rejected — user can resubmit', 'success');
+      } catch (err) {
+        showToast(err.error || 'Reject failed', 'error');
+      }
+    }
+
+    async function submitPaymentProof(consultationId, formEl) {
+      const refInp = formEl.querySelector('[name="paymentReference"]');
+      const fileInp = formEl.querySelector('[name="receipt"]');
+      const fd = new FormData();
+      fd.append('paymentReference', (refInp && refInp.value) || '');
+      if (fileInp && fileInp.files && fileInp.files[0]) fd.append('receipt', fileInp.files[0]);
+      try {
+        await apiForm('/consultations/' + consultationId + '/payment-proof', fd);
+        await loadConsultations();
+        showToast('Proof submitted — admin will verify', 'success');
+        return true;
+      } catch (err) {
+        showToast(err.error || 'Submit failed', 'error');
+        return false;
+      }
+    }
+
+    async function patchConsultation(consultationId, act) {
+      let body;
+      if (act === 'accept') {
+        const meetingUrl = prompt('Meeting link (optional, e.g. Google Meet):') || '';
+        body = { action: 'accept', meetingUrl };
+      } else if (act === 'decline') {
+        const declineReason = prompt('Reason (optional):') || '';
+        body = { action: 'decline', declineReason };
+      } else {
+        body = { status: act };
+      }
+      try {
+        await api('/consultations/' + consultationId, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        });
+        await loadConsultations();
+        if (activeChatId === consultationId) setChatLocked();
+        showToast('Consultation updated', 'success');
+      } catch (err) {
+        showToast(err.error || 'Update failed', 'error');
+      }
+    }
+
+    function listAvatarInitials(name) {
+      const parts = String(name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      if (!parts.length) return '?';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function renderConsultationList(rows) {
+      const list = document.getElementById('consultList');
+      const q = (document.getElementById('consultSearch').value || '').trim().toLowerCase();
+      const baseRows = isModerator
+        ? rows.filter((c) => (c.paymentStatus || '') === 'pending_review')
+        : rows;
+      const filtered = q
+        ? baseRows.filter((c) => {
+            const t = `${c.concernTitle || ''} ${c.concernMessage || ''} ${c.userName || ''} ${c.specialistName || ''}`.toLowerCase();
+            return t.includes(q);
+          })
+        : baseRows;
+
+      if (!filtered.length) {
+        const msg = !rows.length
+          ? 'No consultations yet.'
+          : q
+            ? 'No matches.'
+            : isModerator
+              ? 'No manual payment proofs awaiting review right now.'
+              : 'No matches.';
+        list.innerHTML = `<div class="px-2 py-8 text-center text-xs text-slate-500">${msg}</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered
+        .map((c) => {
+          const id = Number(c.consultationId);
+          const active = activeChatId === id;
+          const snippet = (c.concernMessage || '').replace(/\s+/g, ' ').slice(0, 56);
+          const partner = partnerNameForList(c);
+          const initials = listAvatarInitials(partner);
+          return `
+          <button type="button" data-cid="${id}" class="mb-1.5 flex w-full gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors ${active ? 'bg-violet-600/20 ring-1 ring-violet-500/35 shadow-[0_4px_20px_rgba(91,33,182,0.12)]' : 'hover:bg-slate-800/70'}">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600/90 to-slate-800 text-[11px] font-bold tracking-tight text-white ring-1 ring-slate-600/50" aria-hidden="true">${esc(initials)}</span>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-1.5">
+                <span class="truncate text-sm font-semibold text-white">${esc(partner)}</span>
+                <div class="flex shrink-0 flex-col items-end gap-0.5">
+                  ${statusBadge(c.status)}
+                  ${isModerator || isSpecialist ? paymentStaffListBadge(c) : ''}
+                </div>
+              </div>
+              <p class="mt-0.5 line-clamp-1 text-xs text-slate-300">${esc(c.concernTitle || '')}</p>
+              <p class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500">${esc(snippet)}${snippet.length >= 56 ? '…' : ''}</p>
+              ${isModerator || isSpecialist ? `<p class="mt-1 truncate text-[9px] text-slate-600">${esc(c.userName || '')}</p>` : ''}
+            </div>
+          </button>`;
+        })
+        .join('');
+
+      list.querySelectorAll('[data-cid]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const c = findConsultation(btn.dataset.cid);
+          if (c) openChat(Number(c.consultationId), c.concernTitle);
+        });
+      });
+    }
+
+    async function loadConsultations() {
+      try {
+        const data = await api('/consultations');
+        const rows = data.consultations || [];
+        consultationRowsCache.length = 0;
+        rows.forEach((r) => consultationRowsCache.push(r));
+        consultationTitleById.clear();
+        rows.forEach((c) => consultationTitleById.set(Number(c.consultationId), c.concernTitle || 'Untitled'));
+
+        renderConsultationList(rows);
+        updateRequestUi(rows.length);
+
+        setChatLocked();
+        syncCancelRequestUi();
+
+        if (activeChatId && !findConsultation(activeChatId)) {
+          closeChat();
+        } else if (activeChatId) {
+          const cur = findConsultation(activeChatId);
+          if (isModerator) {
+            const modalBody = document.getElementById('adminApprovalModalBody');
+            const bd = document.getElementById('adminApprovalModalBackdrop');
+            if (!cur || (cur.paymentStatus || '') !== 'pending_review') {
+              closeAdminApprovalModal();
+              activeChatId = null;
+              if (modalBody) renderDetail(null, modalBody);
+            } else if (modalBody && bd && bd.classList.contains('open')) {
+              renderDetail(cur, modalBody);
+              const titleEl = document.getElementById('adminApprovalModalTitle');
+              const subEl = document.getElementById('adminApprovalModalSubtitle');
+              if (titleEl) titleEl.textContent = cur.concernTitle || 'Consultation';
+              if (subEl) subEl.textContent = `${cur.userName || 'User'} · ${cur.userEmail || '—'}`;
+            }
+          } else {
+            renderDetail(cur);
+          }
+        }
+
+        if (!queryChatOpened) {
+          if (Number.isFinite(chatFromQuery) && chatFromQuery > 0 && consultationTitleById.has(chatFromQuery)) {
+            queryChatOpened = true;
+            didInitialChatSelect = true;
+            await openChat(chatFromQuery, consultationTitleById.get(chatFromQuery));
+          } else if (chatLatestFromQuery && rows.length) {
+            queryChatOpened = true;
+            didInitialChatSelect = true;
+            if (isModerator) {
+              const pending = rows.filter((c) => (c.paymentStatus || '') === 'pending_review');
+              if (pending.length) {
+                const first = pending[0];
+                await openChat(Number(first.consultationId), first.concernTitle || 'Untitled');
+              }
+            } else {
+              const first = rows[0];
+              await openChat(Number(first.consultationId), first.concernTitle || 'Untitled');
+            }
+          }
+        }
+      } catch (err) {
+        showToast(err.error || 'Failed to load consultations', 'error');
+      }
+    }
+
+    function partnerNameForHeader(c, messages) {
+      if (!c) return 'Consultation';
+      if (isModerator || isSpecialist) return c.userName || 'User';
+      if (c.specialistName) return c.specialistName;
+      if (messages && messages.length) {
+        const specMsg = [...messages].reverse().find((m) => String(m.senderRole).toLowerCase() === 'specialist');
+        if (specMsg && specMsg.senderName) return specMsg.senderName;
+      }
+      return 'Hair specialist';
+    }
+
+    function subtitleForChatHeader(c) {
+      if (!c) return 'Select a conversation on the left';
+      const t = c.concernTitle || 'Consultation';
+      const short = t.length > 52 ? t.slice(0, 52) + '…' : t;
+      const pay = c.paymentStatus || 'unpaid';
+      let payHint = '';
+      if (isModerator || isSpecialist) {
+        if (pay === 'pending_review') payHint = ' · Proof pending review';
+        else if (pay === 'verified') payHint = ' · Paid';
+        else payHint = ' · Not paid';
+      }
+      return `${c.status}${payHint} · ${short}`;
+    }
+
+    function partnerNameForList(c) {
+      if (!c) return 'Consultation';
+      if (isModerator || isSpecialist) return c.userName || 'User';
+      if (c.specialistName) return c.specialistName;
+      return 'Hair specialist';
+    }
+
+    async function openReviewerPrompt(consultationId) {
+      const specialistNotes = prompt('Specialist notes:');
+      if (specialistNotes === null) return;
+      const validatedProductsText = prompt('Validated products (comma-separated):') || '';
+      const finalRecommendation = prompt('Final recommendation to user:') || '';
+      try {
+        await api('/consultations/' + consultationId, {
+          method: 'PATCH',
+          body: JSON.stringify({ specialistNotes, validatedProductsText, finalRecommendation }),
+        });
+        await loadConsultations();
+        showToast('Notes saved', 'success');
+      } catch (err) {
+        showToast(err.error || 'Save failed', 'error');
+      }
+    }
+
+    function messageBubble(m) {
+      const mine = Number(m.senderUserId) === Number((user && user.userId) || 0);
+      const senderTag = mine ? 'You' : `${m.senderName || 'Unknown'} · ${m.senderRole || 'user'}`;
+      const mid = m.messageId != null ? m.messageId : m.message_id;
+      const canDelete = mid && (isModerator || mine);
+      const resolvedImg = resolveChatImageUrl(m);
+      const safeImg = resolvedImg ? esc(resolvedImg) : '';
+      const imgBlock = safeImg
+        ? `<div data-chat-img-wrap class="mt-2.5 max-w-[min(100%,320px)] overflow-hidden rounded-xl border border-slate-500/30 bg-slate-900/60">
+             <button type="button" data-chat-image="${safeImg}" class="block w-full">
+               <img src="${safeImg}" data-orig-src="${safeImg}" alt="Attachment" class="chat-msg-img max-h-56 min-h-[4rem] w-full object-contain bg-slate-900/80" loading="eager" decoding="async" />
+             </button>
+           </div>`
+        : '';
+      const textBlock = m.messageText
+        ? `<div class="whitespace-pre-wrap text-[15px] leading-relaxed">${esc(m.messageText)}</div>`
+        : '';
+      const delBtn = canDelete
+        ? `<button type="button" class="rounded-md px-2 py-0.5 text-[10px] text-slate-500 opacity-80 hover:bg-black/15 hover:text-rose-200 hover:opacity-100" data-delete-message="${mid}" aria-label="Delete message">Delete</button>`
+        : '';
+      const bubble =
+        mine
+          ? 'max-w-[min(92%,28rem)] rounded-2xl rounded-br-md border border-violet-400/25 bg-gradient-to-br from-violet-600 to-violet-700 px-4 py-3 text-white shadow-lg shadow-violet-950/25'
+          : 'max-w-[min(92%,28rem)] rounded-2xl rounded-bl-md border border-slate-600/45 bg-slate-700/85 px-4 py-3 text-slate-100 shadow-md shadow-black/20';
+      const metaMine = 'text-violet-100/85';
+      const metaOther = 'text-slate-400';
+      return `
+        <div class="flex gap-2 ${mine ? 'justify-end' : 'justify-start'}">
+          ${mine ? '' : '<span class="mt-1 h-8 w-8 shrink-0 rounded-full bg-slate-700/90 text-center text-[10px] font-bold leading-8 text-slate-300 ring-1 ring-slate-600/60" aria-hidden="true">' + esc(listAvatarInitials(m.senderName || '?')) + '</span>'}
+          <div class="${bubble}">
+            <div class="mb-1.5 text-[11px] font-medium ${mine ? metaMine : metaOther}">${esc(senderTag)}</div>
+            ${textBlock}
+            ${imgBlock}
+            <div class="mt-2 flex items-center ${mine ? 'justify-end' : 'justify-between'} gap-2 text-[11px] ${mine ? 'text-violet-100/70' : 'text-slate-500'}">
+              <span>${esc(formatTime(m.createdAt))}</span>
+              ${delBtn}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadChatMessages() {
+      if (!activeChatId) return;
+      try {
+        const res = await api('/consultations/' + activeChatId + '/messages');
+        const messages = res.messages || [];
+        if (!res.chatLocked) {
+          const row = findConsultation(activeChatId);
+          if (row && !chatAllowed(row)) await loadConsultations();
+        }
+        if (res.chatLocked) {
+          chatMessages.innerHTML = '';
+          const c = findConsultation(activeChatId);
+          document.getElementById('chatTitle').textContent = partnerNameForHeader(c, messages);
+          document.getElementById('chatSubtitle').textContent = subtitleForChatHeader(c);
+          updateChatHeaderMenu();
+          setChatLocked();
+          return;
+        }
+        chatErrorNotified = false;
+        const isNearBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 60;
+        revokeChatMessageBlobUrls();
+        let lastDay = '';
+        const blocks = [];
+        messages.forEach((m) => {
+          const day = formatDay(m.createdAt);
+          if (day && day !== lastDay) {
+            lastDay = day;
+            blocks.push(`<div class="flex justify-center py-2"><span class="rounded-full bg-slate-800/90 px-2.5 py-1 text-[10px] font-medium tracking-wide text-slate-400">${esc(day)}</span></div>`);
+          }
+          blocks.push(messageBubble(m));
+        });
+        chatMessages.innerHTML = blocks.length ? blocks.join('') : '';
+        wireChatMessageImages();
+        hydrateChatMessageImages().catch(() => {});
+        const c = findConsultation(activeChatId);
+        document.getElementById('chatTitle').textContent = partnerNameForHeader(c, messages);
+        document.getElementById('chatSubtitle').textContent = subtitleForChatHeader(c);
+        updateChatHeaderMenu();
+        if (isNearBottom || chatMessages.dataset.forceBottom === '1') {
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+          chatMessages.dataset.forceBottom = '0';
+        }
+        setChatLocked();
+      } catch (err) {
+        revokeChatMessageBlobUrls();
+        chatMessages.innerHTML = `<p class="text-sm text-rose-300">Unable to load this consultation. Try again.</p>`;
+        if (!chatErrorNotified) {
+          showToast(err.error || 'Failed to load consultation updates', 'error');
+          chatErrorNotified = true;
+        }
+      }
+    }
+
+    function clearPendingChatPhoto() {
+      pendingChatPhoto = null;
+      if (pendingChatPhotoPreviewUrl) {
+        URL.revokeObjectURL(pendingChatPhotoPreviewUrl);
+        pendingChatPhotoPreviewUrl = '';
+      }
+      const inp = document.getElementById('chatPhotoInput');
+      if (inp) inp.value = '';
+      const btn = document.getElementById('chatPhotoBtn');
+      if (btn) btn.classList.remove('ring-2', 'ring-violet-500/50', 'border-violet-400/60');
+      if (chatPhotoPreview) chatPhotoPreview.classList.add('hidden');
+      if (chatPhotoPreviewImg) chatPhotoPreviewImg.removeAttribute('src');
+      if (chatPhotoPreviewName) chatPhotoPreviewName.textContent = 'Photo attached';
+    }
+
+    function setPendingChatPhoto(file) {
+      pendingChatPhoto = file || null;
+      const btn = document.getElementById('chatPhotoBtn');
+      if (btn) {
+        if (pendingChatPhoto) btn.classList.add('ring-2', 'ring-violet-500/50', 'border-violet-400/60');
+        else btn.classList.remove('ring-2', 'ring-violet-500/50', 'border-violet-400/60');
+      }
+      if (!pendingChatPhoto) return;
+      if (pendingChatPhotoPreviewUrl) URL.revokeObjectURL(pendingChatPhotoPreviewUrl);
+      pendingChatPhotoPreviewUrl = URL.createObjectURL(pendingChatPhoto);
+      if (chatPhotoPreviewImg) chatPhotoPreviewImg.src = pendingChatPhotoPreviewUrl;
+      if (chatPhotoPreviewName) {
+        chatPhotoPreviewName.textContent = pendingChatPhoto.name || 'Photo attached';
+      }
+      if (chatPhotoPreview) chatPhotoPreview.classList.remove('hidden');
+    }
+
+    function openAdminApprovalModal() {
+      const bd = document.getElementById('adminApprovalModalBackdrop');
+      if (!bd) return;
+      bd.classList.add('open');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeAdminApprovalModal() {
+      const bd = document.getElementById('adminApprovalModalBackdrop');
+      if (!bd) return;
+      bd.classList.remove('open');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    async function openChat(consultationId, concernTitle) {
+      clearPendingChatPhoto();
+      activeChatId = Number(consultationId);
+      const c = findConsultation(activeChatId);
+      renderConsultationList(consultationRowsCache);
+
+      if (isModerator) {
+        if (!c) {
+          showToast('Consultation not found.', 'error');
+          return;
+        }
+        const modalBody = document.getElementById('adminApprovalModalBody');
+        const titleEl = document.getElementById('adminApprovalModalTitle');
+        const subEl = document.getElementById('adminApprovalModalSubtitle');
+        if (titleEl) titleEl.textContent = c.concernTitle || concernTitle || 'Consultation';
+        if (subEl) subEl.textContent = `${c.userName || 'User'} · ${c.userEmail || '—'}`;
+        renderDetail(c, modalBody);
+        openAdminApprovalModal();
+        return;
+      }
+
+      document.getElementById('chatTitle').textContent = partnerNameForHeader(c, null);
+      document.getElementById('chatSubtitle').textContent = subtitleForChatHeader(c);
+      chatMessages.dataset.forceBottom = '1';
+      renderDetail(c || null);
+      updateChatHeaderMenu();
+      await loadChatMessages();
+      setChatLocked();
+      if (chatRefreshTimer) clearInterval(chatRefreshTimer);
+      chatRefreshTimer = setInterval(loadChatMessages, 4000);
+      if (!isModerator && !isSpecialist) openConsultMessenger();
+    }
+
+    function closeChat() {
+      if (isModerator) {
+        activeChatId = null;
+        chatErrorNotified = false;
+        closeAdminApprovalModal();
+        renderDetail(null, document.getElementById('adminApprovalModalBody'));
+        renderConsultationList(consultationRowsCache);
+        syncCancelRequestUi();
+        return;
+      }
+      activeChatId = null;
+      chatErrorNotified = false;
+      if (chatRefreshTimer) {
+        clearInterval(chatRefreshTimer);
+        chatRefreshTimer = null;
+      }
+      document.getElementById('chatTitle').textContent = 'Consultation';
+      document.getElementById('chatSubtitle').textContent = 'Select a conversation on the left';
+      revokeChatMessageBlobUrls();
+      chatMessages.innerHTML = '';
+      chatInput.value = '';
+      clearPendingChatPhoto();
+      renderDetail(null);
+      renderConsultationList(consultationRowsCache);
+      setChatLocked();
+      updateChatHeaderMenu();
+      syncCancelRequestUi();
+    }
+
+    window.openChat = openChat;
+
+    document.getElementById('consultSearch').addEventListener('input', () => renderConsultationList(consultationRowsCache));
+    document.getElementById('closeChatBtn').addEventListener('click', closeChat);
+    document.getElementById('adminApprovalModalClose')?.addEventListener('click', () => closeChat());
+    document.getElementById('adminApprovalModalBackdrop')?.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'adminApprovalModalBackdrop') closeChat();
+    });
+
+    (function wireChatKebabAndSpecialistModal() {
+      const chatKebabBtn = document.getElementById('chatKebabBtn');
+      const chatKebabMenu = document.getElementById('chatKebabMenu');
+      chatKebabBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!chatKebabMenu) return;
+        chatKebabMenu.classList.toggle('hidden');
+        const isOpen = !chatKebabMenu.classList.contains('hidden');
+        chatKebabBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+      document.addEventListener('click', () => closeChatKebabMenu());
+      chatKebabMenu?.addEventListener('click', (e) => e.stopPropagation());
+
+      document.getElementById('chatMenuMuteBtn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!activeChatId) return;
+        const id = activeChatId;
+        const muted = isConsultMuted(id);
+        setConsultMuted(id, !muted);
+        updateChatHeaderMenu();
+        closeChatKebabMenu();
+        showToast(muted ? 'Notifications on for this chat' : 'Muted this conversation', 'success');
+      });
+      document.getElementById('chatMenuCopyLinkBtn')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!activeChatId) return;
+        const url = `${window.location.origin}/consultations.html?chat=${activeChatId}`;
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast('Link copied', 'success');
+        } catch (_) {
+          try {
+            const ta = document.createElement('textarea');
+            ta.value = url;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showToast('Link copied', 'success');
+          } catch (__) {
+            showToast(url, 'info');
+          }
+        }
+        closeChatKebabMenu();
+      });
+      document.getElementById('chatMenuDeleteConversationBtn')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await deleteConversationFromMenu();
+      });
+
+      document.getElementById('specialistProfileModalBackdrop')?.addEventListener('click', closeSpecialistProfileModal);
+      document.getElementById('specialistProfileModalClose')?.addEventListener('click', closeSpecialistProfileModal);
+      document.getElementById('clientConsultModalBackdrop')?.addEventListener('click', closeClientConsultModal);
+      document.getElementById('clientConsultModalClose')?.addEventListener('click', closeClientConsultModal);
+
+      document.getElementById('paymongoQrClose')?.addEventListener('click', closePaymongoQrModal);
+      document.getElementById('paymongoQrModal')?.addEventListener('click', (ev) => {
+        if (ev.target && ev.target.id === 'paymongoQrModal') closePaymongoQrModal();
+      });
+    })();
+
+    needConsultationBtn.addEventListener('click', () => showRequestForm());
+    anotherConsultBtn.addEventListener('click', () => showRequestForm());
+
+    (function wireConsultationPaymentModal() {
+      document.getElementById('consultationPaymentModalClose')?.addEventListener('click', () => closeConsultationPaymentModal());
+      document.getElementById('consultation-payment-backdrop')?.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'consultation-payment-backdrop') closeConsultationPaymentModal();
+      });
+      document.getElementById('paymentIconPaymongo')?.addEventListener('click', () => paymentModalPaymongoCheckout());
+      document.getElementById('paymentIconQrPh')?.addEventListener('click', () => paymentModalQrPh());
+      const proof = document.getElementById('paymentModalProofForm');
+      if (proof) {
+        proof.addEventListener('submit', async (ev) => {
+          ev.preventDefault();
+          const hid = document.getElementById('paymentModalConsultationId');
+          const cid = Number(hid && hid.value);
+          if (!Number.isFinite(cid)) return;
+          const ok = await submitPaymentProof(cid, proof);
+          if (ok) closeConsultationPaymentModal();
+        });
+      }
+    })();
+
+    const form = document.getElementById('requestForm');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const specialistUserId = Number(
+          document.getElementById('selectedSpecialistUserId') &&
+            document.getElementById('selectedSpecialistUserId').value
+        );
+        if (!Number.isFinite(specialistUserId) || specialistUserId <= 0) {
+          showToast('Choose a specialist from the cards first.', 'error');
+          return;
+        }
+        const concernTitle = document.getElementById('concernTitle').value.trim();
+        const concernMessage = document.getElementById('concernMessage').value.trim();
+        const preferredDate = document.getElementById('preferredDate').value || null;
+        try {
+          const created = await api('/consultations', {
+            method: 'POST',
+            body: JSON.stringify({ specialistUserId, concernTitle, concernMessage, preferredDate }),
+          });
+          browseSpecialistsOverride = false;
+          closeConsultationRequestModal();
+          didInitialChatSelect = true;
+          await loadConsultations();
+          if (created && created.consultationId) {
+            document.getElementById('consultPageMain')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          showToast('Consultation request submitted — track progress below.', 'success');
+        } catch (err) {
+          showToast(err.error || 'Failed to submit request', 'error');
+        }
+      });
+    }
+
+    document.getElementById('chatPhotoBtn').addEventListener('click', () => {
+      if (document.getElementById('chatPhotoBtn').disabled) return;
+      document.getElementById('chatPhotoInput').click();
+    });
+    document.getElementById('chatPhotoInput').addEventListener('change', async (e) => {
+      const input = e.target;
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file) return;
+      let toAttach = file;
+      if (/\.(heic|heif)$/i.test(file.name) && heic2anyLib()) {
+        try {
+          const jpegBlob = await decodeHeicBlob(file);
+          toAttach = new File([jpegBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+          showToast('Photo converted to JPEG for preview', 'success');
+        } catch (_) {
+          showToast('Could not convert HEIC — try JPG or PNG', 'error');
+          return;
+        }
+      }
+      setPendingChatPhoto(toAttach);
+      showToast('Photo attached — add a caption if you want, then tap Send', 'info');
+    });
+    document.getElementById('chatPhotoClearBtn').addEventListener('click', clearPendingChatPhoto);
+
+    document.getElementById('chatMessages').addEventListener('click', (e) => {
+      const delBtn = e.target.closest('[data-delete-message]');
+      if (delBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const mid = delBtn.getAttribute('data-delete-message');
+        if (!mid || !activeChatId) return;
+        if (!confirm('Delete this message?')) return;
+        const tok = typeof getToken === 'function' ? getToken() : '';
+        fetch('/api/consultations/' + activeChatId + '/messages/' + mid, {
+          method: 'DELETE',
+          headers: tok ? { Authorization: 'Bearer ' + tok } : {},
+        })
+          .then(async (res) => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw data;
+            chatMessages.dataset.forceBottom = '1';
+            return loadChatMessages();
+          })
+          .catch((err) => showToast(err.error || 'Could not delete message', 'error'));
+        return;
+      }
+      const trigger = e.target.closest('[data-chat-image]');
+      if (!trigger) return;
+      const src = trigger.getAttribute('data-chat-image') || '';
+      if (!src) return;
+      const wrap = document.getElementById('chatImageViewer');
+      const img = document.getElementById('chatImageViewerImg');
+      img.src = src;
+      wrap.classList.remove('hidden');
+      wrap.classList.add('flex');
+    });
+    document.getElementById('chatImageViewerClose').addEventListener('click', () => {
+      const wrap = document.getElementById('chatImageViewer');
+      const img = document.getElementById('chatImageViewerImg');
+      wrap.classList.add('hidden');
+      wrap.classList.remove('flex');
+      img.removeAttribute('src');
+    });
+    document.getElementById('chatImageViewer').addEventListener('click', (e) => {
+      if (e.target.id !== 'chatImageViewer') return;
+      document.getElementById('chatImageViewerClose').click();
+    });
+
+    document.getElementById('preferredDatePickBtn').addEventListener('click', () => {
+      const el = document.getElementById('preferredDate');
+      if (el && typeof el.showPicker === 'function') el.showPicker();
+      else el.focus();
+    });
+
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!activeChatId || chatInput.disabled) return;
+      const messageText = chatInput.value.trim();
+      if (pendingChatPhoto) {
+        try {
+          const fd = new FormData();
+          fd.append('photo', pendingChatPhoto);
+          fd.append('messageText', messageText);
+          await apiForm('/consultations/' + activeChatId + '/messages', fd);
+          chatInput.value = '';
+          clearPendingChatPhoto();
+          if (typeof loadNotifications === 'function') loadNotifications();
+          chatMessages.dataset.forceBottom = '1';
+          await loadChatMessages();
+        } catch (err) {
+          showToast(err.error || 'Failed to send photo', 'error');
+        }
+        return;
+      }
+      if (!messageText) return;
+      try {
+        await api('/consultations/' + activeChatId + '/messages', {
+          method: 'POST',
+          body: JSON.stringify({ messageText }),
+        });
+        chatInput.value = '';
+        if (typeof loadNotifications === 'function') loadNotifications();
+        chatMessages.dataset.forceBottom = '1';
+        await loadChatMessages();
+      } catch (err) {
+        showToast(err.error || 'Failed to send message', 'error');
+      }
+    });
+
+    async function loadSpecialists() {
+      const root = document.getElementById('specialistCards');
+      if (!root) return;
+      try {
+        const data = await api('/profile/consultation-specialists');
+        specialistsForBooking = data.specialists || [];
+        const ids = specialistsForBooking
+          .map((s) => Number(s.userId))
+          .filter((n) => Number.isFinite(n) && n > 0);
+        if (ids.length) {
+          try {
+            const summary = await api(
+              '/consultations/specialist-feedback-summaries?specialistUserIds=' + ids.join(',')
+            );
+            const map = (summary && summary.summaries) || {};
+            specialistsForBooking = specialistsForBooking.map((s) => {
+              const stats = map[s.userId] || map[String(s.userId)] || {};
+              return {
+                ...s,
+                ratingAvg: stats.avgRating != null ? Number(stats.avgRating) : null,
+                ratingCount: Number(stats.totalReviews || 0),
+              };
+            });
+          } catch (_err) {
+            specialistsForBooking = specialistsForBooking.map((s) => ({
+              ...s,
+              ratingAvg: null,
+              ratingCount: 0,
+            }));
+          }
+        }
+        if (specialistsForBooking.length === 0) {
+          root.innerHTML =
+            '<p class="col-span-full rounded-xl border border-dashed border-slate-600 bg-slate-900/40 px-4 py-10 text-center text-sm text-slate-400">No specialists listed yet. Ask an admin to add seller or specialist accounts with profiles.</p>';
+        } else {
+          root.innerHTML = specialistsForBooking.map(renderOneSpecialistCard).join('');
+        }
+        setSelectedSpecialist('');
+      } catch (err) {
+        const reason = err && (err.error || err.message) ? ` (${esc(String(err.error || err.message))})` : '';
+        root.innerHTML =
+          `<p class="col-span-full rounded-xl border border-rose-500/30 bg-rose-950/40 px-4 py-6 text-center text-sm text-rose-200">Could not load specialists. Refresh and try again${reason}.</p>`;
+      }
+    }
+
+    async function loadSpecialistFeeSettings() {
+      if (!isSpecialist || !specialistFeeInput) return;
+      try {
+        const p = await api('/profile');
+        const rate = p && p.consultationRate != null ? Number(p.consultationRate) : null;
+        specialistFeeInput.value = rate != null && Number.isFinite(rate) ? String(Math.round(rate)) : '';
+        if (specialistFeeHint) {
+          specialistFeeHint.textContent = rate
+            ? `Current fee: ₱${Math.round(rate).toLocaleString()}`
+            : 'No fee set yet. Clients will see default platform rate.';
+        }
+      } catch (_err) {
+        if (specialistFeeHint) specialistFeeHint.textContent = 'Could not load your current fee.';
+      }
+    }
+
+    specialistFeeForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fee = Number(specialistFeeInput && specialistFeeInput.value);
+      if (!Number.isFinite(fee) || fee <= 0) {
+        showToast('Enter a valid consultation fee.', 'error');
+        return;
+      }
+      try {
+        await api('/profile', {
+          method: 'PATCH',
+          body: JSON.stringify({ consultationRate: Math.round(fee) }),
+        });
+        showToast('Consultation fee updated.', 'success');
+        if (specialistFeeHint) {
+          specialistFeeHint.textContent = `Current fee: ₱${Math.round(fee).toLocaleString()}`;
+        }
+      } catch (err) {
+        showToast(err.error || 'Could not update fee', 'error');
+      }
+    });
+
+    const specialistCardsEl = document.getElementById('specialistCards');
+    if (specialistCardsEl) {
+      specialistCardsEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-specialist-id]');
+        if (!btn) return;
+        openConsultationRequestModal(btn.getAttribute('data-specialist-id'));
+      });
+    }
+
+    const consultReqBackdrop = document.getElementById('consultation-request-backdrop');
+    const consultReqClose = document.getElementById('consultationRequestModalClose');
+    if (consultReqClose) consultReqClose.addEventListener('click', () => closeConsultationRequestModal());
+    if (consultReqBackdrop) {
+      consultReqBackdrop.addEventListener('click', (e) => {
+        if (e.target.id === 'consultation-request-backdrop') closeConsultationRequestModal();
+      });
+    }
+
+    if (isSpecialist || isModerator) {
+      if (specialistBrowseSection) specialistBrowseSection.classList.add('hidden');
+      if (isSpecialist) loadSpecialistFeeSettings();
+    } else {
+      loadSpecialists();
+    }
+
+    (function stripPayMongoReturnParams() {
+      const p = new URLSearchParams(window.location.search);
+      const pm = p.get('paymongo');
+      if (pm !== 'success' && pm !== 'cancel') return;
+      p.delete('paymongo');
+      const qs = p.toString();
+      window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+      if (pm === 'success') {
+        showToast('If payment succeeded, your consultation will unlock once PayMongo confirms (usually seconds).', 'success');
+      } else {
+        showToast('Checkout cancelled.', 'info');
+      }
+    })();
+
+    loadConsultations();
+  </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forgot Password – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+  <div id="disclaimer-placeholder"></div>
+  <div class="w-full max-w-md mt-8">
+    <a href="/" class="inline-flex items-center gap-2 text-violet-400 mb-8">✨ Hairvelous</a>
+    <h1 class="text-2xl font-bold text-white mb-2">Forgot password</h1>
+    <p class="text-slate-400 mb-6">Enter your email and we'll send a reset link (in prototype we show the token below).</p>
+    <form id="form" class="space-y-4">
+      <div>
+        <label for="email" class="block text-sm text-slate-400 mb-1">Email</label>
+        <input type="email" id="email" required class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-4 py-2.5" placeholder="you@example.com" />
+      </div>
+      <div id="msg" class="text-sm hidden"></div>
+      <button type="submit" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-medium py-2.5 rounded-lg">Send reset link</button>
+    </form>
+    <p class="mt-4 text-center text-slate-400 text-sm"><a href="/login.html" class="text-violet-400 hover:underline">Back to login</a></p>
+  </div>
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('msg');
+      msg.classList.add('hidden');
+      try {
+        const res = await api('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email: document.getElementById('email').value.trim() }) });
+        msg.classList.remove('hidden');
+        msg.className = 'text-sm text-emerald-400';
+        msg.textContent = res.message;
+        if (res.resetToken) msg.innerHTML += '<br><span class="text-slate-400 break-all text-xs mt-2 block">Token (for reset): ' + res.resetToken + '</span><a href="/reset-password.html?token=' + encodeURIComponent(res.resetToken) + '" class="text-violet-400 underline mt-2 block">Use this token to reset</a>';
+      } catch (err) {
+        msg.classList.remove('hidden');
+        msg.className = 'text-sm text-red-400';
+        msg.textContent = err.error || 'Request failed';
+      }
+    });
+  </script>
+</body>
+</html>

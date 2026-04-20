@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Hair Profile – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="disclaimer-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-4xl mx-auto px-4 py-10">
+    <h1 class="text-3xl font-bold text-white mb-2">Your Hair Profile</h1>
+    <p class="text-slate-400 mb-8">Here’s a quick summary of your assessment before we show product recommendations.</p>
+
+    <div id="profile-card" class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-6">
+      <div id="loading" class="text-slate-400">Loading your profile...</div>
+      <div id="profile-content" class="hidden space-y-4">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="bg-slate-700/40 rounded-lg p-4 border border-slate-600/50">
+            <p class="text-slate-400 text-sm">Hair Type</p>
+            <p id="hair-type" class="text-white text-lg font-semibold">—</p>
+          </div>
+          <div class="bg-slate-700/40 rounded-lg p-4 border border-slate-600/50">
+            <p class="text-slate-400 text-sm">Scalp Condition</p>
+            <p id="scalp-condition" class="text-white text-lg font-semibold">—</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-700/40 rounded-lg p-4 border border-slate-600/50">
+          <p class="text-slate-400 text-sm mb-2">Main Concerns</p>
+          <div id="issues" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div id="profile-note" class="text-slate-300 text-sm bg-violet-900/20 border border-violet-700/40 rounded-lg p-4">
+          Based on your answers, we prepared recommendations tailored to your current hair and scalp needs.
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      <button id="btn-view-recs" class="bg-violet-600 hover:bg-violet-500 text-white px-6 py-3 rounded-lg font-medium">
+        View Recommended Products
+      </button>
+      <a href="/assessment.html" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-medium">
+        Retake Assessment
+      </a>
+      <a href="/tracker.html" class="border border-slate-600 hover:bg-slate-800 text-slate-200 px-6 py-3 rounded-lg font-medium">
+        Track Hair Progress
+      </a>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth()) { /* redirects */ }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    async function loadProfile() {
+      const params = new URLSearchParams(window.location.search);
+      const assessmentId = params.get('assessmentId');
+
+      if (!assessmentId) {
+        // fallback if missing
+        document.getElementById('loading').textContent = 'No assessment ID found. Please take assessment first.';
+        return;
+      }
+
+      try {
+        const data = await api('/assessments/' + assessmentId + '/results');
+        const result = data.result || data;
+
+        document.getElementById('hair-type').textContent = result.hairType || 'Not specified';
+        document.getElementById('scalp-condition').textContent = result.scalpCondition || 'Not specified';
+
+        const issuesEl = document.getElementById('issues');
+        const issues = Array.isArray(result.issuesDetected) ? result.issuesDetected : [];
+        if (!issues.length) {
+          issuesEl.innerHTML = '<span class="text-slate-400 text-sm">No major issues detected from your answers.</span>';
+        } else {
+          issuesEl.innerHTML = issues.map(i =>
+            '<span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-slate-200 text-sm">' + esc(i) + '</span>'
+          ).join('');
+        }
+
+        if (result.isBald === true) {
+          document.getElementById('profile-note').innerHTML =
+            'You indicated very little or no scalp hair. Recommendations will focus more on scalp-friendly care and protective options.';
+        }
+
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('profile-content').classList.remove('hidden');
+      } catch (err) {
+        document.getElementById('loading').textContent = (err && err.error) || 'Failed to load profile summary.';
+      }
+    }
+
+    document.getElementById('btn-view-recs').addEventListener('click', () => {
+      window.location.href = '/recommendations.html';
+    });
+
+    loadProfile();
+  </script>
+</body>
+</html>

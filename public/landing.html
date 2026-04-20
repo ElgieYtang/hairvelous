@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hairvelous – Hair Care & Product Recommendation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="disclaimer-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+  <main>
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-violet-900/20 to-slate-900"></div>
+      <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200')] bg-cover bg-center opacity-20"></div>
+      <div class="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 fade-in">Discover Your Perfect <span class="text-violet-400">Hair Care Journey</span></h1>
+        <p class="text-slate-300 text-lg max-w-2xl mb-8 fade-in-delay-1">Get AI-powered personalized assessments, expert recommendations, and join a community dedicated to healthy, beautiful hair. Your transformation starts here.</p>
+        <div class="flex flex-wrap gap-4 fade-in-delay-2">
+          <a href="/register.html" class="btn-primary inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-3 rounded-lg transition-all">+ Get Started</a>
+          <a href="/login.html" class="card-hover inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-medium px-6 py-3 rounded-lg border border-slate-600 transition-all">Sign In</a>
+        </div>
+        <div class="flex flex-wrap gap-8 mt-10 text-slate-400 fade-in-delay-3">
+          <span class="flex items-center gap-2">👤 500,000+ Users</span>
+          <span class="flex items-center gap-2">⭐ 4.9 Rating</span>
+          <span class="flex items-center gap-2">✓ Expert Approved</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-6xl mx-auto px-4 py-16">
+      <h2 class="text-3xl font-bold text-white mb-2">Everything You Need for <span class="text-violet-400">Healthy Hair</span></h2>
+      <p class="text-slate-400 mb-12">From AI-powered diagnostics to community support, we provide comprehensive tools for your hair care journey.</p>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="card-hover bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 fade-in-delay-1">
+          <div class="w-12 h-12 rounded-lg bg-violet-600/30 flex items-center justify-center text-2xl mb-4 icon-bounce">🎯</div>
+          <h3 class="text-xl font-semibold text-white mb-2">AI Hair Analysis</h3>
+          <p class="text-slate-400">Upload a photo and let our AI detect your hair type and concerns. For awareness only—not a medical diagnosis.</p>
+        </div>
+        <div class="card-hover bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 fade-in-delay-2">
+          <div class="w-12 h-12 rounded-lg bg-violet-600/30 flex items-center justify-center text-2xl mb-4 icon-bounce">⭐</div>
+          <h3 class="text-xl font-semibold text-white mb-2">Smart Recommendations</h3>
+          <p class="text-slate-400">Product suggestions tailored to your profile and concerns.</p>
+        </div>
+        <div class="card-hover bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 fade-in-delay-3">
+          <div class="w-12 h-12 rounded-lg bg-violet-600/30 flex items-center justify-center text-2xl mb-4 icon-bounce">📖</div>
+          <h3 class="text-xl font-semibold text-white mb-2">DIY Guides</h3>
+          <p class="text-slate-400">Discover home remedies and treat your hair with care. Educational only.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    (function () {
+      if (typeof isLoggedIn === 'function' && isLoggedIn() && typeof getHomePathForUser === 'function') {
+        window.location.replace(getHomePathForUser());
+      }
+    })();
+  </script>
+  <script src="/js/layout.js"></script>
+</body>
+</html>

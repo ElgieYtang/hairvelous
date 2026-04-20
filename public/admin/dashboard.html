@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doctor Dashboard – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <nav class="border-b border-slate-700/50 bg-slate-900/95">
+    <div class="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
+      <a href="/" class="flex items-center gap-2 text-white font-semibold">✨ Hairvelous</a>
+      <div class="flex gap-4">
+        <a href="/" class="text-slate-400 hover:text-white">Home</a>
+        <a href="/profile-edit.html" class="text-slate-400 hover:text-white">Profile</a>
+        <a href="/admin/dashboard.html" class="text-violet-400">Doctor</a>
+        <button type="button" onclick="logout()" class="text-slate-400 hover:text-white">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <h1 class="text-3xl font-bold text-white mb-2">Doctor dashboard</h1>
+    <p class="text-slate-400 mb-8">Manage users, products, DIY guides, and system config (stubs).</p>
+
+    <div class="grid md:grid-cols-2 gap-6 mb-10">
+      <a href="#users" class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 hover:border-violet-500/50 block">
+        <h2 class="text-lg font-semibold text-white mb-1">Users</h2>
+        <p class="text-slate-400 text-sm">Create, update, view, suspend; reset password.</p>
+      </a>
+      <a href="#reports" class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 hover:border-violet-500/50 block">
+        <h2 class="text-lg font-semibold text-white mb-1">Reports (stub)</h2>
+        <p class="text-slate-400 text-sm">Total users, assessments. Full reports TBD.</p>
+      </a>
+      <a href="#config" class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 hover:border-violet-500/50 block">
+        <h2 class="text-lg font-semibold text-white mb-1">System config (stub)</h2>
+        <p class="text-slate-400 text-sm">Key-value config. Extend as needed.</p>
+      </a>
+    </div>
+
+    <section id="reports" class="mb-10">
+      <h2 class="text-xl font-semibold text-white mb-4">Reports</h2>
+      <div id="reports-content" class="bg-slate-800/50 rounded-xl p-4 border border-slate-700 text-slate-300"></div>
+    </section>
+
+    <section id="users" class="mb-10">
+      <h2 class="text-xl font-semibold text-white mb-4">Users</h2>
+      <table class="w-full border border-slate-700 rounded-lg overflow-hidden">
+        <thead class="bg-slate-800">
+          <tr>
+            <th class="text-left p-3 text-slate-300">ID</th>
+            <th class="text-left p-3 text-slate-300">Email</th>
+            <th class="text-left p-3 text-slate-300">Name</th>
+            <th class="text-left p-3 text-slate-300">Role</th>
+            <th class="text-left p-3 text-slate-300">Suspended</th>
+            <th class="text-left p-3 text-slate-300">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody" class="divide-y divide-slate-700"></tbody>
+      </table>
+    </section>
+
+    <section id="config" class="mb-10">
+      <h2 class="text-xl font-semibold text-white mb-4">System config</h2>
+      <div id="config-content" class="bg-slate-800/50 rounded-xl p-4 border border-slate-700 text-slate-300 mb-4"></div>
+      <form id="config-form" class="flex gap-4 items-end">
+        <input type="text" id="config-key" placeholder="Key" class="rounded-lg bg-slate-800 border border-slate-600 text-white px-4 py-2" />
+        <input type="text" id="config-value" placeholder="Value" class="rounded-lg bg-slate-800 border border-slate-600 text-white px-4 py-2" />
+        <button type="submit" class="bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg">Set</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    if (!requireAuth() || !requireAdmin()) { /* redirects */ }
+
+    async function loadReports() {
+      const data = await api('/admin/reports');
+      const r = data.reports || {};
+      document.getElementById('reports-content').innerHTML = 'Total users: ' + (r.totalUsers ?? '-') + ' | Completed assessments: ' + (r.totalAssessments ?? '-') + (r.note ? '<br><span class="text-slate-500">' + r.note + '</span>' : '');
+    }
+
+    async function loadUsers() {
+      const data = await api('/users');
+      const users = data.users || [];
+      const tbody = document.getElementById('users-tbody');
+      tbody.innerHTML = '';
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.className = 'bg-slate-800/30';
+        tr.innerHTML = '<td class="p-3">' + u.id + '</td><td class="p-3">' + escapeHtml(u.email) + '</td><td class="p-3">' + escapeHtml((u.first_name || '') + ' ' + (u.last_name || '')) + '</td><td class="p-3">' + (u.role_name || '') + '</td><td class="p-3">' + (u.is_suspended ? 'Yes' : 'No') + '</td><td class="p-3"><button type="button" class="reset-pw text-violet-400 hover:underline" data-id="' + u.id + '">Reset password</button> <button type="button" class="suspend text-amber-400 hover:underline" data-id="' + u.id + '" data-suspended="' + (u.is_suspended ? '1' : '0') + '">' + (u.is_suspended ? 'Unsuspend' : 'Suspend') + '</button></td>';
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('.reset-pw').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const newPass = prompt('New password (min 6 chars):');
+          if (!newPass || newPass.length < 6) return;
+          api('/users/' + btn.dataset.id + '/reset-password', { method: 'POST', body: JSON.stringify({ newPassword: newPass }) }).then(() => showToast('Password reset', 'success')).catch(e => showToast(e.error || 'Failed', 'error'));
+        });
+      });
+      tbody.querySelectorAll('.suspend').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const suspended = btn.dataset.suspended === '1';
+          api('/users/' + btn.dataset.id, { method: 'PATCH', body: JSON.stringify({ isSuspended: !suspended }) }).then(() => { loadUsers(); showToast(suspended ? 'User unsuspended' : 'User suspended', 'success'); }).catch(e => showToast(e.error || 'Failed', 'error'));
+        });
+      });
+    }
+
+    async function loadConfig() {
+      const data = await api('/admin/config');
+      const c = data.config || {};
+      document.getElementById('config-content').innerHTML = Object.keys(c).length ? JSON.stringify(c, null, 2) : 'No config entries.';
+    }
+
+    document.getElementById('config-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const key = document.getElementById('config-key').value.trim();
+      if (!key) return;
+      await api('/admin/config', { method: 'PATCH', body: JSON.stringify({ key, value: document.getElementById('config-value').value }) });
+      showToast('Config updated');
+      loadConfig();
+    });
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    loadReports();
+    loadUsers();
+    loadConfig();
+  </script>
+</body>
+</html>

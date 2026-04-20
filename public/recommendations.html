@@ -1,0 +1,776 @@
+<!-- public/recommendations.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recommendations – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+    .soft-panel {
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: linear-gradient(160deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.95));
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
+    }
+    .pv-backdrop {
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 240ms ease;
+    }
+    .pv-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .pv-modal {
+      transform: translateY(10px) scale(0.985);
+      opacity: 0;
+      transition: transform 320ms cubic-bezier(.2,.9,.2,1), opacity 240ms ease;
+    }
+    .pv-backdrop.open .pv-modal {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    .pv-image {
+      animation: pvImageIn 420ms cubic-bezier(.2,.9,.2,1);
+      transform-origin: left center;
+    }
+    @keyframes pvImageIn {
+      from { transform: scale(0.94); opacity: 0.65; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="disclaimer-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="mb-6 soft-panel p-5 md:p-6">
+      <div class="grid md:grid-cols-2 gap-5 items-center">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-violet-300 mb-2">Hairvelous Collection</p>
+          <h1 class="text-3xl md:text-4xl font-bold text-white leading-tight mb-2">Find products that fit your hair profile.</h1>
+          <p class="text-slate-300 text-sm mb-3">We prioritize recommendations from your assessment first, then show other options if you want to explore.</p>
+          <p class="text-xs text-violet-200/90 border border-violet-500/30 rounded-lg px-3 py-2 bg-violet-950/40 mb-4">
+            Recommendations use our rule-based engine (AI-assisted where enabled). Final product choices for sensitive conditions should be confirmed with a hair specialist or stylist.
+          </p>
+          <a href="#recommendations-section" class="inline-flex items-center bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium">Explore Products</a>
+        </div>
+        <div id="hero-product-preview" class="rounded-xl border border-slate-700 bg-slate-800/50 p-4 min-h-[180px] flex items-center justify-center text-slate-500 text-sm">
+          Product preview will appear here
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <div class="inline-flex rounded-lg border border-slate-600 bg-slate-800/80 p-0.5" role="group" aria-label="Product source mode">
+        <button id="btn-mode-recommended" type="button" class="px-4 py-1.5 rounded-md text-sm font-medium bg-violet-600 text-white">Recommended</button>
+        <button id="btn-mode-all" type="button" class="px-4 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white">All Products</button>
+      </div>
+      <p id="mode-hint" class="text-xs text-slate-400">Recommended items are prioritized from your hair profile.</p>
+    </div>
+
+    <div id="preferences-panel" class="flex flex-wrap items-center gap-4 mb-4">
+      <span class="text-slate-400 text-sm">Preferences:</span>
+      <div class="flex items-center gap-2">
+        <label class="text-slate-400 text-sm">Budget</label>
+        <select id="budget" class="rounded-lg bg-slate-700 border border-slate-600 text-white px-3 py-1.5 text-sm">
+          <option value="low">Low (&lt; 15)</option>
+          <option value="medium" selected>Medium (15-25)</option>
+          <option value="high">High (&gt; 25)</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-slate-400 text-sm">Type</label>
+        <select id="productType" class="rounded-lg bg-slate-700 border border-slate-600 text-white px-3 py-1.5 text-sm">
+          <option value="all" selected>All</option>
+          <option value="shampoo">Shampoo</option>
+          <option value="conditioner">Conditioner</option>
+          <option value="serum">Serum</option>
+          <option value="mask">Mask</option>
+        </select>
+      </div>
+      <button id="btn-update-recs" class="bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg text-sm">Update</button>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+      <aside class="lg:w-64 shrink-0">
+        <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-5 sticky top-24">
+          <h2 class="text-lg font-semibold text-white mb-1">Recommended</h2>
+          <p class="text-slate-400 text-sm mb-6">Products tailored to your hair profile.</p>
+
+          <h3 class="text-sm font-medium text-slate-300 mb-3">Categories</h3>
+          <div id="categories-list" class="space-y-1.5 mb-6">
+            <button type="button" data-category="" class="category-btn w-full text-left px-3 py-2 rounded-lg text-sm bg-slate-700/80 text-white border border-slate-600">All</button>
+          </div>
+
+          <h3 class="text-sm font-medium text-slate-300 mb-3">Brands</h3>
+          <div id="brands-list" class="space-y-2">
+            <p class="text-slate-500 text-sm">Load recommendations to see brands.</p>
+          </div>
+        </div>
+      </aside>
+
+      <div class="flex-1 min-w-0">
+        <div id="recommendations-section" class="mb-8">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+            <div class="relative flex-1">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </span>
+              <input type="text" id="search-products" placeholder="Search products..." class="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm" />
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <select id="sort-products" class="rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500">
+                <option value="relevance">Relevance</option>
+              </select>
+            </div>
+          </div>
+          <p id="showing-count" class="text-slate-400 text-sm mb-4">Showing 0 products</p>
+
+          <p id="fallback-notice" class="text-amber-200/90 text-sm mb-3 hidden">Showing all products. <a href="/assessment.html" class="text-violet-400 hover:underline">Complete an assessment</a> for personalized recommendations.</p>
+          <div id="products-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+          <p id="no-products" class="text-slate-500 py-8 hidden">No products available.</p>
+          <p id="no-match" class="text-slate-500 py-8 hidden">No products match the selected filters.</p>
+        </div>
+
+        <div id="routine-plan-section" class="mb-8 hidden">
+          <h2 class="text-lg font-semibold text-white mb-4">Routine Plan</h2>
+          <div id="routine-content" class="bg-slate-800/50 rounded-xl p-6 border border-slate-700"></div>
+        </div>
+
+        <div id="warnings-section" class="mb-8 hidden">
+          <h2 class="text-lg font-semibold text-white mb-4">Important Warnings</h2>
+          <div id="warnings-list" class="bg-amber-900/20 border border-amber-700/50 rounded-xl p-4 space-y-2"></div>
+        </div>
+
+        <div id="diy-section" class="mb-8 hidden">
+          <h2 class="text-lg font-semibold text-white mb-4">Suggested DIY Guides</h2>
+          <div id="diy-list" class="grid md:grid-cols-2 gap-4"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="product-modal-backdrop" class="pv-backdrop fixed inset-0 z-50 p-4 sm:p-6 md:p-10">
+    <div class="pv-modal mx-auto max-w-5xl h-full md:h-auto md:max-h-[88vh] overflow-auto bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl">
+      <div class="p-4 sm:p-5 border-b border-slate-700 flex items-center justify-between">
+        <h3 class="text-white font-semibold">Product Details</h3>
+        <button id="product-modal-close" class="text-slate-400 hover:text-white text-sm">Close ✕</button>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-6 p-4 sm:p-6">
+        <div class="rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50 aspect-square flex items-center justify-center">
+          <img id="modal-product-image" class="pv-image w-full h-full object-cover hidden" alt="Product image" />
+          <div id="modal-image-placeholder" class="text-slate-500 text-sm">No product image</div>
+        </div>
+        <div>
+          <p id="modal-product-brand" class="text-slate-400 text-sm mb-1"></p>
+          <h2 id="modal-product-name" class="text-3xl font-bold text-white mb-2">Product</h2>
+          <p id="modal-product-price" class="hidden text-2xl font-bold text-violet-300 mb-4"></p>
+          <div id="modal-product-categories" class="flex flex-wrap gap-2 mb-4"></div>
+          <p id="modal-product-expiry" class="text-slate-400 text-sm mb-4"></p>
+          <p id="modal-product-description" class="text-slate-300 leading-relaxed"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth()) { /* redirects */ }
+
+    let allRecommendations = [];
+    let recommendedProducts = [];
+    let allCatalogProducts = [];
+    let productMode = 'recommended';
+    let selectedCategory = '';
+    let selectedBrands = new Set();
+    let hasRecommendationProfile = null;
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function formatCategory(name) {
+      if (!name) return '';
+      return name.split(/[\s\/-]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+
+    /** Small category tags (e.g. anti-dandruff → "Anti Dandruff") */
+    function categoryChipsHtml(categories) {
+      const list = Array.isArray(categories) ? categories.filter(Boolean).slice(0, 6) : [];
+      if (!list.length) return '';
+      return (
+        '<div class="flex flex-wrap gap-1.5 mb-2">' +
+        list.map((c) => {
+          const label = formatCategory(String(c));
+          return (
+            '<span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide bg-slate-700/90 text-violet-100 border border-slate-500/50">' +
+            escapeHtml(label) +
+            '</span>'
+          );
+        }).join('') +
+        '</div>'
+      );
+    }
+
+    /** "Profile-matched" only on Recommended tab; hidden on All Products */
+    function profileMatchLineHtml(p) {
+      if (productMode !== 'recommended') return '';
+      if (p.isRecommended) {
+        return '<div class="text-emerald-400/95 text-xs mb-3">Profile-matched recommendation</div>';
+      }
+      return '<div class="text-slate-500 text-xs mb-3">Additional catalog option</div>';
+    }
+
+    function expiryText(p) {
+      if (p.expiryType === 'date' && p.expiryDate) return 'Expires: ' + p.expiryDate;
+      if (p.expiryType === 'period_after_opening' && p.expiryPeriodMonths) {
+        return 'Use within ' + p.expiryPeriodMonths + ' months after opening';
+      }
+      return 'Expiry: Not applicable';
+    }
+
+    function buildFilters(data) {
+      const recs = data.recommendations || [];
+      const categories = new Set();
+      const brands = new Set();
+      recs.forEach(r => {
+        (r.categories || []).forEach(c => categories.add(c));
+        if (r.brand) brands.add(r.brand);
+      });
+
+      const catList = document.getElementById('categories-list');
+      catList.innerHTML = '<button type="button" data-category="" class="category-btn w-full text-left px-3 py-2 rounded-lg text-sm ' + (selectedCategory === '' ? 'bg-slate-700/80 text-white border border-slate-600' : 'text-slate-300 hover:bg-slate-700/50 border border-transparent') + '">All</button>';
+      [...categories].sort().forEach(cat => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.category = cat;
+        btn.className = 'category-btn w-full text-left px-3 py-2 rounded-lg text-sm ' + (selectedCategory === cat ? 'bg-slate-700/80 text-white border border-slate-600' : 'text-slate-300 hover:bg-slate-700/50 border border-transparent');
+        btn.textContent = formatCategory(cat);
+        catList.appendChild(btn);
+      });
+
+      const brandList = document.getElementById('brands-list');
+      if (brands.size === 0) {
+        brandList.innerHTML = '<p class="text-slate-500 text-sm">No brands in this set.</p>';
+      } else {
+        brandList.innerHTML = '';
+        [...brands].sort().forEach(brand => {
+          const label = document.createElement('label');
+          label.className = 'flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white text-sm';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'rounded border-violet-500 bg-slate-800 text-violet-500 focus:ring-violet-500';
+          cb.dataset.brand = brand;
+          cb.checked = selectedBrands.has(brand);
+          cb.addEventListener('change', () => {
+            if (cb.checked) selectedBrands.add(brand);
+            else selectedBrands.delete(brand);
+            renderProducts();
+          });
+          label.appendChild(cb);
+          label.appendChild(document.createTextNode(brand));
+          brandList.appendChild(label);
+        });
+      }
+    }
+
+    function getFilteredAndSortedItems() {
+      let items = allRecommendations.filter(r => {
+        if (selectedCategory && (!r.categories || !r.categories.includes(selectedCategory))) return false;
+        if (selectedBrands.size > 0 && (!r.brand || !selectedBrands.has(r.brand))) return false;
+        const q = (document.getElementById('search-products')?.value || '').trim().toLowerCase();
+        if (q && !(r.name && r.name.toLowerCase().includes(q)) && !(r.brand && r.brand.toLowerCase().includes(q))) return false;
+        return true;
+      });
+      const sort = document.getElementById('sort-products')?.value || 'relevance';
+      if (sort === 'relevance') {
+        items = [...items].sort((a, b) => {
+          const recDelta = (Number(b.isRecommended) || 0) - (Number(a.isRecommended) || 0);
+          if (recDelta !== 0) return recDelta;
+          return (Number(b.matchScore) || 0) - (Number(a.matchScore) || 0);
+        });
+      }
+      return items;
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('products-grid');
+      const noProducts = document.getElementById('no-products');
+      const noMatch = document.getElementById('no-match');
+      const showingCount = document.getElementById('showing-count');
+
+      const items = getFilteredAndSortedItems();
+
+      noProducts.classList.add('hidden');
+      noMatch.classList.add('hidden');
+      if (allRecommendations.length === 0) {
+        noProducts.classList.remove('hidden');
+        grid.innerHTML = '';
+        if (showingCount) showingCount.textContent = 'Showing 0 products';
+        return;
+      }
+      if (items.length === 0) {
+        noMatch.classList.remove('hidden');
+        grid.innerHTML = '';
+        if (showingCount) showingCount.textContent = 'Showing 0 products';
+        return;
+      }
+
+      if (showingCount) showingCount.textContent = 'Showing ' + items.length + ' product' + (items.length !== 1 ? 's' : '');
+
+      grid.innerHTML = items.map(p => `
+        <div class="bg-slate-800/55 rounded-xl border border-slate-700/80 overflow-hidden hover:border-violet-500/50 transition-all duration-200 flex flex-col shadow-sm">
+          <div class="aspect-[4/3] bg-slate-700/40 flex items-center justify-center text-slate-500 overflow-hidden" data-thumb-wrap>
+            ${p.imageUrl
+              ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" class="w-full h-full object-cover" data-thumb-img />`
+              : `<svg class="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`
+            }
+          </div>
+          <div class="p-4 flex flex-col flex-1">
+            ${p.brand ? '<div class="text-slate-400 text-xs mb-0.5">' + escapeHtml(p.brand) + '</div>' : ''}
+            ${categoryChipsHtml(p.categories)}
+            <h3 class="font-semibold text-white mb-1 line-clamp-2 min-h-[3rem]">${escapeHtml(p.name)}</h3>
+            <div class="text-slate-400 text-xs mb-1 min-h-[1rem]">${expiryText(p) ? escapeHtml(expiryText(p)) : ''}</div>
+            ${profileMatchLineHtml(p)}
+            <div class="text-sm text-slate-400 mt-auto">Price may vary by store.</div>
+            <div class="mt-3">
+              <a
+                href="/product-view.html?id=${encodeURIComponent(p.productId)}"
+                class="js-view-details block text-center bg-violet-600 hover:bg-violet-500 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
+                data-product-id="${encodeURIComponent(p.productId)}"
+                data-product-name="${escapeHtml(p.name || '')}"
+                data-product-brand="${escapeHtml(p.brand || '')}"
+                data-product-image="${escapeHtml(p.imageUrl || '')}"
+                data-product-expiry-type="${escapeHtml(p.expiryType || 'not_applicable')}"
+                data-product-expiry-date="${escapeHtml(p.expiryDate || '')}"
+                data-product-expiry-period="${p.expiryPeriodMonths != null ? Number(p.expiryPeriodMonths) : ''}"
+              >
+                View Details
+              </a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderNeedsAssessmentState() {
+      const fallbackNotice = document.getElementById('fallback-notice');
+      if (fallbackNotice) fallbackNotice.classList.add('hidden');
+      recommendedProducts = [];
+      allRecommendations = [];
+      selectedCategory = '';
+      selectedBrands = new Set();
+      buildFilters({ recommendations: [] });
+      renderProducts();
+      renderShowcase([]);
+      const noProducts = document.getElementById('no-products');
+      if (noProducts) {
+        noProducts.classList.remove('hidden');
+        noProducts.innerHTML =
+          'No recommended products yet. Please <a href="/assessment.html" class="underline text-violet-300 hover:text-violet-200">complete your assessment</a> first.';
+      }
+      const noMatch = document.getElementById('no-match');
+      if (noMatch) noMatch.classList.add('hidden');
+      const showingCount = document.getElementById('showing-count');
+      if (showingCount) showingCount.textContent = 'Showing 0 products';
+    }
+
+    function normalizeProductToRecommendation(p) {
+      const cats = (p.categories || []);
+      const categoryList = Array.isArray(cats) ? cats.map(c => (typeof c === 'string' ? c.trim() : c)).filter(Boolean) : [];
+      return {
+        productId: p.productId,
+        name: p.name,
+        brand: p.brand || null,
+        description: p.description || null,
+        imageUrl: p.imageUrl || null,
+        price: p.price != null ? Number(p.price) : 0,
+        reason: p.reason || '',
+        matchScore: p.matchScore != null ? Number(p.matchScore) : 0,
+        isRecommended: !!p.isRecommended,
+        expiryType: p.expiryType || 'not_applicable',
+        expiryDate: p.expiryDate || null,
+        expiryPeriodMonths: p.expiryPeriodMonths != null ? Number(p.expiryPeriodMonths) : null,
+        categories: categoryList,
+      };
+    }
+
+    function renderShowcase(items) {
+      const featured = (items || []).slice(0, 1);
+      const hero = document.getElementById('hero-product-preview');
+
+      if (!featured.length) {
+        hero.innerHTML = 'Product preview will appear here';
+        return;
+      }
+
+      const heroItem = featured[0];
+      hero.innerHTML = `
+        <div class="w-full flex items-center gap-4">
+          <div class="w-24 h-24 rounded-lg overflow-hidden border border-slate-700 bg-slate-700/40 shrink-0">
+            ${heroItem.imageUrl ? `<img src="${escapeHtml(heroItem.imageUrl)}" alt="${escapeHtml(heroItem.name)}" class="w-full h-full object-cover" />` : ''}
+          </div>
+          <div class="min-w-0">
+            <p class="text-slate-400 text-xs">${escapeHtml(heroItem.brand || '')}</p>
+            <p class="text-white font-semibold line-clamp-2">${escapeHtml(heroItem.name || '')}</p>
+            <p class="text-slate-400 text-xs mt-1">Price may vary by store.</p>
+          </div>
+        </div>
+      `;
+
+    }
+
+    function normalizeUrlForCompare(src) {
+      try {
+        return new URL(src, window.location.origin).href;
+      } catch (_e) {
+        return String(src || '');
+      }
+    }
+
+    function setModalImage(src) {
+      const img = document.getElementById('modal-product-image');
+      const ph = document.getElementById('modal-image-placeholder');
+      if (!src) {
+        img.classList.add('hidden');
+        ph.classList.remove('hidden');
+        img.removeAttribute('src');
+        img.dataset.currentSrc = '';
+        return;
+      }
+      const incoming = normalizeUrlForCompare(src);
+      const current = img.dataset.currentSrc || normalizeUrlForCompare(img.getAttribute('src') || '');
+      // Prevent late flicker/reload when hydrate returns same image URL.
+      if (incoming && current && incoming === current) {
+        img.classList.remove('hidden');
+        ph.classList.add('hidden');
+        return;
+      }
+      img.src = src;
+      img.classList.remove('hidden');
+      ph.classList.add('hidden');
+      img.dataset.currentSrc = incoming;
+      img.onerror = function () {
+        img.classList.add('hidden');
+        ph.classList.remove('hidden');
+      };
+    }
+
+    function openProductModal(prefill, sourceRect = null) {
+      document.getElementById('modal-product-brand').textContent = prefill.brand || '';
+      document.getElementById('modal-product-name').textContent = prefill.name || 'Product';
+      document.getElementById('modal-product-expiry').textContent = expiryText(prefill);
+      document.getElementById('modal-product-description').textContent = prefill.description || 'Loading product details...';
+      document.getElementById('modal-product-categories').innerHTML = '';
+      setModalImage(prefill.imageUrl || '');
+
+      const backdrop = document.getElementById('product-modal-backdrop');
+      backdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      // Card image -> modal image zoom transition.
+      if (sourceRect && prefill.imageUrl) {
+        const targetImg = document.getElementById('modal-product-image');
+        targetImg.style.opacity = '0';
+        requestAnimationFrame(() => {
+          const targetRect = targetImg.getBoundingClientRect();
+          if (!targetRect.width || !targetRect.height) {
+            targetImg.style.opacity = '1';
+            return;
+          }
+          const ghost = document.createElement('img');
+          ghost.src = prefill.imageUrl;
+          ghost.style.position = 'fixed';
+          ghost.style.left = `${sourceRect.left}px`;
+          ghost.style.top = `${sourceRect.top}px`;
+          ghost.style.width = `${sourceRect.width}px`;
+          ghost.style.height = `${sourceRect.height}px`;
+          ghost.style.objectFit = 'cover';
+          ghost.style.zIndex = '9999';
+          ghost.style.borderRadius = '10px';
+          ghost.style.boxShadow = '0 18px 40px rgba(2,6,23,.55)';
+          ghost.style.transition = 'all 620ms cubic-bezier(.22,.82,.18,1)';
+          document.body.appendChild(ghost);
+
+          requestAnimationFrame(() => {
+            ghost.style.left = `${targetRect.left}px`;
+            ghost.style.top = `${targetRect.top}px`;
+            ghost.style.width = `${targetRect.width}px`;
+            ghost.style.height = `${targetRect.height}px`;
+            ghost.style.borderRadius = '12px';
+          });
+
+          setTimeout(() => {
+            targetImg.style.opacity = '1';
+            ghost.remove();
+          }, 650);
+        });
+      }
+    }
+
+    function closeProductModal() {
+      const backdrop = document.getElementById('product-modal-backdrop');
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    async function hydrateProductModal(productId) {
+      if (!productId) return;
+      try {
+        const data = await api('/products/' + encodeURIComponent(productId));
+        const p = data.product || {};
+        document.getElementById('modal-product-brand').textContent = p.brand || '';
+        document.getElementById('modal-product-name').textContent = p.name || 'Product';
+        document.getElementById('modal-product-expiry').textContent = expiryText(p);
+        document.getElementById('modal-product-description').textContent = p.description || 'No description available.';
+        const cats = Array.isArray(p.categories) ? p.categories : [];
+        document.getElementById('modal-product-categories').innerHTML = cats.length
+          ? cats.map((c) => `<span class="px-2.5 py-1 rounded-full text-xs bg-violet-600/30 text-violet-200 border border-violet-500/35">${escapeHtml(c)}</span>`).join('')
+          : '<span class="text-slate-500 text-sm">No categories</span>';
+        setModalImage(p.imageUrl || '');
+      } catch (_e) {}
+    }
+
+    async function loadRecommendations() {
+      const fallbackNotice = document.getElementById('fallback-notice');
+      if (fallbackNotice) fallbackNotice.classList.add('hidden');
+
+      try {
+        const budget = document.getElementById('budget')?.value || 'medium';
+        const productType = document.getElementById('productType')?.value || 'all';
+        const data = await api('/recommendations/profile?budget=' + budget + '&productType=' + productType);
+        hasRecommendationProfile = true;
+        recommendedProducts = (data.recommendations || []).map((p) => normalizeProductToRecommendation({
+          ...p,
+          isRecommended: true,
+        }));
+        allRecommendations = recommendedProducts.slice();
+        selectedCategory = '';
+        selectedBrands = new Set();
+        buildFilters({ recommendations: allRecommendations });
+        renderProducts();
+        renderShowcase(allRecommendations);
+
+        // Build "All Products" with recommended first.
+        try {
+          const prodData = await api('/products');
+          const rawAll = (prodData.products || []).map((p) => normalizeProductToRecommendation({
+            ...p,
+            categories: typeof p.categories === 'string' ? p.categories.split(',').map(c => c.trim()) : (p.categories || []),
+          }));
+          const recMap = new Map(recommendedProducts.map((r) => [String(r.productId), r]));
+          const merged = rawAll.map((p) => {
+            const hit = recMap.get(String(p.productId));
+            if (!hit) return { ...p, isRecommended: false, matchScore: 0 };
+            return {
+              ...p,
+              isRecommended: true,
+              matchScore: Number(hit.matchScore) || 0,
+              reason: hit.reason || p.reason || '',
+            };
+          });
+          merged.sort((a, b) => {
+            const recDelta = (Number(b.isRecommended) || 0) - (Number(a.isRecommended) || 0);
+            if (recDelta !== 0) return recDelta;
+            return (Number(b.matchScore) || 0) - (Number(a.matchScore) || 0);
+          });
+          allCatalogProducts = merged;
+        } catch (_e) {
+          allCatalogProducts = recommendedProducts.slice();
+        }
+
+        if (data.routinePlan) {
+          document.getElementById('routine-plan-section').classList.remove('hidden');
+          const routine = data.routinePlan;
+          let html = '';
+          if (routine.daily && routine.daily.length > 0) {
+            html += '<h3 class="text-white font-medium mb-2">Daily</h3><ul class="list-disc list-inside text-slate-300 text-sm mb-4 space-y-1">';
+            routine.daily.forEach(d => {
+              html += `<li>${escapeHtml(d.time)}: ${escapeHtml(d.step)}${d.product ? ' (' + escapeHtml(d.product) + ')' : ''}</li>`;
+            });
+            html += '</ul>';
+          }
+          if (routine.weekly && routine.weekly.length > 0) {
+            html += '<h3 class="text-white font-medium mb-2">Weekly</h3><ul class="list-disc list-inside text-slate-300 text-sm mb-4 space-y-1">';
+            routine.weekly.forEach(w => {
+              html += `<li>${escapeHtml(w.step)} - ${escapeHtml(w.frequency)}${w.products && w.products.length ? ' (' + w.products.map(p => escapeHtml(p)).join(', ') + ')' : ''}</li>`;
+            });
+            html += '</ul>';
+          }
+          if (routine.notes && routine.notes.length) {
+            html += '<p class="text-slate-400 text-sm mt-4">' + routine.notes.map(n => escapeHtml(n)).join('<br>') + '</p>';
+          }
+          document.getElementById('routine-content').innerHTML = html || '<p class="text-slate-500">No routine steps.</p>';
+        }
+
+        if (data.warnings && data.warnings.length > 0) {
+          document.getElementById('warnings-section').classList.remove('hidden');
+          document.getElementById('warnings-list').innerHTML = data.warnings.map(w => '<p class="text-amber-200 text-sm">' + escapeHtml(w) + '</p>').join('');
+        }
+
+        if (data.diyGuides && data.diyGuides.length > 0) {
+          document.getElementById('diy-section').classList.remove('hidden');
+          document.getElementById('diy-list').innerHTML = data.diyGuides.map(g =>
+            '<a href="/guides.html#' + (g.guideId || '') + '" class="bg-slate-800/50 rounded-lg p-4 border border-slate-700 hover:border-violet-500/50 block"><div class="font-medium text-white">' + escapeHtml(g.title) + '</div><p class="text-slate-400 text-sm mt-1">' + escapeHtml(g.summary || '') + '</p></a>'
+          ).join('');
+        }
+      } catch (err) {
+        const backendReason = String((err && (err.error || err.message)) || '').toLowerCase();
+        const missingProfile =
+          (err && err.status === 404 && (backendReason.includes('profile') || backendReason.includes('assessment')))
+          || backendReason.includes('complete an assessment')
+          || backendReason.includes('assessment first')
+          || backendReason.includes('profile not found');
+        if (missingProfile) {
+          hasRecommendationProfile = false;
+          if (productMode === 'recommended') {
+            renderNeedsAssessmentState();
+          }
+          try {
+            const data = await api('/products');
+            allCatalogProducts = (data.products || []).map((p) => normalizeProductToRecommendation({
+              ...p,
+              isRecommended: false,
+              categories: typeof p.categories === 'string' ? p.categories.split(',').map(c => c.trim()) : (p.categories || []),
+            }));
+          } catch (_allErr) {
+            allCatalogProducts = [];
+          }
+          return;
+        }
+        // fallback to all products on other errors
+        try {
+          const data = await api('/products');
+          const products = data.products || [];
+          allRecommendations = products.map(p => normalizeProductToRecommendation({
+            ...p,
+            isRecommended: false,
+            categories: typeof p.categories === 'string' ? p.categories.split(',').map(c => c.trim()) : (p.categories || []),
+          }));
+          allCatalogProducts = allRecommendations.slice();
+          recommendedProducts = [];
+          selectedCategory = '';
+          selectedBrands = new Set();
+          buildFilters({ recommendations: allRecommendations });
+          renderProducts();
+          renderShowcase(allRecommendations);
+          if (fallbackNotice) fallbackNotice.classList.remove('hidden');
+          document.getElementById('routine-plan-section').classList.add('hidden');
+          document.getElementById('warnings-section').classList.add('hidden');
+          document.getElementById('diy-section').classList.add('hidden');
+        } catch (fallbackErr) {
+          showToast(err.message || err.error || 'Failed to load recommendations', 'error');
+          document.getElementById('no-products').classList.remove('hidden');
+          document.getElementById('no-products').textContent = 'No products to show.';
+        }
+      }
+    }
+
+    document.getElementById('categories-list').addEventListener('click', (e) => {
+      const btn = e.target.closest('.category-btn');
+      if (!btn) return;
+      selectedCategory = btn.dataset.category || '';
+      document.querySelectorAll('.category-btn').forEach(b => {
+        const cat = b.dataset.category || '';
+        b.className = 'category-btn w-full text-left px-3 py-2 rounded-lg text-sm border ' + (cat === selectedCategory ? 'bg-slate-700/80 text-white border-slate-600' : 'text-slate-300 hover:bg-slate-700/50 border-transparent');
+      });
+      renderProducts();
+    });
+
+    document.getElementById('search-products').addEventListener('input', renderProducts);
+    document.getElementById('sort-products').addEventListener('change', renderProducts);
+    document.getElementById('btn-update-recs').addEventListener('click', loadRecommendations);
+
+    function syncModeButtons() {
+      const recBtn = document.getElementById('btn-mode-recommended');
+      const allBtn = document.getElementById('btn-mode-all');
+      const active = 'px-4 py-1.5 rounded-md text-sm font-medium bg-violet-600 text-white';
+      const inactive = 'px-4 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white';
+      recBtn.className = productMode === 'recommended' ? active : inactive;
+      allBtn.className = productMode === 'all' ? active : inactive;
+      const modeHint = document.getElementById('mode-hint');
+      modeHint.textContent = productMode === 'recommended'
+        ? 'Recommended items are prioritized from your hair profile.'
+        : 'Showing all products, with recommended items still pinned higher.';
+    }
+
+    document.getElementById('btn-mode-recommended').addEventListener('click', () => {
+      productMode = 'recommended';
+      if (hasRecommendationProfile === false) {
+        renderNeedsAssessmentState();
+        syncModeButtons();
+        return;
+      }
+      allRecommendations = recommendedProducts.slice();
+      selectedCategory = '';
+      selectedBrands = new Set();
+      buildFilters({ recommendations: allRecommendations });
+      renderProducts();
+      renderShowcase(allRecommendations);
+      syncModeButtons();
+    });
+
+    document.getElementById('btn-mode-all').addEventListener('click', async () => {
+      productMode = 'all';
+      if (!allCatalogProducts.length) {
+        try {
+          const data = await api('/products');
+          allCatalogProducts = (data.products || []).map((p) => normalizeProductToRecommendation({
+            ...p,
+            isRecommended: false,
+            categories: typeof p.categories === 'string' ? p.categories.split(',').map(c => c.trim()) : (p.categories || []),
+          }));
+        } catch (_e) {}
+      }
+      allRecommendations = allCatalogProducts.slice();
+      selectedCategory = '';
+      selectedBrands = new Set();
+      buildFilters({ recommendations: allRecommendations });
+      renderProducts();
+      renderShowcase(allRecommendations);
+      syncModeButtons();
+    });
+
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('.js-view-details');
+      if (!link) return;
+      e.preventDefault();
+      const card = link.closest('.bg-slate-800\\/55');
+      const thumb = card ? card.querySelector('[data-thumb-img]') : null;
+      const sourceRect = thumb ? thumb.getBoundingClientRect() : null;
+      const prefill = {
+        productId: decodeURIComponent(link.dataset.productId || ''),
+        name: link.dataset.productName || '',
+        brand: link.dataset.productBrand || '',
+        imageUrl: link.dataset.productImage || '',
+        expiryType: link.dataset.productExpiryType || 'not_applicable',
+        expiryDate: link.dataset.productExpiryDate || '',
+        expiryPeriodMonths: link.dataset.productExpiryPeriod !== '' ? Number(link.dataset.productExpiryPeriod) : null,
+      };
+      openProductModal(prefill, sourceRect);
+      hydrateProductModal(prefill.productId);
+    });
+
+    document.getElementById('product-modal-close').addEventListener('click', closeProductModal);
+    document.getElementById('product-modal-backdrop').addEventListener('click', (e) => {
+      if (e.target.id === 'product-modal-backdrop') closeProductModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeProductModal();
+    });
+
+    syncModeButtons();
+    loadRecommendations();
+  </script>
+</body>
+</html>

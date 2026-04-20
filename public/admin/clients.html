@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Client List – Hairvelous Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Client List</h1>
+        <p class="text-slate-400 text-sm mt-1">Only registered users (clients) are shown. Admin accounts are not listed.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </span>
+          <input type="text" id="search-clients" placeholder="Search by name or email..." class="w-full sm:w-64 pl-10 pr-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-slate-800">
+            <tr>
+              <th class="text-left p-4 text-slate-300">Client</th>
+              <th class="text-left p-4 text-slate-300">Email</th>
+              <th class="text-left p-4 text-slate-300">Registered</th>
+            </tr>
+          </thead>
+          <tbody id="clients-tbody" class="divide-y divide-slate-700">
+            <tr><td colspan="3" class="p-8 text-center text-slate-500">Loading clients...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p id="clients-summary" class="text-slate-500 text-sm mt-3"></p>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth() || !requireAdmin()) { /* redirects */ }
+
+    let allClients = [];
+
+    function formatDate(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      } catch {
+        return iso;
+      }
+    }
+
+    function renderClients(clients) {
+      const tbody = document.getElementById('clients-tbody');
+      const summary = document.getElementById('clients-summary');
+      if (!clients.length) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-slate-500">No clients found.</td></tr>';
+        summary.textContent = '0 clients';
+        return;
+      }
+      tbody.innerHTML = clients.map(c => `
+        <tr class="hover:bg-slate-800/30">
+          <td class="p-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-violet-600/30 flex items-center justify-center text-lg shrink-0">👤</div>
+              <span class="font-medium text-white">${escapeHtml(c.name || '—')}</span>
+            </div>
+          </td>
+          <td class="p-4 text-slate-300">${escapeHtml(c.email || '—')}</td>
+          <td class="p-4 text-slate-400 text-sm">${formatDate(c.dateCreated)}</td>
+        </tr>
+      `).join('');
+      summary.textContent = clients.length + ' client' + (clients.length !== 1 ? 's' : '');
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function filterClients() {
+      const q = (document.getElementById('search-clients').value || '').trim().toLowerCase();
+      const list = q
+        ? allClients.filter(c =>
+            (c.name && c.name.toLowerCase().includes(q)) ||
+            (c.email && c.email.toLowerCase().includes(q))
+          )
+        : allClients;
+      renderClients(list);
+    }
+
+    async function loadClients() {
+      const tbody = document.getElementById('clients-tbody');
+      try {
+        const data = await api('/admin/clients');
+        allClients = data.clients || [];
+        filterClients();
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-red-400">Failed to load clients. ' + (err.message || err.error || '') + '</td></tr>';
+        document.getElementById('clients-summary').textContent = '';
+      }
+    }
+
+    document.getElementById('search-clients').addEventListener('input', filterClients);
+    loadClients();
+  </script>
+</body>
+</html>

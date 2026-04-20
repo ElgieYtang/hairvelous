@@ -1,0 +1,1632 @@
+# ADMIN ACCOUNTS FEATURE — full export
+
+
+
+========== backend/utils/schemaHelpers.js ==========
+
+/**
+ * Cached checks for optional DB columns (migrations may add these over time).
+ */
+const pool = require('../config/db');
+
+let cachedHasIsSuspended = null;
+
+async function hasIsSuspendedColumn() {
+  if (cachedHasIsSuspended !== null) return cachedHasIsSuspended;
+  try {
+    const [cols] = await pool.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'is_suspended'`
+    );
+    cachedHasIsSuspended = cols.length > 0;
+    return cachedHasIsSuspended;
+  } catch {
+    cachedHasIsSuspended = false;
+    return false;
+  }
+}
+
+/**
+ * Throws if user is suspended (no-op when column missing).
+ */
+async function assertUserNotSuspended(userId) {
+  if (!(await hasIsSuspendedColumn())) return;
+  const [rows] = await pool.query('SELECT is_suspended FROM users WHERE user_id = ?', [userId]);
+  if (rows.length === 0) return;
+  if (rows[0].is_suspended === 1 || rows[0].is_suspended === true) {
+    const err = new Error('Account suspended');
+    err.statusCode = 403;
+    throw err;
+  }
+}
+
+module.exports = {
+  hasIsSuspendedColumn,
+  assertUserNotSuspended,
+};
+
+
+========== database/migration_users_is_suspended.sql ==========
+
+-- Migration: Add is_suspended to users (admin can suspend accounts)
+-- Safe to run multiple times.
+
+USE hairvelous;
+
+SET @col_exists = (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'users'
+  AND COLUMN_NAME = 'is_suspended'
+);
+
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE users ADD COLUMN is_suspended TINYINT(1) NOT NULL DEFAULT 0 AFTER date_created',
+  'SELECT ''Column is_suspended already exists'' AS message'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+
+
+========== backend/services/adminService.js ==========
+
+/**
+ * Admin Service
+ * Location: backend/services/adminService.js
+ * Purpose: Business logic for admin operations
+ */
+const bcrypt = require('bcryptjs');
+const pool = require('../config/db');
+const { hasIsSuspendedColumn } = require('../utils/schemaHelpers');
+
+class AdminService {
+  /**
+   * All registered accounts (same payload as listUsers).
+   * Used by admin Clients / Accounts page.
+   */
+  async listClients() {
+    return this.listUsers();
+  }
+
+  /**
+   * List all users (roles, assessments, suspension when column exists)
+   */
+  async listUsers() {
+    const suspendedCol = (await hasIsSuspendedColumn())
+      ? 'u.is_suspended'
+      : '0 AS is_suspended';
+    const [rows] = await pool.query(
+      `SELECT u.user_id, u.name, u.email, u.date_created, r.role_name,
+              ${suspendedCol},
+              (SELECT COUNT(*) FROM hair_assessment WHERE user_id = u.user_id) as assessment_count
+       FROM users u
+       JOIN roles r ON u.role_id = r.role_id
+       ORDER BY u.date_created DESC`
+    );
+
+    return rows.map(r => ({
+      userId: r.user_id,
+      name: r.name,
+      email: r.email,
+      roleName: r.role_name,
+      dateCreated: r.date_created,
+      isSuspended: !!(r.is_suspended === 1 || r.is_suspended === true),
+      assessmentCount: r.assessment_count,
+    }));
+  }
+
+  /**
+   * Suspend/reactivate user
+   */
+  async toggleUserStatus(userId, isSuspended) {
+    if (!(await hasIsSuspendedColumn())) {
+      const err = new Error(
+        'Suspend is not available until the database migration is applied. Run database/migration_users_is_suspended.sql'
+      );
+      err.statusCode = 503;
+      throw err;
+    }
+    const [found] = await pool.query('SELECT user_id FROM users WHERE user_id = ?', [userId]);
+    if (found.length === 0) {
+      const err = new Error('User not found');
+      err.statusCode = 404;
+      throw err;
+    }
+    await pool.query('UPDATE users SET is_suspended = ? WHERE user_id = ?', [
+      isSuspended ? 1 : 0,
+      userId,
+    ]);
+    return {
+      message: isSuspended ? 'User suspended' : 'User reactivated',
+      userId,
+      isSuspended: !!isSuspended,
+    };
+  }
+
+  /**
+   * Reset user password (admin)
+   */
+  async resetUserPassword(userId, newPassword) {
+    const [found] = await pool.query('SELECT user_id FROM users WHERE user_id = ?', [userId]);
+    if (found.length === 0) {
+      const err = new Error('User not found');
+      err.statusCode = 404;
+      throw err;
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = ? WHERE user_id = ?', [
+      passwordHash,
+      userId,
+    ]);
+
+    return { message: 'Password reset successful' };
+  }
+
+  /**
+   * Get basic reports (stub)
+   */
+  async getReports() {
+    const [userCount] = await pool.query('SELECT COUNT(*) as total FROM users');
+    const [assessmentCount] = await pool.query('SELECT COUNT(*) as total FROM hair_assessment');
+    const [productCount] = await pool.query('SELECT COUNT(*) as total FROM products');
+    const [recommendationCount] = await pool.query('SELECT COUNT(*) as total FROM recommendations');
+    const [roleDistribution] = await pool.query(
+      `SELECT r.role_name as role_name, COUNT(*) as total
+       FROM users u
+       JOIN roles r ON u.role_id = r.role_id
+       GROUP BY r.role_name
+       ORDER BY total DESC`
+    );
+    const [usersLast6Months] = await pool.query(
+      `SELECT DATE_FORMAT(u.date_created, '%Y-%m') as period, COUNT(*) as total
+       FROM users u
+       WHERE u.date_created >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
+       GROUP BY period
+       ORDER BY period ASC`
+    );
+    const [assessmentsLast6Months] = await pool.query(
+      `SELECT DATE_FORMAT(a.date_taken, '%Y-%m') as period, COUNT(*) as total
+       FROM hair_assessment a
+       WHERE a.date_taken >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
+       GROUP BY period
+       ORDER BY period ASC`
+    );
+    const [assessmentsLast14Days] = await pool.query(
+      `SELECT DATE_FORMAT(a.date_taken, '%Y-%m-%d') as period, COUNT(*) as total
+       FROM hair_assessment a
+       WHERE a.date_taken >= DATE_SUB(CURDATE(), INTERVAL 13 DAY)
+       GROUP BY period
+       ORDER BY period ASC`
+    );
+    const [productByCategory] = await pool.query(
+      `SELECT pc.category_name as category, COUNT(DISTINCT pc.product_id) as total
+       FROM product_categories pc
+       GROUP BY pc.category_name
+       ORDER BY total DESC, category ASC
+       LIMIT 8`
+    );
+    const [productPriceBands] = await pool.query(
+      `SELECT
+         CASE
+           WHEN p.price < 200 THEN 'Under 200'
+           WHEN p.price >= 200 AND p.price < 500 THEN '200-499'
+           WHEN p.price >= 500 AND p.price < 1000 THEN '500-999'
+           ELSE '1000+'
+         END as band,
+         COUNT(*) as total
+       FROM products p
+       GROUP BY band
+       ORDER BY
+         CASE band
+           WHEN 'Under 200' THEN 1
+           WHEN '200-499' THEN 2
+           WHEN '500-999' THEN 3
+           ELSE 4
+         END`
+    );
+    const [productsWithImage] = await pool.query(
+      `SELECT COUNT(*) as total
+       FROM products
+       WHERE image_url IS NOT NULL AND TRIM(COALESCE(image_url, '')) != ''`
+    );
+    const [productsWithoutDescription] = await pool.query(
+      `SELECT COUNT(*) as total
+       FROM products
+       WHERE description IS NULL OR TRIM(description) = ''`
+    );
+    const [topProducts] = await pool.query(
+      `SELECT
+         p.product_id,
+         p.name,
+         p.brand,
+         p.price,
+         COUNT(r.rec_id) as recommendation_count
+       FROM products p
+       LEFT JOIN recommendations r ON r.product_id = p.product_id
+       GROUP BY p.product_id, p.name, p.brand, p.price
+       ORDER BY recommendation_count DESC, p.price DESC
+       LIMIT 5`
+    );
+    const [recentActivity] = await pool.query(
+      `(SELECT
+          'user_registered' as type,
+          u.name as title,
+          u.email as detail,
+          u.date_created as occurred_at
+        FROM users u
+        ORDER BY u.date_created DESC
+        LIMIT 5)
+       UNION ALL
+       (SELECT
+          'assessment_taken' as type,
+          COALESCE(u.name, CONCAT('User #', a.user_id)) as title,
+          'Completed hair assessment' as detail,
+          a.date_taken as occurred_at
+        FROM hair_assessment a
+        LEFT JOIN users u ON u.user_id = a.user_id
+        ORDER BY a.date_taken DESC
+        LIMIT 5)
+       ORDER BY occurred_at DESC
+       LIMIT 8`
+    );
+
+    return {
+      totalUsers: userCount[0].total,
+      totalAssessments: assessmentCount[0].total,
+      totalProducts: productCount[0].total,
+      totalRecommendations: recommendationCount[0].total,
+      productImageCoveragePct:
+        productCount[0].total > 0
+          ? Math.round((productsWithImage[0].total / productCount[0].total) * 100)
+          : 0,
+      productsMissingDescription: productsWithoutDescription[0].total || 0,
+      roleDistribution: roleDistribution.map(r => ({
+        roleName: r.role_name,
+        total: Number(r.total) || 0,
+      })),
+      usersLast6Months: usersLast6Months.map(r => ({
+        period: r.period,
+        total: Number(r.total) || 0,
+      })),
+      assessmentsLast6Months: assessmentsLast6Months.map(r => ({
+        period: r.period,
+        total: Number(r.total) || 0,
+      })),
+      assessmentsLast14Days: assessmentsLast14Days.map(r => ({
+        period: r.period,
+        total: Number(r.total) || 0,
+      })),
+      productByCategory: productByCategory.map(r => ({
+        category: r.category,
+        total: Number(r.total) || 0,
+      })),
+      productPriceBands: productPriceBands.map(r => ({
+        band: r.band,
+        total: Number(r.total) || 0,
+      })),
+      topProducts: topProducts.map(r => ({
+        productId: r.product_id,
+        name: r.name,
+        brand: r.brand || '',
+        price: Number(r.price) || 0,
+        recommendationCount: Number(r.recommendation_count) || 0,
+      })),
+      recentActivity: recentActivity.map(r => ({
+        type: r.type,
+        title: r.title || 'Activity',
+        detail: r.detail || '',
+        occurredAt: r.occurred_at,
+      })),
+      note: 'Creative dashboard analytics enabled. You can extend with orders/revenue when those modules are added.',
+    };
+  }
+}
+
+module.exports = new AdminService();
+
+
+========== backend/middleware/auth.js ==========
+
+/**
+ * Authentication Middleware
+ * Location: backend/middleware/auth.js
+ * Purpose: JWT verification, role-based access control
+ */
+const jwt = require('jsonwebtoken');
+const pool = require('../config/db');
+const { hasIsSuspendedColumn } = require('../utils/schemaHelpers');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const SKIP_DB_FOR_TESTING = process.env.SKIP_DB_FOR_TESTING === 'true';
+
+function getTestUser() {
+  return {
+    userId: 1,
+    name: 'Test User',
+    email: 'test@example.com',
+    roleId: 1,
+    roleName: 'user',
+    isSuspended: false,
+  };
+}
+
+/**
+ * Optional authentication: sets req.user if token valid, else null
+ */
+async function optionalAuth(req, res, next) {
+  // Testing mode: skip DB and pretend user is logged in
+  if (SKIP_DB_FOR_TESTING) {
+    req.user = getTestUser();
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    req.user = null;
+    return next();
+  }
+
+  const token = authHeader.slice(7);
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const hasSuspended = await hasIsSuspendedColumn();
+    const extra = hasSuspended ? ', u.is_suspended' : '';
+    const [rows] = await pool.query(
+      `SELECT u.user_id, u.name, u.email, u.role_id, r.role_name ${extra}
+       FROM users u 
+       JOIN roles r ON u.role_id = r.role_id 
+       WHERE u.user_id = ?`,
+      [decoded.userId]
+    );
+
+    if (rows.length === 0) {
+      req.user = null;
+      return next();
+    }
+
+    const suspended =
+      hasSuspended && (rows[0].is_suspended === 1 || rows[0].is_suspended === true);
+
+    req.user = {
+      userId: rows[0].user_id,
+      name: rows[0].name,
+      email: rows[0].email,
+      roleId: rows[0].role_id,
+      roleName: rows[0].role_name,
+      isSuspended: !!suspended,
+    };
+    next();
+  } catch (err) {
+    req.user = null;
+    next();
+  }
+}
+
+/**
+ * Require authentication: returns 401 if not logged in
+ */
+function requireAuth(req, res, next) {
+  // Testing mode: bypass auth and inject fake user
+  if (SKIP_DB_FOR_TESTING) {
+    if (!req.user) {
+      req.user = getTestUser();
+    }
+    return next();
+  }
+
+  if (!req.user) {
+    return res.status(401).json({
+      error: 'Authentication required',
+    });
+  }
+  if (req.user.isSuspended) {
+    return res.status(403).json({
+      error: 'Account suspended',
+    });
+  }
+  next();
+}
+
+/**
+ * Require admin role: returns 403 if not admin
+ */
+function requireAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      error: 'Authentication required',
+    });
+  }
+  if (req.user.isSuspended) {
+    return res.status(403).json({
+      error: 'Account suspended',
+    });
+  }
+  if (req.user.roleName !== 'admin') {
+    return res.status(403).json({
+      error: 'Admin access required',
+    });
+  }
+  next();
+}
+
+/**
+ * Generate JWT token
+ */
+function signToken(userId) {
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+module.exports = {
+  optionalAuth,
+  requireAuth,
+  requireAdmin,
+  signToken,
+  JWT_SECRET,
+};
+
+function requireSellerOrAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  if (req.user.isSuspended) {
+    return res.status(403).json({ error: 'Account suspended' });
+  }
+  if (req.user.roleName !== 'admin' && req.user.roleName !== 'seller') {
+    return res.status(403).json({ error: 'Seller or admin access required' });
+  }
+  next();
+}
+
+module.exports = {
+  optionalAuth,
+  requireAuth,
+  requireAdmin,
+  requireSellerOrAdmin,
+  signToken,
+  JWT_SECRET,
+};
+
+
+========== backend/services/authService.js ==========
+
+/**
+ * Auth Service
+ * Location: backend/services/authService.js
+ * Purpose: Business logic for authentication
+ */
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const pool = require('../config/db');
+const { signToken } = require('../middleware/auth');
+const { hasIsSuspendedColumn } = require('../utils/schemaHelpers');
+
+class AuthService {
+  /**
+   * Check if Google OAuth columns exist
+   */
+  async hasGoogleOAuthColumns() {
+    try {
+      const [columns] = await pool.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'users' 
+        AND COLUMN_NAME IN ('auth_provider', 'google_sub', 'is_email_verified')
+      `);
+      return columns.length === 3;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  /**
+ * Register a new user
+ */
+async register(name, email, password, profile = {}) {
+  // Temporary testing bypass: skip DB and return a fake user/token
+  if (process.env.SKIP_DB_FOR_TESTING === 'true') {
+    const fakeUserId = 1;
+    const token = signToken(fakeUserId);
+    return { userId: fakeUserId, token, note: 'SKIP_DB_FOR_TESTING enabled – no DB writes performed.' };
+  }
+
+  let existing;
+  try {
+    [existing] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email]);
+  } catch (err) {
+    if (err.code === 'ECONNREFUSED') {
+      throw new Error('Database unavailable. Start MySQL and ensure DB_HOST/DB_USER/DB_NAME are correct in .env');
+    }
+    throw err;
+  }
+  if (existing.length > 0) {
+    throw new Error('Email already registered');
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const hasGoogleColumns = await this.hasGoogleOAuthColumns();
+
+  let result;
+  if (hasGoogleColumns) {
+    // Use columns if they exist
+    [result] = await pool.query(
+      'INSERT INTO users (name, email, password_hash, role_id, auth_provider, is_email_verified) VALUES (?, ?, ?, 1, ?, 1)',
+      [name, email, passwordHash, 'local']
+    );
+  } else {
+    // Fallback: insert without Google OAuth columns
+    [result] = await pool.query(
+      'INSERT INTO users (name, email, password_hash, role_id) VALUES (?, ?, ?, 1)',
+      [name, email, passwordHash]
+    );
+  }
+
+  const userId = result.insertId;
+
+  // Create/Update extended profile (sex, birthdate, race)
+  const sex = profile.sex || null;
+  const birthdate = profile.birthdate || null;
+  const race = profile.race || null;
+
+  await pool.query(
+    `INSERT INTO user_profiles (user_id, sex, birthdate, race)
+     VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       sex = VALUES(sex),
+       birthdate = VALUES(birthdate),
+       race = VALUES(race)`,
+    [userId, sex, birthdate, race]
+  );
+
+  const token = signToken(userId);
+  return { userId, token };
+}
+
+  /**
+   * Login user
+   */
+  async login(email, password) {
+    const hasGoogleColumns = await this.hasGoogleOAuthColumns();
+    const hasSuspended = await hasIsSuspendedColumn();
+    const suspendedSelect = hasSuspended ? ', u.is_suspended' : '';
+
+    let query;
+    if (hasGoogleColumns) {
+      query = `SELECT u.user_id, u.name, u.email, u.password_hash, u.role_id, u.auth_provider, r.role_name ${suspendedSelect}
+               FROM users u 
+               JOIN roles r ON u.role_id = r.role_id 
+               WHERE u.email = ?`;
+    } else {
+      query = `SELECT u.user_id, u.name, u.email, u.password_hash, u.role_id, r.role_name ${suspendedSelect}
+               FROM users u 
+               JOIN roles r ON u.role_id = r.role_id 
+               WHERE u.email = ?`;
+    }
+
+    const [rows] = await pool.query(query, [email]);
+
+    if (rows.length === 0) {
+      throw new Error('Invalid email or password');
+    }
+
+    const user = rows[0];
+
+    if (hasSuspended && (user.is_suspended === 1 || user.is_suspended === true)) {
+      throw new Error('Account suspended');
+    }
+
+    // Check if user is trying to login with password but account is Google-only
+    if (hasGoogleColumns && user.auth_provider === 'google') {
+      throw new Error('This account uses Google sign-in. Please use "Continue with Google" instead.');
+    }
+
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) {
+      throw new Error('Invalid email or password');
+    }
+
+    const token = signToken(user.user_id);
+    return {
+      token,
+      user: {
+        userId: user.user_id,
+        name: user.name,
+        email: user.email,
+        roleId: user.role_id,
+        roleName: user.role_name,
+      },
+    };
+  }
+
+  /**
+   * Generate reset token (stub: returns token in response for prototype)
+   */
+  async forgotPassword(email) {
+    const [rows] = await pool.query('SELECT user_id FROM users WHERE email = ?', [email]);
+    if (rows.length === 0) {
+      // Don't reveal if email exists (security best practice)
+      return { message: 'If an account exists, a reset link has been sent.' };
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await pool.query(
+      'UPDATE users SET reset_token = ?, reset_token_expires_at = ? WHERE user_id = ?',
+      [token, expiresAt, rows[0].user_id]
+    );
+
+    // In production: send email. For prototype, return token in response.
+    return {
+      message: 'If an account exists, a reset link has been sent.',
+      resetToken: token, // Remove in production
+    };
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(token, newPassword) {
+    const [rows] = await pool.query(
+      'SELECT user_id FROM users WHERE reset_token = ? AND reset_token_expires_at > NOW()',
+      [token]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Invalid or expired reset token');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires_at = NULL WHERE user_id = ?',
+      [passwordHash, rows[0].user_id]
+    );
+
+    return { message: 'Password reset successful' };
+  }
+}
+
+module.exports = new AuthService();
+
+
+
+========== backend/services/googleAuthService.js ==========
+
+/**
+ * Google OAuth Service
+ * Location: backend/services/googleAuthService.js
+ * Purpose: Handle Google OAuth 2.0 authentication
+ */
+const { OAuth2Client } = require('google-auth-library');
+const crypto = require('crypto');
+const pool = require('../config/db');
+const { assertUserNotSuspended } = require('../utils/schemaHelpers');
+const { signToken } = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
+
+class GoogleAuthService {
+  constructor() {
+    const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+    const callbackUrl = process.env.GOOGLE_CALLBACK_URL?.trim();
+    
+    if (!clientId || !clientSecret || !callbackUrl || 
+        clientId === '' || clientSecret === '' || callbackUrl === '') {
+      // Silently handle missing config - Google button will be disabled on frontend
+      this.client = null;
+      this.isConfigured = false;
+      return;
+    }
+    
+    this.client = new OAuth2Client(clientId, clientSecret, callbackUrl);
+    this.isConfigured = true;
+  }
+
+  /**
+   * Get Google OAuth authorization URL
+   */
+  getAuthUrl(state) {
+    if (!this.client || !this.isConfigured) {
+      throw new Error('Google OAuth is not configured');
+    }
+    
+    return this.client.generateAuthUrl({
+      access_type: 'offline',
+      scope: ['openid', 'email', 'profile'],
+      state: state, // CSRF protection
+      prompt: 'select_account', // Force account selection
+    });
+  }
+
+  /**
+   * Exchange authorization code for tokens and verify ID token
+   */
+  async verifyIdToken(code) {
+    if (!this.client || !this.isConfigured) {
+      throw new Error('Google OAuth is not configured');
+    }
+    
+    try {
+      // Exchange code for tokens
+      const { tokens } = await this.client.getToken(code);
+      const idToken = tokens.id_token;
+
+      if (!idToken) {
+        throw new Error('No ID token received from Google');
+      }
+
+      // Verify ID token
+      const ticket = await this.client.verifyIdToken({
+        idToken: idToken,
+        audience: process.env.GOOGLE_CLIENT_ID?.trim(),
+      });
+
+      const payload = ticket.getPayload();
+      return payload;
+    } catch (error) {
+      throw new Error(`Google token verification failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Check if Google OAuth columns exist
+   */
+  async hasGoogleOAuthColumns() {
+    try {
+      const [columns] = await pool.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'users' 
+        AND COLUMN_NAME IN ('auth_provider', 'google_sub', 'is_email_verified')
+      `);
+      return columns.length === 3;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  /**
+   * Handle Google OAuth callback - create or link user account
+   */
+  async handleGoogleCallback(googlePayload) {
+    const { sub, email, name, email_verified } = googlePayload;
+
+    // Verify email is verified
+    if (!email_verified) {
+      throw new Error('Google email is not verified.');
+    }
+
+    // Check if columns exist
+    const hasGoogleColumns = await this.hasGoogleOAuthColumns();
+    
+    if (!hasGoogleColumns) {
+      throw new Error('Google OAuth columns not found. Please run the migration: database/migration_add_google_oauth_final.sql');
+    }
+
+    // Check if user exists by google_sub
+    const [existingBySub] = await pool.query(
+      'SELECT user_id, name, email, role_id, auth_provider FROM users WHERE google_sub = ?',
+      [sub]
+    );
+
+    if (existingBySub.length > 0) {
+      // User exists with this Google account - log them in
+      const user = existingBySub[0];
+      await assertUserNotSuspended(user.user_id);
+      const [roleRows] = await pool.query('SELECT role_name FROM roles WHERE role_id = ?', [user.role_id]);
+      
+      const token = signToken(user.user_id);
+      return {
+        token,
+        user: {
+          userId: user.user_id,
+          name: user.name,
+          email: user.email,
+          roleId: user.role_id,
+          roleName: roleRows[0]?.role_name || 'user',
+        },
+      };
+    }
+
+    // Check if user exists by email (local account)
+    const [existingByEmail] = await pool.query(
+      'SELECT user_id, name, email, role_id, auth_provider FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (existingByEmail.length > 0) {
+      // User exists with local account - link Google account
+      const user = existingByEmail[0];
+      await assertUserNotSuspended(user.user_id);
+
+      // Update user to link Google account
+      await pool.query(
+        'UPDATE users SET auth_provider = ?, google_sub = ?, is_email_verified = ? WHERE user_id = ?',
+        ['google', sub, email_verified ? 1 : 0, user.user_id]
+      );
+
+      const [roleRows] = await pool.query('SELECT role_name FROM roles WHERE role_id = ?', [user.role_id]);
+      
+      const token = signToken(user.user_id);
+      return {
+        token,
+        user: {
+          userId: user.user_id,
+          name: user.name,
+          email: user.email,
+          roleId: user.role_id,
+          roleName: roleRows[0]?.role_name || 'user',
+        },
+      };
+    }
+
+    // New user - create account
+    // Generate a placeholder password hash (required by schema, but won't be used)
+    const placeholderHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+    
+    const [result] = await pool.query(
+      `INSERT INTO users (name, email, password_hash, role_id, auth_provider, google_sub, is_email_verified) 
+       VALUES (?, ?, ?, 1, 'google', ?, ?)`,
+      [name, email, placeholderHash, sub, email_verified ? 1 : 0]
+    );
+
+    const token = signToken(result.insertId);
+    return {
+      token,
+      user: {
+        userId: result.insertId,
+        name: name,
+        email: email,
+        roleId: 1,
+        roleName: 'user',
+      },
+    };
+  }
+}
+
+module.exports = new GoogleAuthService();
+
+
+
+========== backend/controllers/adminController.js ==========
+
+/**
+ * Admin Controller
+ * Location: backend/controllers/adminController.js
+ * Purpose: Handle HTTP requests for admin operations
+ */
+const adminService = require('../services/adminService');
+const { validationResult } = require('express-validator');
+
+class AdminController {
+  async listClients(req, res, next) {
+    try {
+      const clients = await adminService.listClients();
+      res.json({ clients });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async listUsers(req, res, next) {
+    try {
+      const users = await adminService.listUsers();
+      res.json({ users });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async toggleUserStatus(req, res, next) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+      const targetId = parseInt(req.params.userId, 10);
+      if (Number.isNaN(targetId)) {
+        return res.status(400).json({ error: 'Invalid user id' });
+      }
+      const { isSuspended } = req.body;
+      if (typeof isSuspended !== 'boolean') {
+        return res.status(400).json({ error: 'isSuspended must be a boolean' });
+      }
+      if (targetId === req.user.userId && isSuspended) {
+        return res.status(400).json({ error: 'You cannot suspend your own account' });
+      }
+      const result = await adminService.toggleUserStatus(targetId, isSuspended);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async resetUserPassword(req, res, next) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { userId } = req.params;
+      const { newPassword } = req.body;
+      const result = await adminService.resetUserPassword(parseInt(userId), newPassword);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getReports(req, res, next) {
+    try {
+      const reports = await adminService.getReports();
+      res.json({ reports });
+    } catch (err) {
+      next(err);
+    }
+  }
+}
+
+module.exports = new AdminController();
+
+
+
+========== backend/routes/adminRoutes.js ==========
+
+/**
+ * Admin Routes
+ * Location: backend/routes/adminRoutes.js
+ * Purpose: Define admin endpoints
+ */
+const express = require('express');
+const router = express.Router();
+const adminController = require('../controllers/adminController');
+const { requireAdmin } = require('../middleware/auth');
+const { body } = require('express-validator');
+
+router.get('/clients', requireAdmin, adminController.listClients);
+router.get('/users', requireAdmin, adminController.listUsers);
+router.patch(
+  '/users/:userId/status',
+  requireAdmin,
+  body('isSuspended').isBoolean().withMessage('isSuspended must be true or false'),
+  adminController.toggleUserStatus
+);
+router.post('/users/:userId/reset-password', requireAdmin, [
+  body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+], adminController.resetUserPassword);
+router.get('/reports', requireAdmin, adminController.getReports);
+
+module.exports = router;
+
+
+
+========== public/admin/clients.html ==========
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accounts – Hairvelous Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Accounts</h1>
+        <p class="text-slate-400 text-sm mt-1">Every role is listed—clients, sellers, and admins. Reset a password or suspend / activate an account.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </span>
+          <input type="text" id="search-clients" placeholder="Search name, email, or role..." class="w-full sm:w-64 pl-10 pr-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-slate-800">
+            <tr>
+              <th class="text-left p-4 text-slate-300">Account</th>
+              <th class="text-left p-4 text-slate-300">Email</th>
+              <th class="text-left p-4 text-slate-300">Role</th>
+              <th class="text-left p-4 text-slate-300">Status</th>
+              <th class="text-left p-4 text-slate-300">Registered</th>
+              <th class="text-right p-4 text-slate-300">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="clients-tbody" class="divide-y divide-slate-700">
+            <tr><td colspan="6" class="p-8 text-center text-slate-500">Loading accounts...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p id="clients-summary" class="text-slate-500 text-sm mt-3"></p>
+  </main>
+
+  <!-- Reset password modal -->
+  <div id="reset-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" aria-modal="true">
+    <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-md w-full p-6 shadow-xl">
+      <h2 class="text-lg font-semibold text-white mb-1">Reset password</h2>
+      <p class="text-slate-400 text-sm mb-4">Set a new password for this account (min 6 characters).</p>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">New password</label>
+          <input type="password" id="reset-pass-1" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white" autocomplete="new-password" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Confirm</label>
+          <input type="password" id="reset-pass-2" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white" autocomplete="new-password" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button type="button" id="reset-cancel" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700">Cancel</button>
+        <button type="button" id="reset-submit" class="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth() || !requireAdmin()) { /* redirects */ }
+
+    let allClients = [];
+    let resetTargetId = null;
+    const me = getUser();
+    const myId = me && (me.userId != null ? Number(me.userId) : null);
+
+    function formatDate(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      } catch {
+        return iso;
+      }
+    }
+
+    function roleBadgeClass(role) {
+      if (role === 'admin') return 'bg-amber-600/30 text-amber-200';
+      if (role === 'seller') return 'bg-sky-600/30 text-sky-200';
+      return 'bg-slate-700 text-slate-300';
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function renderClients(clients) {
+      const tbody = document.getElementById('clients-tbody');
+      const summary = document.getElementById('clients-summary');
+      if (!clients.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-500">No accounts match your search.</td></tr>';
+        summary.textContent = '0 accounts';
+        return;
+      }
+      tbody.innerHTML = clients.map(c => {
+        const rid = Number(c.userId);
+        const isSelf = myId != null && rid === myId;
+        const suspended = !!c.isSuspended;
+        const role = c.roleName || 'user';
+        const suspendBtn = isSelf
+          ? '<span class="text-slate-500 text-xs" title="You cannot suspend your own account">—</span>'
+          : `<button type="button" class="suspend-btn text-amber-400 hover:text-amber-300 text-sm font-medium" data-user-id="${rid}" data-suspended="${suspended}">${suspended ? 'Activate' : 'Suspend'}</button>`;
+        const statusHtml = suspended
+          ? '<span class="inline-flex px-2 py-0.5 rounded text-xs bg-red-900/40 text-red-300">Suspended</span>'
+          : '<span class="inline-flex px-2 py-0.5 rounded text-xs bg-emerald-900/40 text-emerald-300">Active</span>';
+        return `
+        <tr class="hover:bg-slate-800/30">
+          <td class="p-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-violet-600/30 flex items-center justify-center text-lg shrink-0">👤</div>
+              <span class="font-medium text-white">${escapeHtml(c.name || '—')}</span>
+            </div>
+          </td>
+          <td class="p-4 text-slate-300">${escapeHtml(c.email || '—')}</td>
+          <td class="p-4"><span class="px-2 py-1 rounded text-xs capitalize ${roleBadgeClass(role)}">${escapeHtml(role)}</span></td>
+          <td class="p-4">${statusHtml}</td>
+          <td class="p-4 text-slate-400 text-sm">${formatDate(c.dateCreated)}</td>
+          <td class="p-4 text-right whitespace-nowrap">
+            <button type="button" class="reset-btn text-violet-400 hover:text-violet-300 text-sm font-medium mr-4" data-user-id="${rid}">Reset password</button>
+            ${suspendBtn}
+          </td>
+        </tr>`;
+      }).join('');
+      summary.textContent = clients.length + ' account' + (clients.length !== 1 ? 's' : '');
+
+      tbody.querySelectorAll('.reset-btn').forEach(btn => {
+        btn.addEventListener('click', () => openResetModal(Number(btn.getAttribute('data-user-id'))));
+      });
+      tbody.querySelectorAll('.suspend-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const uid = Number(btn.getAttribute('data-user-id'));
+          const cur = btn.getAttribute('data-suspended') === 'true';
+          toggleSuspend(uid, cur);
+        });
+      });
+    }
+
+    function filterClients() {
+      const q = (document.getElementById('search-clients').value || '').trim().toLowerCase();
+      const list = q
+        ? allClients.filter(c =>
+            (c.name && c.name.toLowerCase().includes(q)) ||
+            (c.email && c.email.toLowerCase().includes(q)) ||
+            (c.roleName && String(c.roleName).toLowerCase().includes(q))
+          )
+        : allClients;
+      renderClients(list);
+    }
+
+    function openResetModal(userId) {
+      resetTargetId = userId;
+      document.getElementById('reset-pass-1').value = '';
+      document.getElementById('reset-pass-2').value = '';
+      document.getElementById('reset-modal').classList.remove('hidden');
+      document.getElementById('reset-pass-1').focus();
+    }
+
+    function closeResetModal() {
+      resetTargetId = null;
+      document.getElementById('reset-modal').classList.add('hidden');
+    }
+
+    async function submitReset() {
+      const p1 = document.getElementById('reset-pass-1').value;
+      const p2 = document.getElementById('reset-pass-2').value;
+      if (!p1 || p1.length < 6) {
+        showToast('Password must be at least 6 characters', 'error');
+        return;
+      }
+      if (p1 !== p2) {
+        showToast('Passwords do not match', 'error');
+        return;
+      }
+      try {
+        await api('/admin/users/' + resetTargetId + '/reset-password', {
+          method: 'POST',
+          body: JSON.stringify({ newPassword: p1 }),
+        });
+        showToast('Password updated', 'success');
+        closeResetModal();
+      } catch (err) {
+        const msg = err.error || err.message || (Array.isArray(err.errors) ? err.errors.map(e => e.msg).join('; ') : 'Request failed');
+        showToast(msg, 'error');
+      }
+    }
+
+    async function toggleSuspend(userId, currentlySuspended) {
+      try {
+        await api('/admin/users/' + userId + '/status', {
+          method: 'PATCH',
+          body: JSON.stringify({ isSuspended: !currentlySuspended }),
+        });
+        showToast(currentlySuspended ? 'Account activated' : 'Account suspended', 'success');
+        await loadClients();
+      } catch (err) {
+        const msg = err.error || err.message || 'Request failed';
+        showToast(msg, 'error');
+      }
+    }
+
+    async function loadClients() {
+      const tbody = document.getElementById('clients-tbody');
+      try {
+        const data = await api('/admin/clients');
+        allClients = data.clients || [];
+        filterClients();
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-400">Failed to load accounts. ' + escapeHtml(err.error || err.message || '') + '</td></tr>';
+        document.getElementById('clients-summary').textContent = '';
+      }
+    }
+
+    document.getElementById('search-clients').addEventListener('input', filterClients);
+    document.getElementById('reset-cancel').addEventListener('click', closeResetModal);
+    document.getElementById('reset-submit').addEventListener('click', submitReset);
+    document.getElementById('reset-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'reset-modal') closeResetModal();
+    });
+
+    loadClients();
+  </script>
+</body>
+</html>
+
+
+
+========== public/js/layout.js ==========
+
+/**
+ * Shared Layout Functions
+ * Location: public/js/layout.js
+ * Purpose: Common layout elements (nav, smooth animations)
+ */
+
+// Load animations CSS
+function loadAnimationsCSS() {
+  if (!document.getElementById('animations-css')) {
+    const link = document.createElement('link');
+    link.id = 'animations-css';
+    link.rel = 'stylesheet';
+    link.href = '/css/animations.css';
+    document.head.appendChild(link);
+  }
+}
+
+function renderNav() {
+  const user = getUser();
+  const isLoggedIn = !!user;
+  const role = user && (user.roleName || user.role);
+  const isAdmin = role === 'admin';
+  const isSeller = role === 'seller';
+
+  return `
+    <nav class="border-b border-slate-700/50 sticky top-0 bg-slate-900/95 backdrop-blur z-40 slide-in-left">
+      <div class="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
+        <a href="/" class="flex items-center gap-2 text-white font-semibold hover:scale-105 transition-transform">
+          <span class="text-2xl icon-bounce">✨</span>
+          <span>Hairvelous</span>
+        </a>
+        <div class="flex items-center gap-4 md:gap-6">
+          ${
+            isLoggedIn
+              ? `
+            ${
+              isAdmin
+                ? `
+            <a href="/admin_dashboard.html" class="text-slate-300 hover:text-white transition-all">Dashboard</a>
+            <a href="/admin/clients.html" class="text-slate-300 hover:text-white transition-all">Accounts</a>
+            <a href="/product_management.html" class="text-slate-300 hover:text-white transition-all">Products</a>
+            <a href="/profile-edit.html" class="text-slate-300 hover:text-white transition-all">Profile</a>
+            `
+                : isSeller
+                ? `
+            <a href="/seller_dashboard.html" class="text-slate-300 hover:text-white transition-all">Dashboard</a>
+            <a href="/product_management.html" class="text-slate-300 hover:text-white transition-all">Products</a>
+            <a href="/profile-edit.html" class="text-slate-300 hover:text-white transition-all">Profile</a>
+            `
+                : `
+            <a href="/dashboard.html" class="text-slate-300 hover:text-white transition-all">Dashboard</a>
+            <a href="/assessment.html" class="text-slate-300 hover:text-white transition-all">Assessment</a>
+            <a href="/recommendations.html" class="text-slate-300 hover:text-white transition-all">Products</a>
+            <a href="/guides.html" class="text-slate-300 hover:text-white transition-all">Guides</a>
+            <a href="/tracker.html" class="text-slate-300 hover:text-white transition-all">Tracker</a>
+            <a href="/profile-edit.html" class="text-slate-300 hover:text-white transition-all">Profile</a>
+            `
+            }
+            <span class="text-slate-400 text-sm fade-in">${user.email || ''}</span>
+            <button onclick="logout()" class="text-slate-400 hover:text-white text-sm transition-all hover:scale-105">Logout</button>
+          `
+              : `
+            <a href="/landing.html" class="text-slate-300 hover:text-white transition-all">Home</a>
+            <a href="/login.html" class="text-violet-400 hover:text-violet-300 transition-all">Login</a>
+            <a href="/register.html" class="bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg text-sm btn-primary transition-all">Sign Up</a>
+          `
+          }
+        </div>
+      </div>
+    </nav>
+  `;
+}
+
+function initLayout() {
+  loadAnimationsCSS();
+  const navPlaceholder = document.getElementById('nav-placeholder');
+
+  if (navPlaceholder) {
+    navPlaceholder.innerHTML = renderNav();
+  }
+
+  // Add fade-in to main content
+  const main = document.querySelector('main');
+  if (main && !main.classList.contains('fade-in')) {
+    main.classList.add('fade-in');
+  }
+
+  // Add card-hover class to cards
+  document.querySelectorAll('a[href], .bg-slate-800\\/50').forEach(card => {
+    if (card.tagName === 'A' || card.classList.contains('rounded-xl')) {
+      card.classList.add('card-hover');
+    }
+  });
+
+  // Add smooth transitions to buttons
+  document.querySelectorAll('button, .btn-primary').forEach(btn => {
+    if (!btn.classList.contains('btn-primary')) {
+      btn.classList.add('btn-primary');
+    }
+  });
+
+  // Apply slide-in animation with blur
+  setTimeout(() => {
+    document.body.classList.add('active');
+    document.querySelectorAll('.animation').forEach((el, index) => {
+      if (!el.style.getPropertyValue('--i')) {
+        el.style.setProperty('--i', index);
+      }
+    });
+  }, 200);
+}
+
+// Smooth page transitions
+document.addEventListener('DOMContentLoaded', () => {
+  // Add fade-out on link clicks
+  document.querySelectorAll('a[href$=".html"]').forEach(link => {
+    link.addEventListener('click', function(e) {
+      if (this.href && !this.href.includes('#') && !this.target) {
+        e.preventDefault();
+        document.body.style.opacity = '0';
+        document.body.style.transition = 'opacity 0.2s ease-out';
+        setTimeout(() => {
+          window.location.href = this.href;
+        }, 200);
+      }
+    });
+  });
+
+  // Fade in on page load
+  document.body.style.opacity = '0';
+  setTimeout(() => {
+    document.body.style.transition = 'opacity 0.3s ease-in';
+    document.body.style.opacity = '1';
+  }, 10);
+});
+
+// Auto-init on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initLayout);
+} else {
+  initLayout();
+}
+
+
+========== database/schema_hairvelous.sql ==========
+
+-- Hairvelous MySQL Schema
+-- Single file: tables, indexes, foreign keys, seed data
+
+CREATE DATABASE IF NOT EXISTS hairvelous;
+USE hairvelous;
+
+-- ---------------------------------------------------------------------------
+-- Tables (drop in reverse dependency order for clean rerun)
+-- ---------------------------------------------------------------------------
+DROP TABLE IF EXISTS routine_logs;
+DROP TABLE IF EXISTS recommendations;
+DROP TABLE IF EXISTS product_categories;
+DROP TABLE IF EXISTS diy_guides;
+DROP TABLE IF EXISTS hair_profiles;
+DROP TABLE IF EXISTS hair_photos;
+DROP TABLE IF EXISTS assessment_responses;
+DROP TABLE IF EXISTS hair_assessment;
+-- Migration tables (FK -> users); must drop before users
+DROP TABLE IF EXISTS user_credential_documents;
+DROP TABLE IF EXISTS user_profiles;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS products;
+
+-- ---------------------------------------------------------------------------
+-- roles
+-- ---------------------------------------------------------------------------
+CREATE TABLE roles (
+  role_id INT PRIMARY KEY AUTO_INCREMENT,
+  role_name VARCHAR(50) NOT NULL UNIQUE,
+  INDEX idx_role_name (role_name)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- users
+-- ---------------------------------------------------------------------------
+CREATE TABLE users (
+  user_id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(200) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role_id INT NOT NULL,
+  reset_token VARCHAR(255) NULL,
+  reset_token_expires_at DATETIME NULL,
+  date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  is_suspended TINYINT(1) NOT NULL DEFAULT 0,
+  UNIQUE KEY uq_email (email),
+  INDEX idx_role_id (role_id),
+  INDEX idx_reset_token (reset_token),
+  CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(role_id) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- hair_assessment
+-- ---------------------------------------------------------------------------
+CREATE TABLE hair_assessment (
+  assessment_id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  date_taken TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user_id (user_id),
+  INDEX idx_date_taken (date_taken),
+  CONSTRAINT fk_assessment_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- assessment_responses
+-- ---------------------------------------------------------------------------
+CREATE TABLE assessment_responses (
+  response_id INT PRIMARY KEY AUTO_INCREMENT,
+  assessment_id INT NOT NULL,
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  INDEX idx_assessment_id (assessment_id),
+  CONSTRAINT fk_response_assessment FOREIGN KEY (assessment_id) REFERENCES hair_assessment(assessment_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- hair_photos
+-- ---------------------------------------------------------------------------
+CREATE TABLE hair_photos (
+  photo_id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  image_path VARCHAR(500) NOT NULL,
+  ai_result TEXT NULL,
+  date_uploaded TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user_id (user_id),
+  INDEX idx_date_uploaded (date_uploaded),
+  CONSTRAINT fk_photo_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- hair_profiles
+-- ---------------------------------------------------------------------------
+CREATE TABLE hair_profiles (
+  profile_id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  hair_type VARCHAR(100) NULL,
+  scalp_condition VARCHAR(100) NULL,
+  issues_detected TEXT NULL,
+  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_user_id (user_id),
+  INDEX idx_last_updated (last_updated),
+  CONSTRAINT fk_profile_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- products
+-- ---------------------------------------------------------------------------
+CREATE TABLE products (
+  product_id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  brand VARCHAR(100) NULL,
+  description TEXT NULL,
+  price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+  INDEX idx_name (name),
+  INDEX idx_brand (brand)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- product_categories (product_id FK -> products)
+-- ---------------------------------------------------------------------------
+CREATE TABLE product_categories (
+  category_id INT PRIMARY KEY AUTO_INCREMENT,
+  product_id INT NOT NULL,
+  category_name VARCHAR(100) NOT NULL,
+  INDEX idx_product_id (product_id),
+  INDEX idx_category_name (category_name),
+  CONSTRAINT fk_cat_product FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- recommendations
+-- ---------------------------------------------------------------------------
+CREATE TABLE recommendations (
+  rec_id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  product_id INT NOT NULL,
+  reason TEXT NULL,
+  date_recommended TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user_id (user_id),
+  INDEX idx_product_id (product_id),
+  INDEX idx_date_recommended (date_recommended),
+  CONSTRAINT fk_rec_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_rec_product FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- routine_logs
+-- ---------------------------------------------------------------------------
+CREATE TABLE routine_logs (
+  routine_id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  activity_type VARCHAR(100) NOT NULL,
+  notes TEXT NULL,
+  photo_path VARCHAR(500) NULL,
+  photo_ai_result TEXT NULL,
+  date_logged DATE NOT NULL,
+  INDEX idx_user_id (user_id),
+  INDEX idx_date_logged (date_logged),
+  INDEX idx_activity_type (activity_type),
+  CONSTRAINT fk_routine_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- diy_guides
+-- ---------------------------------------------------------------------------
+CREATE TABLE diy_guides (
+  guide_id INT PRIMARY KEY AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  category ENUM('mask', 'oil', 'rinse', 'growth') NOT NULL DEFAULT 'mask',
+  difficulty ENUM('easy', 'medium', 'hard') NOT NULL DEFAULT 'easy',
+  ingredients TEXT NULL,
+  steps TEXT NOT NULL,
+  caution TEXT NULL,
+  created_by INT NULL,
+  date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_category (category),
+  INDEX idx_difficulty (difficulty),
+  INDEX idx_created_by (created_by),
+  INDEX idx_date_created (date_created),
+  CONSTRAINT fk_guide_creator FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
+-- Seed: roles (admin, user)
+-- ---------------------------------------------------------------------------
+INSERT INTO roles (role_id, role_name) VALUES
+(1, 'user'),
+(2, 'admin');
+
+-- ---------------------------------------------------------------------------
+-- Seed: sample products and product_categories
+-- Categories: anti-dandruff, moisturizing, anti-frizz, clarifying/oily scalp
+-- ---------------------------------------------------------------------------
+INSERT INTO products (product_id, name, brand, description, price) VALUES
+(1, 'Scalp Relief Shampoo', 'HairCare Pro', 'Helps reduce flaking and soothe itchy scalp. For preventive care only.', 12.99),
+(2, 'Anti-Dandruff Treatment Serum', 'ScalpFix', 'Targeted serum for visible flaking. Not a medical treatment.', 18.50),
+(3, 'Deep Moisture Hair Mask', 'HydrateCo', 'Intensive hydration for dry, brittle hair.', 14.99),
+(4, 'Daily Moisturizing Conditioner', 'HairCare Pro', 'Lightweight moisture for daily use.', 9.99),
+(5, 'Frizz Control Oil', 'SmoothLock', 'Reduces frizz and adds shine without weighing down.', 16.00),
+(6, 'Anti-Frizz Smoothing Serum', 'HairCare Pro', 'Heat-protectant and frizz control in one.', 13.50),
+(7, 'Clarifying Shampoo', 'PureScalp', 'Removes buildup; for oily scalp. Use weekly.', 11.99),
+(8, 'Oil-Control Scalp Tonic', 'PureScalp', 'Lightweight tonic for oily roots and fresh scalp.', 15.00);
+
+INSERT INTO product_categories (product_id, category_name) VALUES
+(1, 'anti-dandruff'),
+(2, 'anti-dandruff'),
+(3, 'moisturizing'),
+(4, 'moisturizing'),
+(5, 'anti-frizz'),
+(6, 'anti-frizz'),
+(7, 'clarifying/oily scalp'),
+(8, 'clarifying/oily scalp');
+
+-- ---------------------------------------------------------------------------
+-- Seed: sample DIY guides
+-- ---------------------------------------------------------------------------
+INSERT INTO diy_guides (title, category, difficulty, ingredients, steps, caution, created_by) VALUES
+('Coconut Oil Hair Mask', 'mask', 'easy', '2 tbsp coconut oil, 1 tbsp honey (optional)', '1. Warm coconut oil slightly\n2. Apply to hair lengths and ends\n3. Leave for 30 minutes\n4. Wash with mild shampoo', 'Do not use if allergic to coconut. Patch test first.', NULL),
+('Apple Cider Vinegar Rinse', 'rinse', 'easy', '1 part ACV, 4 parts water', '1. Mix ACV with water\n2. After shampooing, pour over hair\n3. Massage scalp gently\n4. Rinse thoroughly', 'Do not use if you have open cuts or severe scalp issues. Consult a professional if unsure.', NULL),
+('Argan Oil Treatment', 'oil', 'easy', '2-3 drops argan oil', '1. Apply oil to palms\n2. Work through damp hair\n3. Focus on ends\n4. Style as usual', 'Use sparingly to avoid greasy look.', NULL),
+('Egg and Olive Oil Mask', 'mask', 'medium', '1 egg, 2 tbsp olive oil', '1. Beat egg and mix with olive oil\n2. Apply to hair\n3. Cover with shower cap\n4. Leave 20 minutes\n5. Rinse with cool water', 'Use cool water to rinse to avoid cooking the egg. May have strong smell.', NULL),
+('Rice Water Rinse for Growth', 'rinse', 'easy', '1 cup rice, 2 cups water', '1. Soak rice in water for 30 minutes\n2. Strain and collect water\n3. After shampoo, pour rice water over hair\n4. Massage and leave 5 minutes\n5. Rinse', 'Fermented rice water may have stronger effect but stronger smell. Start with fresh rice water.', NULL);
+
+-- Optional: seed users (passwords are bcrypt placeholders; run backend/scripts/seed-users.js to set real ones)
+-- INSERT INTO users (name, email, password_hash, role_id) VALUES
+-- ('Jane User', 'user@example.com', '$2a$10$placeholder', 1),
+-- ('Admin User', 'admin@example.com', '$2a$10$placeholder', 2);
+

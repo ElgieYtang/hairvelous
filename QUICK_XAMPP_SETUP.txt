@@ -1,0 +1,78 @@
+═══════════════════════════════════════════════════════════
+  QUICK XAMPP SETUP GUIDE - Hairvelous Database
+═══════════════════════════════════════════════════════════
+
+STEP 1: INSTALL XAMPP
+──────────────────────
+1. Download: https://www.apachefriends.org/download.html
+2. Install XAMPP (choose MySQL component)
+3. Open XAMPP Control Panel
+
+STEP 2: START MYSQL
+───────────────────
+1. In XAMPP Control Panel, click "Start" next to MySQL
+2. Should show green "Running" status
+
+STEP 3: SETUP DATABASE (Choose ONE method)
+───────────────────────────────────────────
+
+METHOD A: Using phpMyAdmin (Easiest - GUI)
+──────────────────────────────────────────
+1. In XAMPP Control Panel, click "Admin" next to MySQL
+   OR open: http://localhost/phpmyadmin
+2. Login: username=root, password=(leave blank)
+3. Click "New" → Database name: hairvelous → Create
+4. Click on "hairvelous" database
+5. Click "Import" tab
+6. Choose File: database\schema_hairvelous.sql
+7. Click "Go"
+8. Done! ✅
+
+METHOD B: Using Batch Script
+─────────────────────────────
+1. Double-click: setup_database_xampp.bat
+2. Enter password (or press Enter if blank)
+3. Done! ✅
+
+METHOD C: Using Node.js Script
+───────────────────────────────
+1. Make sure MySQL is running in XAMPP
+2. Update .env: DB_PASSWORD= (leave empty)
+3. Run: node setup_db_via_node.js
+4. Done! ✅
+
+STEP 4: UPDATE .ENV FILE
+─────────────────────────
+Make sure .env has:
+  DB_HOST=localhost
+  DB_USER=root
+  DB_PASSWORD=          ← Leave empty for XAMPP default
+  DB_NAME=hairvelous
+
+STEP 5: TEST
+────────────
+1. cd backend
+2. npm start
+3. Open: http://localhost:3000
+4. Register a new account
+5. Should work! ✅
+
+═══════════════════════════════════════════════════════════
+  TROUBLESHOOTING
+═══════════════════════════════════════════════════════════
+
+MySQL won't start?
+→ Check XAMPP logs (click "Logs" button)
+→ Port 3306 might be in use
+→ Stop other MySQL services: net stop MySQL80
+
+Can't access phpMyAdmin?
+→ Start Apache in XAMPP Control Panel
+→ Or use MySQL Workbench instead
+
+Database connection fails?
+→ Check MySQL is running (green in XAMPP)
+→ Verify .env has DB_PASSWORD= (empty)
+→ Test: mysql -u root (should connect)
+
+═══════════════════════════════════════════════════════════

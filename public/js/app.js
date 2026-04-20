@@ -1,0 +1,149 @@
+const API_BASE = '/api';
+const TOKEN_KEY = 'hairvelous_token';
+const USER_KEY = 'hairvelous_user';
+
+/** After login or registration, open the app with the nav drawer closed first */
+function collapseSidebarForFreshLogin() {
+  try {
+    localStorage.setItem('hairvelous_sidebar_collapsed', '1');
+  } catch (_) {}
+}
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+function setToken(token) {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
+}
+function getUser() {
+  try {
+    return JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+function setUser(user) {
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+  else localStorage.removeItem(USER_KEY);
+}
+function isLoggedIn() {
+  return !!getToken();
+}
+function requireAuth() {
+  if (!isLoggedIn()) {
+    window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+    return false;
+  }
+  return true;
+}
+function requireAdmin() {
+  const u = getUser();
+  if (!u || (u.roleName !== 'admin' && u.role !== 'admin')) {
+    window.location.href = '/dashboard.html';
+    return false;
+  }
+  return true;
+}
+function logout() {
+  setToken(null);
+  setUser(null);
+  window.location.href = '/login.html';
+}
+
+/** Dashboard URL for the current session (marketing / landing redirects use this). */
+function getHomePathForUser() {
+  const u = getUser();
+  if (!u) return '/landing.html';
+  const role = u.roleName || u.role;
+  if (role === 'admin') return '/admin_dashboard.html';
+  if (role === 'seller') return '/product_management.html';
+  if (role === 'specialist') return '/specialist_dashboard.html';
+  return '/dashboard.html';
+}
+
+async function api(path, options = {}) {
+  const url = path.startsWith('http') ? path : API_BASE + path;
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(url, { ...options, headers });
+  const ct = res.headers.get('content-type') || '';
+  let data = {};
+  if (ct.includes('application/json')) {
+    data = await res.json().catch(() => ({}));
+  } else {
+    const text = await res.text().catch(() => '');
+    if (text && !text.trim().startsWith('<')) {
+      data = { error: text.slice(0, 300) };
+    } else if (!res.ok) {
+      data = { error: res.status === 404 ? 'Not found — is the API server running the latest code?' : `HTTP ${res.status}` };
+    }
+  }
+  if (!res.ok) throw { status: res.status, ...data };
+  return data;
+}
+
+async function apiForm(path, formData, method = 'POST') {
+  const url = path.startsWith('http') ? path : API_BASE + path;
+  const headers = {};
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(url, { method, headers, body: formData });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw { status: res.status, ...data };
+  return data;
+}
+
+function showToast(message, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 ${type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-emerald-600' : 'bg-violet-600'} text-white transform transition-all duration-300`;
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.textContent = message;
+  document.body.appendChild(el);
+  
+  // Animate in
+  setTimeout(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  }, 10);
+  
+  // Animate out and remove
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    setTimeout(() => el.remove(), 300);
+  }, 3000);
+}
+
+// Smooth fade in for elements
+function fadeIn(element, delay = 0) {
+  if (!element) return;
+  element.style.opacity = '0';
+  element.style.transform = 'translateY(10px)';
+  element.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+  setTimeout(() => {
+    element.style.opacity = '1';
+    element.style.transform = 'translateY(0)';
+  }, delay);
+}
+
+// Smooth fade out
+function fadeOut(element, callback) {
+  if (!element) return;
+  element.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+  element.style.opacity = '0';
+  element.style.transform = 'translateY(-10px)';
+  setTimeout(() => {
+    if (callback) callback();
+  }, 300);
+}
+
+// Stagger animation for lists
+function staggerFadeIn(selector, delay = 100) {
+  const elements = document.querySelectorAll(selector);
+  elements.forEach((el, index) => {
+    fadeIn(el, index * delay);
+  });
+}

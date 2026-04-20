@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hairvelous</title>
+  <script src="/js/app.js"></script>
+  <script>
+    (function () {
+      if (typeof isLoggedIn === 'function' && isLoggedIn() && typeof getHomePathForUser === 'function') {
+        window.location.replace(getHomePathForUser());
+      } else {
+        window.location.replace('/landing.html');
+      }
+    })();
+  </script>
+  <noscript>
+    <meta http-equiv="refresh" content="0;url=/landing.html" />
+  </noscript>
+</head>
+<body>
+  <p style="font-family: system-ui, sans-serif; padding: 2rem; text-align: center; background: #020617; color: #e5e7eb;">
+    Redirecting&hellip; <a href="/landing.html" style="color:#a855f7;">Continue</a>
+  </p>
+</body>
+</html>

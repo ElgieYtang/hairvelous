@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login – Hairvelous</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+  <div id="disclaimer-placeholder"></div>
+
+  <div class="w-full max-w-md mt-8">
+    <a href="/" class="inline-flex items-center gap-2 text-violet-400 mb-8">
+      <span class="text-2xl">✨</span>
+      <span class="font-semibold">Hairvelous</span>
+    </a>
+    <h1 class="text-2xl font-bold text-white mb-2">Welcome back</h1>
+    <p class="text-slate-400 mb-6">Sign in to continue your hair care journey.</p>
+
+    <!-- Google Sign In Button (Firebase) -->
+    <div id="google-auth-container" class="mb-6">
+      <button type="button" id="google-signin-btn"
+         class="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-medium py-2.5 rounded-lg transition border border-gray-300 cursor-pointer">
+        <svg class="w-5 h-5" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Continue with Google
+      </button>
+    </div>
+
+    <div class="relative mb-6">
+      <div class="absolute inset-0 flex items-center">
+        <div class="w-full border-t border-slate-700"></div>
+      </div>
+      <div class="relative flex justify-center text-sm">
+        <span class="px-2 bg-slate-900 text-slate-400">Or continue with email</span>
+      </div>
+    </div>
+
+    <form id="login-form" class="space-y-4">
+      <div>
+        <label for="email" class="block text-sm font-medium text-slate-300 mb-1">Email</label>
+        <input type="email" id="email" name="email" required
+          class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-4 py-2.5 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          placeholder="you@example.com" />
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium text-slate-300 mb-1">Password</label>
+        <input type="password" id="password" name="password" required
+          class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-4 py-2.5 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          placeholder="••••••••" />
+      </div>
+      <div id="login-error" class="text-red-400 text-sm hidden"></div>
+      <button type="submit" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-medium py-2.5 rounded-lg transition">
+        Sign in
+      </button>
+    </form>
+    <p class="mt-4 text-center text-slate-400 text-sm">
+      <a href="/forgot.html" class="text-violet-400 hover:underline">Forgot password?</a>
+      <span class="mx-2">•</span>
+      <a href="/register.html" class="text-violet-400 hover:underline">Create account</a>
+    </p>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/firebase-auth.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    function roleRedirectPath(user) {
+      const role = user && (user.roleName || user.role);
+      if (role === 'admin') return '/admin_dashboard.html';
+      if (role === 'seller') return '/product_management.html';
+      if (role === 'specialist') return '/specialist_dashboard.html';
+      return '/dashboard.html';
+    }
+
+    // Check if Google/Firebase auth is available
+    async function checkGoogleAuth() {
+      try {
+        const response = await fetch('/api/auth/google/status');
+        const data = await response.json();
+        const btn = document.getElementById('google-signin-btn');
+        if (btn) {
+          btn.style.opacity = data.configured ? '1' : '0.7';
+          btn.title = data.configured ? '' : 'Google Sign-In may not be configured.';
+        }
+      } catch (err) {
+        const btn = document.getElementById('google-signin-btn');
+        if (btn) btn.style.opacity = '0.7';
+      }
+    }
+
+    // Google Sign-In button click (Firebase)
+    const googleBtn = document.getElementById('google-signin-btn');
+    if (googleBtn) {
+      googleBtn.dataset.originalHtml = googleBtn.innerHTML;
+      googleBtn.addEventListener('click', async function() {
+        const btn = this;
+        const errEl = document.getElementById('login-error');
+        errEl.classList.add('hidden');
+        if (typeof signInWithGoogleFirebase !== 'function') {
+          errEl.textContent = 'Google Sign-In is not available. Please refresh the page.';
+          errEl.classList.remove('hidden');
+          return;
+        }
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-pulse">Signing in...</span>';
+        try {
+          let redirect = new URLSearchParams(location.search).get('redirect');
+          if (!redirect) {
+            // fall back to dashboard; actual redirect will be handled client-side after token/user are set
+            redirect = '/dashboard.html';
+          }
+          if (redirect && !redirect.startsWith('/')) redirect = '/' + redirect;
+          if (redirect && !redirect.includes('.')) redirect = redirect + '.html';
+          const result = await signInWithGoogleFirebase(redirect);
+          if (result && result.user) {
+            setUser(result.user);
+            window.location.href = roleRedirectPath(result.user);
+          } else if (result && result.error) {
+            errEl.textContent = result.error;
+            errEl.classList.remove('hidden');
+          }
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = btn.dataset.originalHtml || 'Continue with Google';
+        }
+      });
+    }
+
+    // Already logged in: send to role-specific page
+    if (isLoggedIn()) {
+      const u = getUser();
+      const params = new URLSearchParams(location.search);
+      const explicit = params.get('redirect');
+      if (explicit) {
+        window.location.href = explicit;
+      } else {
+        window.location.href = roleRedirectPath(u);
+      }
+    }
+
+    // Check if Google auth is available on page load
+    checkGoogleAuth();
+
+    // Email/password login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById('login-error');
+      errEl.classList.add('hidden');
+      try {
+        const res = await api('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: document.getElementById('email').value.trim(),
+            password: document.getElementById('password').value,
+          }),
+        });
+        setToken(res.token);
+        setUser(res.user);
+        collapseSidebarForFreshLogin();
+        const params = new URLSearchParams(location.search);
+        const explicit = params.get('redirect');
+        if (explicit) {
+          window.location.href = explicit;
+        } else {
+          window.location.href = roleRedirectPath(res.user);
+        }
+      } catch (err) {
+        errEl.textContent = err.error || 'Login failed';
+        errEl.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

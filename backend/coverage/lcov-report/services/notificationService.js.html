@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for services/notificationService.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="..\prettify.css" />
+    <link rel="stylesheet" href="..\base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(..\sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="..\index.html">All files</a> / <a href="index.html">services</a> notificationService.js
+    </h1>
+    <div class='clearfix'>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126</td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const pool = <span class="cstat-no" title="statement not covered" >require('../config/db');</span>
+&nbsp;
+class NotificationService {
+<span class="fstat-no" title="function not covered" >  co</span>nstructor() {
+<span class="cstat-no" title="statement not covered" >    this.ready = false;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync ensureTable() {
+<span class="cstat-no" title="statement not covered" >    if (this.ready) <span class="cstat-no" title="statement not covered" >return;</span></span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      await pool.query(`</span>
+        CREATE TABLE IF NOT EXISTS notifications (
+          notification_id INT PRIMARY KEY AUTO_INCREMENT,
+          recipient_user_id INT NOT NULL,
+          type VARCHAR(60) NOT NULL,
+          title VARCHAR(200) NOT NULL,
+          message TEXT NOT NULL,
+          link_url VARCHAR(255) NULL,
+          is_read TINYINT(1) NOT NULL DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT fk_notification_recipient FOREIGN KEY (recipient_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
+    } catch (_err) {
+<span class="cstat-no" title="statement not covered" >      await pool.query(`</span>
+        CREATE TABLE IF NOT EXISTS notifications (
+          notification_id INT PRIMARY KEY AUTO_INCREMENT,
+          recipient_user_id INT NOT NULL,
+          type VARCHAR(60) NOT NULL,
+          title VARCHAR(200) NOT NULL,
+          message TEXT NOT NULL,
+          link_url VARCHAR(255) NULL,
+          is_read TINYINT(1) NOT NULL DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+    }
+<span class="cstat-no" title="statement not covered" >    this.ready = true;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync createForUser(recipientUserId, payload) {
+<span class="cstat-no" title="statement not covered" >    await this.ensureTable();</span>
+    const {
+      type = <span class="branch-0 cbranch-no" title="branch not covered" >'general',</span>
+      title = <span class="branch-0 cbranch-no" title="branch not covered" >'Notification',</span>
+      message = <span class="branch-0 cbranch-no" title="branch not covered" >'',</span>
+      linkUrl = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span>
+<span class="cstat-no" title="statement not covered" >    } = payload ||</span> {};
+<span class="cstat-no" title="statement not covered" >    if (!recipientUserId || !message) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+    const [result] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `INSERT INTO notifications (recipient_user_id, type, title, message, link_url)
+       VALUES (?, ?, ?, ?, ?)`,
+      [recipientUserId, type, title, message, linkUrl]
+    );
+<span class="cstat-no" title="statement not covered" >    return { notificationId: result.insertId };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync createForRoles(roleNames, payload, excludeUserId = <span class="branch-0 cbranch-no" title="branch not covered" >null)</span> {
+<span class="cstat-no" title="statement not covered" >    await this.ensureTable();</span>
+<span class="cstat-no" title="statement not covered" >    if (!Array.isArray(roleNames) || !roleNames.length) <span class="cstat-no" title="statement not covered" >return;</span></span>
+    const placeholders = <span class="cstat-no" title="statement not covered" >roleNames.map(<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >'?')</span>.join(',');</span>
+    const args = <span class="cstat-no" title="statement not covered" >[...roleNames];</span>
+    let sql = <span class="cstat-no" title="statement not covered" >`</span>
+      SELECT u.user_id
+      FROM users u
+      JOIN roles r ON r.role_id = u.role_id
+      WHERE r.role_name IN (${placeholders})
+    `;
+<span class="cstat-no" title="statement not covered" >    if (excludeUserId) {</span>
+<span class="cstat-no" title="statement not covered" >      sql += ' AND u.user_id &lt;&gt; ?';</span>
+<span class="cstat-no" title="statement not covered" >      args.push(excludeUserId);</span>
+    }
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query(sql, args);</span>
+<span class="cstat-no" title="statement not covered" >    for (const row of rows) {</span>
+<span class="cstat-no" title="statement not covered" >      await this.createForUser(row.user_id, payload);</span>
+    }
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync listForUser(userId, limit = <span class="branch-0 cbranch-no" title="branch not covered" >20)</span> {
+<span class="cstat-no" title="statement not covered" >    await this.ensureTable();</span>
+    const safeLimit = <span class="cstat-no" title="statement not covered" >Math.max(1, Math.min(Number(limit) || 20, 50));</span>
+    const [rows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      `SELECT notification_id, type, title, message, link_url, is_read, created_at
+       FROM notifications
+       WHERE recipient_user_id = ?
+       ORDER BY created_at DESC, notification_id DESC
+       LIMIT ?`,
+      [userId, safeLimit]
+    );
+    const [countRows] = <span class="cstat-no" title="statement not covered" >await pool.query(</span>
+      'SELECT COUNT(*) AS unread_count FROM notifications WHERE recipient_user_id = ? AND is_read = 0',
+      [userId]
+    );
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      unreadCount: Number((countRows[0] &amp;&amp; countRows[0].unread_count) || 0),
+      notifications: rows.map(<span class="fstat-no" title="function not covered" >(r</span>) =&gt;<span class="cstat-no" title="statement not covered" > ({</span>
+        notificationId: r.notification_id,
+        type: r.type,
+        title: r.title,
+        message: r.message,
+        linkUrl: r.link_url,
+        isRead: !!r.is_read,
+        createdAt: r.created_at,
+      })),
+    };
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync markRead(userId, notificationId = <span class="branch-0 cbranch-no" title="branch not covered" >null)</span> {
+<span class="cstat-no" title="statement not covered" >    await this.ensureTable();</span>
+<span class="cstat-no" title="statement not covered" >    if (notificationId) {</span>
+<span class="cstat-no" title="statement not covered" >      await pool.query(</span>
+        'UPDATE notifications SET is_read = 1 WHERE recipient_user_id = ? AND notification_id = ?',
+        [userId, Number(notificationId)]
+      );
+<span class="cstat-no" title="statement not covered" >      return { updated: true, scope: 'single' };</span>
+    }
+<span class="cstat-no" title="statement not covered" >    await pool.query(</span>
+      'UPDATE notifications SET is_read = 1 WHERE recipient_user_id = ? AND is_read = 0',
+      [userId]
+    );
+<span class="cstat-no" title="statement not covered" >    return { updated: true, scope: 'all' };</span>
+  }
+}
+&nbsp;
+<span class="cstat-no" title="statement not covered" >module.exports = new NotificationService();</span>
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Sat Apr 18 2026 19:45:13 GMT+0800 (Singapore Standard Time)
+</div>
+</div>
+<script src="..\prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="..\sorter.js"></script>
+</body>
+</html>

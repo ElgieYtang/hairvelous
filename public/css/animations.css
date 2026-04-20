@@ -1,0 +1,533 @@
+/**
+ * Smooth Animations for Hairvelous
+ * Location: public/css/animations.css
+ * Purpose: Smooth transitions and animations throughout the app
+ */
+
+/* App shell: header h-14 = 3.5rem. Extra gap below header so content never sits flush; same value in all drawer states. */
+html.app-sidebar-layout {
+  --app-header-h: 3.5rem;
+  --app-main-gap-below-header: 1.75rem;
+}
+
+/* Drawer sits under header (top: 3.5rem). Morph: slide + subtle scale + opacity (GPU-friendly). */
+#app-sidebar.app-sidebar {
+  position: fixed !important;
+  left: 1.5rem;
+  top: 3.5rem;
+  bottom: 1.5rem;
+  z-index: 50;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+.app-sidebar {
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-sidebar.is-collapsed {
+  transform: translate3d(calc(-100% - 1.5rem), 0, 0) scale(0.94);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Main: centered max-width block + equal horizontal inset (matches header px-6 / bell right-6) */
+body.app-sidebar-layout main,
+body:has(#app-sidebar) main {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+  position: relative;
+  z-index: 0;
+  box-sizing: border-box;
+  transition: none !important;
+  overflow-anchor: none;
+}
+@media (min-width: 768px) {
+  body.app-sidebar-layout main,
+  body:has(#app-sidebar) main {
+    /* Header clearance + fixed breathing room — never depends on sidebar open/closed */
+    padding-top: calc(var(--app-header-h, 3.5rem) + var(--app-main-gap-below-header, 1.75rem)) !important;
+  }
+}
+
+#sidebar-backdrop {
+  z-index: 45;
+  contain: paint;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+/* Scrollbar lane: duplicated in layout.js inline #sidebar-layout-critical for first paint */
+html.app-sidebar-layout,
+html:has(#app-sidebar) {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+html.app-sidebar-layout body {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Page fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide in from left */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Smooth slide-in animation with blur (like the example) */
+.animation {
+  transform: translateX(120%);
+  transition: transform 0.7s ease, opacity 0.7s ease, filter 0.7s ease;
+  opacity: 0;
+  filter: blur(10px);
+  transition-delay: calc(0.1s * var(--i, 0));
+}
+
+/* Active state - triggers animation */
+body.active .animation,
+.container.active .animation,
+.form-box.active .animation,
+.animation.active {
+  transform: translateX(0%);
+  opacity: 1;
+  filter: blur(0);
+}
+
+/* Staggered animation delay using CSS variable */
+.animation-list .animation {
+  --i: 0;
+}
+
+.animation-list .animation:nth-child(1) { --i: 0; }
+.animation-list .animation:nth-child(2) { --i: 1; }
+.animation-list .animation:nth-child(3) { --i: 2; }
+.animation-list .animation:nth-child(4) { --i: 3; }
+.animation-list .animation:nth-child(5) { --i: 4; }
+.animation-list .animation:nth-child(6) { --i: 5; }
+.animation-list .animation:nth-child(7) { --i: 6; }
+.animation-list .animation:nth-child(8) { --i: 7; }
+.animation-list .animation:nth-child(9) { --i: 8; }
+.animation-list .animation:nth-child(10) { --i: 9; }
+.animation-list .animation:nth-child(11) { --i: 10; }
+.animation-list .animation:nth-child(12) { --i: 11; }
+
+/* Scale in animation */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Pulse animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Shimmer effect */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Bounce animation */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Rotate animation */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Main fade-in: opacity only (no translateY) — avoids transform stacking / perceived layout shift with drawer */
+@keyframes fadeInMain {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Do not use transition:all — it can interpolate margin/padding/width during drawer/backdrop toggles */
+a, button, input, select, textarea {
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s ease;
+}
+
+/* Enhanced hover effects for links */
+a {
+  position: relative;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+a:hover {
+  transform: translateY(-1px);
+}
+
+/* Smooth card hover effects */
+.card-hover {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.15);
+}
+
+/* Button animations */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease, opacity 0.3s ease;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-primary:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Smooth input focus effects */
+input:focus, textarea:focus, select:focus {
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Fade in animation classes */
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+main.fade-in {
+  animation: fadeInMain 0.45s ease-out;
+}
+
+.fade-in-delay-1 {
+  animation: fadeIn 0.6s ease-out 0.1s both;
+}
+
+.fade-in-delay-2 {
+  animation: fadeIn 0.6s ease-out 0.2s both;
+}
+
+.fade-in-delay-3 {
+  animation: fadeIn 0.6s ease-out 0.3s both;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.5s ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.5s ease-out;
+}
+
+.scale-in {
+  animation: scaleIn 0.4s ease-out;
+}
+
+/* Smooth nav transitions */
+nav {
+  transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+nav a {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+nav a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+
+nav a:hover::after {
+  width: 100%;
+}
+
+/* Smooth card entrance */
+.card {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+.card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Toast notification animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Smooth modal animations */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-backdrop {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  animation: modalSlideUp 0.3s ease-out;
+}
+
+/* Smooth image loading */
+img {
+  transition: opacity 0.3s ease;
+}
+
+img[loading="lazy"] {
+  opacity: 0;
+}
+
+img[loading="lazy"].loaded {
+  opacity: 1;
+}
+
+/* Smooth form transitions */
+form {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Smooth list item animations */
+@keyframes listItemFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.list-item {
+  animation: listItemFadeIn 0.3s ease-out;
+}
+
+/* Smooth badge/tag animations */
+.badge {
+  transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+}
+
+/* Smooth progress bar animation */
+@keyframes progressBar {
+  from {
+    width: 0%;
+  }
+}
+
+.progress-bar {
+  animation: progressBar 1s ease-out;
+}
+
+/* Smooth skeleton loading */
+@keyframes skeleton {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 0px,
+    rgba(255, 255, 255, 0.1) 40px,
+    rgba(255, 255, 255, 0.05) 80px
+  );
+  background-size: 200px 100%;
+  animation: skeleton 1.5s infinite;
+}
+
+/* Smooth table row hover */
+tbody tr {
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+tbody tr:hover {
+  transform: scale(1.01);
+}
+
+/* Smooth icon animations */
+.icon-bounce:hover {
+  animation: bounce 0.6s ease;
+}
+
+.icon-rotate:hover {
+  animation: rotate 0.6s ease;
+}
+
+/* Smooth gradient animations */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-animate {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
