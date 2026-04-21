@@ -5,6 +5,10 @@ const notificationService = require('./notificationService');
 const DEFAULT_CONSULTATION_PHP = 499;
 const DEFAULT_PLATFORM_FEE_PERCENT = 10;
 const SPECIALIST_PAYOUT_INTERVAL_DAYS = 14;
+const GLOBAL_MAX_ACTIVE_CONSULTATIONS = (() => {
+  const n = Number.parseInt(process.env.MAX_ACTIVE_CONSULTATIONS || '3', 10);
+  return Number.isFinite(n) && n > 0 ? n : 3;
+})();
 const PLATFORM_FEE_PERCENT = (() => {
   const n = Number.parseFloat(
     process.env.PLATFORM_CONSULTATION_FEE_PERCENT || String(DEFAULT_PLATFORM_FEE_PERCENT)
@@ -370,26 +374,18 @@ class ConsultationService {
 
   async createRequest(userId, payload) {
     await this.ensureTable();
-    const allowUnlimitedInDemo =
-      String(process.env.DEMO_UNLIMITED_CONSULTATIONS || '').trim().toLowerCase() === 'true' ||
-      String(process.env.NODE_ENV || 'development').trim().toLowerCase() !== 'production';
-    if (!allowUnlimitedInDemo) {
-      const ent = await billingService.getEntitlements(userId);
-      const maxActive = Number(ent && ent.maxActiveConsultations) || 1;
-      const [activeRows] = await pool.query(
-        `SELECT COUNT(*) AS total
-         FROM consultations
-         WHERE user_id = ?
-           AND status NOT IN ('completed', 'cancelled', 'declined')`,
-        [userId]
+    const [activeRows] = await pool.query(
+      `SELECT COUNT(*) AS total
+       FROM consultations
+       WHERE user_id = ?
+         AND status NOT IN ('completed', 'cancelled', 'declined')`,
+      [userId]
+    );
+    const activeTotal = Number((activeRows && activeRows[0] && activeRows[0].total) || 0);
+    if (activeTotal >= GLOBAL_MAX_ACTIVE_CONSULTATIONS) {
+      throw new Error(
+        `You can only keep up to ${GLOBAL_MAX_ACTIVE_CONSULTATIONS} active consultations at once.`
       );
-      const activeTotal = Number((activeRows && activeRows[0] && activeRows[0].total) || 0);
-      if (activeTotal >= maxActive) {
-        if (maxActive <= 1) {
-          throw new Error('Free plan allows 1 active consultation at a time. Upgrade to Pro for more.');
-        }
-        throw new Error(`You can only keep up to ${maxActive} active consultations at once.`);
-      }
     }
     const concernTitle = String(payload.concernTitle || '').trim();
     const concernMessage = String(payload.concernMessage || '').trim();
