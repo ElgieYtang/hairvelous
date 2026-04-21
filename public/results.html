@@ -22,7 +22,7 @@
       </div>
 
       <div id="ai-analysis-section" class="hidden bg-slate-800/50 rounded-xl p-6 border border-violet-700">
-        <h2 class="text-xl font-semibold text-violet-400 mb-1">🔬 AI Hair Analysis</h2>
+        <h2 class="text-xl font-semibold text-violet-400 mb-1">AI Hair Analysis</h2>
         <p class="text-slate-500 text-xs mb-4">Based on your uploaded photo combined with your assessment answers above.</p>
         <div id="ai-content" class="space-y-4 text-slate-300"></div>
       </div>
@@ -147,19 +147,19 @@
       `;
 
       if (ai.careTips && ai.careTips.length > 0) {
-        html += `<p class="text-violet-400 font-medium mb-2">💡 Care Tips:</p><ul class="list-disc list-inside text-slate-300 mb-4 space-y-1">`;
+        html += `<p class="text-violet-400 font-medium mb-2">Care Tips:</p><ul class="list-disc list-inside text-slate-300 mb-4 space-y-1">`;
         ai.careTips.forEach(tip => { html += `<li>${esc(tip)}</li>`; });
         html += `</ul>`;
       }
 
       if (ai.recommendations && ai.recommendations.length > 0) {
-        html += `<p class="text-violet-400 font-medium mb-2">🧴 Product Recommendations:</p><div class="space-y-3 mb-4">`;
+        html += `<p class="text-violet-400 font-medium mb-2">Product Recommendations:</p><div class="space-y-3 mb-4">`;
         ai.recommendations.forEach(rec => {
           html += `
             <div class="bg-slate-900/50 rounded-lg p-3">
               <p class="text-white font-medium">${esc(rec.title || '')}</p>
               <p class="text-slate-400 text-sm">${esc(rec.description || '')}</p>
-              ${rec.usageHint ? `<p class="text-slate-500 text-xs mt-1">💡 ${esc(rec.usageHint)}</p>` : ''}
+              ${rec.usageHint ? `<p class="text-slate-500 text-xs mt-1">${esc(rec.usageHint)}</p>` : ''}
               ${rec.exampleProducts && rec.exampleProducts.length > 0
                 ? `<p class="text-slate-500 text-xs mt-1">Examples: ${rec.exampleProducts.map(esc).join(', ')}</p>`
                 : ''}
@@ -171,12 +171,12 @@
 
       if (ai.whenToSeeProfessional) {
         html += `<div class="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mb-4">
-          <p class="text-amber-200 text-sm"><strong>👨‍⚕️ When to see a professional:</strong> ${esc(ai.whenToSeeProfessional)}</p>
+          <p class="text-amber-200 text-sm"><strong>When to see a professional:</strong> ${esc(ai.whenToSeeProfessional)}</p>
         </div>`;
       }
 
       if (ai.disclaimer) {
-        html += `<p class="text-slate-500 text-xs italic">⚠️ ${esc(ai.disclaimer)}</p>`;
+        html += `<p class="text-slate-500 text-xs italic">${esc(ai.disclaimer)}</p>`;
       }
 
       content.innerHTML = html;
