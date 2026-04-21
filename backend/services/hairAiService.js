@@ -15,6 +15,57 @@ try {
   console.warn('[hairAiService] @google/generative-ai is not installed. Run `npm install @google/generative-ai` in backend.');
 }
 
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getErrorStatusCode(err) {
+  const status = err && (err.status || err.statusCode || (err.response && err.response.status));
+  const asNum = Number(status);
+  return Number.isFinite(asNum) ? asNum : null;
+}
+
+function isRetryableGeminiError(err) {
+  const status = getErrorStatusCode(err);
+  if (status && RETRYABLE_STATUS_CODES.has(status)) return true;
+  const msg = String((err && err.message) || '').toLowerCase();
+  return msg.includes('service unavailable') || msg.includes('overloaded') || msg.includes('timeout');
+}
+
+function getUserFacingGeminiErrorMessage(err) {
+  const status = getErrorStatusCode(err);
+  const msg = String((err && err.message) || '').toLowerCase();
+  if (status === 400 && msg.includes('api key not valid')) {
+    return 'Gemini API key is invalid. Please update GEMINI_API_KEY in server environment.';
+  }
+  if (isRetryableGeminiError(err)) {
+    return 'AI analysis is temporarily busy. Please try again in a moment.';
+  }
+  return 'AI analysis is currently unavailable. Please try again.';
+}
+
+async function generateWithFallback(apiKey, contentParts) {
+  let lastErr = null;
+  for (const modelName of GEMINI_MODELS) {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: modelName });
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        const result = await model.generateContent(contentParts);
+        return result;
+      } catch (err) {
+        lastErr = err;
+        if (!isRetryableGeminiError(err) || attempt === 3) break;
+        await sleep(400 * attempt);
+      }
+    }
+  }
+  throw lastErr || new Error('Gemini request failed');
+}
+
 class HairAiService {
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
@@ -127,10 +178,7 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations.
     `.trim();
 
     try {
-      const genAI = new GoogleGenerativeAI(this.apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
-      const result = await model.generateContent([
+      const result = await generateWithFallback(this.apiKey, [
         prompt,
         {
           inlineData: {
@@ -183,8 +231,7 @@ function getModel() {
     console.warn('GEMINI_API_KEY (or GOOGLE_API_KEY) is not set. Hair AI analysis will not work.');
     return null;
   }
-  const genAI = new GoogleGenerativeAI(apiKey);
-  model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  model = { apiKey };
   return model;
 }
 
@@ -318,15 +365,20 @@ RETURN FORMAT: Valid JSON only, no markdown, no explanations.
 CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. The "hairType" and "scalpCondition" fields MUST exactly match the user's self-reported values above.
   `.trim();
 
-  const result = await m.generateContent([
-    prompt,
-    {
-      inlineData: {
-        data: base64Data,
-        mimeType: 'image/jpeg',
+  let result;
+  try {
+    result = await generateWithFallback(m.apiKey, [
+      prompt,
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: 'image/jpeg',
+        },
       },
-    },
-  ]);
+    ]);
+  } catch (e) {
+    throw new Error(getUserFacingGeminiErrorMessage(e));
+  }
 
   const response = result.response;
   const text = response.text();

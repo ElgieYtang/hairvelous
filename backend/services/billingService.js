@@ -88,6 +88,23 @@ class BillingService {
     }
   }
 
+  async ensurePaymentTransactionColumns() {
+    const [colRows] = await pool.query(
+      `SELECT LOWER(COLUMN_NAME) AS name FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payment_transactions'`
+    );
+    const have = new Set(colRows.map((r) => r.name));
+    if (!have.has('card_name')) {
+      await pool.query('ALTER TABLE payment_transactions ADD COLUMN card_name VARCHAR(150) NULL');
+    }
+    if (!have.has('card_last4')) {
+      await pool.query('ALTER TABLE payment_transactions ADD COLUMN card_last4 VARCHAR(4) NULL');
+    }
+    if (!have.has('card_reference')) {
+      await pool.query('ALTER TABLE payment_transactions ADD COLUMN card_reference VARCHAR(100) NULL');
+    }
+  }
+
   async ensureSchema() {
     await this.ensureDiyGuidesAddonColumns();
     if (this.schemaReady) return;
@@ -140,9 +157,7 @@ class BillingService {
       )
     `);
     await pool.query("ALTER TABLE payment_transactions MODIFY COLUMN method ENUM('gcash','card') NOT NULL DEFAULT 'gcash'");
-    await pool.query('ALTER TABLE payment_transactions ADD COLUMN IF NOT EXISTS card_name VARCHAR(150) NULL');
-    await pool.query('ALTER TABLE payment_transactions ADD COLUMN IF NOT EXISTS card_last4 VARCHAR(4) NULL');
-    await pool.query('ALTER TABLE payment_transactions ADD COLUMN IF NOT EXISTS card_reference VARCHAR(100) NULL');
+    await this.ensurePaymentTransactionColumns();
 
     const [plans] = await pool.query('SELECT plan_code FROM subscription_plans');
     const codes = new Set(plans.map((p) => p.plan_code));
