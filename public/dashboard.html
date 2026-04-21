@@ -128,11 +128,11 @@
   <script src="/js/layout.js"></script>
   <script>
     if (!requireAuth()) { /* redirects */ }
-    (function redirectSpecialist() {
+    (function enforceUserDashboardOnly() {
       const u = getUser();
       const role = u && (u.roleName || u.role);
-      if (role === 'specialist') {
-        window.location.replace('/specialist_dashboard.html');
+      if (role && role !== 'user') {
+        window.location.replace(getHomePathForUser());
       }
     })();
     function esc(s) {
@@ -210,9 +210,9 @@
           indicator.textContent = `Plan: ${status.planName || 'Free'}`;
           indicator.className = 'inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700';
           if (consultLink) {
-            consultLink.href = '/pricing.html';
-            consultLink.className = 'block mini-tile px-4 py-3 border-slate-700 opacity-80';
-            consultLink.querySelector('p.text-slate-400').textContent = 'Pro only - upgrade to unlock';
+            consultLink.href = '/consultations.html';
+            consultLink.className = 'block mini-tile px-4 py-3 hover:border-violet-400/60';
+            consultLink.querySelector('p.text-slate-400').textContent = 'Start consultation (Free plan has limits)';
           }
         }
         return status;
@@ -220,9 +220,9 @@
         indicator.textContent = 'Plan: Free';
         indicator.className = 'inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700';
         if (consultLink) {
-          consultLink.href = '/pricing.html';
-          consultLink.className = 'block mini-tile px-4 py-3 border-slate-700 opacity-80';
-          consultLink.querySelector('p.text-slate-400').textContent = 'Pro only - upgrade to unlock';
+          consultLink.href = '/consultations.html';
+          consultLink.className = 'block mini-tile px-4 py-3 hover:border-violet-400/60';
+          consultLink.querySelector('p.text-slate-400').textContent = 'Start consultation (Free plan has limits)';
         }
         return null;
       }

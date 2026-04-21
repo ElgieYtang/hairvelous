@@ -209,6 +209,23 @@
       return map[s] || (s ? s : '—');
     }
 
+    function consultationDateValue(r) {
+      return r.paidVerifiedAt || r.completedAt || null;
+    }
+
+    function formatConsultationDate(value) {
+      if (!value) return '—';
+      const dt = new Date(value);
+      if (Number.isNaN(dt.getTime())) return String(value);
+      return dt.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
     function downloadCommissionCsv(rows, rangeKey) {
       const filtered = applyCommissionRange(rows, rangeKey);
       if (!filtered.length) {
@@ -217,6 +234,7 @@
       }
       const headers = [
         'Consultation ID',
+        'Date',
         'Concern Title',
         'Client Name',
         'Specialist Name',
@@ -231,6 +249,7 @@
       ];
       const body = filtered.map((r) => [
         r.consultationId,
+        formatConsultationDate(consultationDateValue(r)),
         r.concernTitle || '',
         r.clientName || '',
         r.specialistName || '',
@@ -306,13 +325,14 @@
   <table>
     <thead>
       <tr>
-        <th>ID</th><th>Concern</th><th>Client</th><th>Specialist</th><th>Status</th><th class="right">Gross</th><th class="right">Commission</th><th class="right">Net</th><th>Payout</th>
+        <th>ID</th><th>Date</th><th>Concern</th><th>Client</th><th>Specialist</th><th>Status</th><th class="right">Gross</th><th class="right">Commission</th><th class="right">Net</th><th>Payout</th>
       </tr>
     </thead>
     <tbody>
       ${filtered.map((r) => `
         <tr>
           <td>#${escapeCsv(r.consultationId)}</td>
+          <td>${escapeCsv(formatConsultationDate(consultationDateValue(r)))}</td>
           <td>${escapeCsv(r.concernTitle || '')}</td>
           <td>${escapeCsv(r.clientName || '')}</td>
           <td>${escapeCsv(r.specialistName || '')}</td>
@@ -379,11 +399,12 @@
             <p class="text-sm text-slate-300 font-medium mb-3">Recent paid consultations (${filtered.length} in selected range)</p>
             ${
               recent.length
-                ? `<div class="overflow-x-auto">
-                    <table class="w-full min-w-[720px] text-xs">
+                  ? `<div class="overflow-x-auto">
+                    <table class="w-full min-w-[840px] text-xs">
                       <thead>
                         <tr class="text-left text-slate-500 border-b border-slate-700/70">
                           <th class="py-2 pr-3">Consultation</th>
+                          <th class="py-2 pr-3">Date</th>
                           <th class="py-2 pr-3">Specialist</th>
                           <th class="py-2 pr-3">Gross</th>
                           <th class="py-2 pr-3">Commission</th>
@@ -396,6 +417,7 @@
                           .map(
                             (r) => `<tr class="border-b border-slate-800/70">
                               <td class="py-2 pr-3 text-slate-200">#${r.consultationId}</td>
+                              <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatConsultationDate(consultationDateValue(r))}</td>
                               <td class="py-2 pr-3 text-slate-300">${r.specialistName || '—'}</td>
                               <td class="py-2 pr-3 text-slate-200">${money(r.grossPhp != null ? r.grossPhp : r.amountPhp)}</td>
                               <td class="py-2 pr-3 text-amber-300">${money(r.commissionPhp)}</td>

@@ -12,6 +12,7 @@ const upload = require('../config/upload');
 
 router.post('/logs', requireAuth, validateRoutineLog, routineController.createLog);
 router.post('/logs/media', requireAuth, upload.single('media'), routineController.createLogWithMedia);
+router.get('/client/:clientUserId/logs', requireAuth, routineController.getClientLogsForSpecialist);
 router.get('/logs', requireAuth, routineController.getUserLogs);
 router.get('/progress', requireAuth, routineController.getProgressSummary);
 router.get('/analytics', requireAuth, routineController.getAdvancedAnalytics);

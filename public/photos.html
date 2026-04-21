@@ -69,31 +69,44 @@
       document.getElementById('nav-login').classList.add('hidden');
     }
 
+    function toPublicUrl(pathValue) {
+      if (!pathValue) return '';
+      if (String(pathValue).startsWith('http')) return pathValue;
+      const normalized = String(pathValue).replace(/\\/g, '/');
+      return normalized.startsWith('/') ? normalized : '/' + normalized;
+    }
+
     async function loadPhotos() {
       if (!isLoggedIn()) return;
-      const data = await api('/uploads');
+      const data = await api('/photos');
       const photos = data.photos || [];
       const container = document.getElementById('photos-list');
       container.innerHTML = '';
       photos.forEach(p => {
+        const photoId = Number(p.photoId || p.id || 0);
+        const imagePath = toPublicUrl(p.imagePath || p.file_path || '');
+        const title = p.file_name || p.imagePath || p.file_path || 'Photo';
+        const aiNotes = p.aiResult || p.analysis_notes || '';
+        const uploadedAt = p.dateUploaded || p.created_at || '';
         const div = document.createElement('div');
         div.className = 'bg-slate-800/50 rounded-xl p-4 border border-slate-700';
         div.innerHTML =
           '<div class="flex justify-between items-start">' +
-            '<span class="text-slate-300">' + (p.file_name || p.file_path) + (p.caption ? ' – ' + escapeHtml(p.caption) : '') + '</span>' +
-            '<button type="button" class="delete text-red-400 hover:underline" data-id="' + p.id + '">Delete</button>' +
+            '<span class="text-slate-300">' + escapeHtml(title) + (p.caption ? ' – ' + escapeHtml(p.caption) : '') + '</span>' +
+            '<button type="button" class="delete text-red-400 hover:underline" data-id="' + photoId + '">Delete</button>' +
           '</div>' +
-          (p.analysis_notes ? '<p class="text-slate-500 text-sm mt-2">' + escapeHtml(p.analysis_notes) + '</p>' : '') +
-          '<p class="text-slate-500 text-xs mt-1">' + (p.created_at || '') + '</p>';
+          (imagePath ? '<img src="' + escapeHtml(imagePath) + '" alt="Uploaded hair photo" class="mt-3 max-h-52 w-auto rounded-lg border border-slate-700" />' : '') +
+          (aiNotes ? '<p class="text-slate-500 text-sm mt-2">' + escapeHtml(aiNotes) + '</p>' : '') +
+          '<p class="text-slate-500 text-xs mt-1">' + escapeHtml(String(uploadedAt || '')) + '</p>';
         container.appendChild(div);
-        div.querySelector('.delete').addEventListener('click', () => deletePhoto(p.id));
+        div.querySelector('.delete').addEventListener('click', () => deletePhoto(photoId));
       });
       document.getElementById('no-photos').classList.toggle('hidden', photos.length > 0);
     }
 
     async function deletePhoto(id) {
       if (!confirm('Delete this photo?')) return;
-      await api('/uploads/' + id, { method: 'DELETE' });
+      await api('/photos/' + id, { method: 'DELETE' });
       showToast('Photo deleted', 'success');
       loadPhotos();
     }
@@ -193,7 +206,7 @@
         const formData = new FormData();
         formData.append('photo', file);
         formData.append('caption', document.getElementById('caption').value.trim());
-        await apiForm('/uploads', formData);
+        await apiForm('/photos', formData);
 
         showToast('Photo uploaded! Running AI analysis…', 'info');
         btn.textContent = 'Analyzing…';

@@ -116,6 +116,9 @@ class ProfileService {
     await tryAlter('ALTER TABLE user_profiles ADD COLUMN birthdate DATE NULL');
     await tryAlter('ALTER TABLE user_profiles ADD COLUMN race VARCHAR(120) NULL');
     await tryAlter("ALTER TABLE user_profiles ADD COLUMN id_verification_status VARCHAR(24) NULL DEFAULT 'not_submitted'");
+    await tryAlter(
+      'ALTER TABLE user_profiles ADD COLUMN share_routine_with_specialist TINYINT(1) NOT NULL DEFAULT 0'
+    );
   }
 
   /**
@@ -128,7 +131,8 @@ class ProfileService {
               hp.hair_type, hp.scalp_condition, hp.issues_detected, hp.last_updated,
               up.profile_photo_path, up.specialty, up.location, up.consultation_rate,
               up.expertise_json, up.skills_json, up.education_json,
-              up.sex, up.birthdate, up.race, up.id_verification_status
+              up.sex, up.birthdate, up.race, up.id_verification_status,
+              up.share_routine_with_specialist
        FROM users u
        JOIN roles r ON u.role_id = r.role_id
        LEFT JOIN hair_profiles hp ON u.user_id = hp.user_id
@@ -163,6 +167,7 @@ class ProfileService {
       birthdate: user.birthdate || null,
       race: user.race || null,
       idVerificationStatus: user.id_verification_status || null,
+      shareRoutineWithSpecialist: Number(user.share_routine_with_specialist) === 1,
       expertise: parseJsonSafe(user.expertise_json) || [],
       skills: parseJsonSafe(user.skills_json) || [],
       education: parseJsonSafe(user.education_json) || [],
@@ -215,6 +220,15 @@ class ProfileService {
     if (rate !== undefined) {
       profileFields.push('consultation_rate = ?');
       profileValues.push(rate);
+    }
+
+    const shareRaw =
+      updates.share_routine_with_specialist !== undefined
+        ? updates.share_routine_with_specialist
+        : updates.shareRoutineWithSpecialist;
+    if (shareRaw !== undefined) {
+      profileFields.push('share_routine_with_specialist = ?');
+      profileValues.push(shareRaw === true || shareRaw === 1 || shareRaw === '1' ? 1 : 0);
     }
 
     // Profile fields (including sex, birthdate, race and JSON fields)

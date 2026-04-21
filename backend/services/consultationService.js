@@ -1534,28 +1534,42 @@ class ConsultationService {
        LIMIT 500`
     );
     return {
-      transactions: (rows || []).map((r) => ({
-        consultationId: r.consultation_id,
-        concernTitle: r.concern_title,
-        consultationStatus: r.status,
-        paymentStatus: r.payment_status,
-        clientName: r.user_name,
-        clientEmail: r.user_email,
-        specialistName: r.specialist_name,
-        specialistEmail: r.specialist_email,
-        amountPhp: r.amount_php != null ? Number(r.amount_php) : null,
-        platformFeePercent: r.platform_fee_percent != null ? Number(r.platform_fee_percent) : null,
-        paidVerifiedAt: r.paid_verified_at,
-        completedAt: r.completed_at,
-        earningId: r.earning_id || null,
-        grossPhp: r.gross_amount_php != null ? Number(r.gross_amount_php) : null,
-        commissionPhp: r.commission_amount_php != null ? Number(r.commission_amount_php) : null,
-        specialistNetPhp: r.net_amount_php != null ? Number(r.net_amount_php) : null,
-        earningStatus: r.earning_status || null,
-        payoutRequestId: r.payout_request_id || null,
-        payoutStatus: r.payout_status || null,
-        payoutRequestedAt: r.payout_requested_at || null,
-      })),
+      transactions: (rows || []).map((r) => {
+        const amountPhp = r.amount_php != null ? Number(r.amount_php) : null;
+        const feePercent =
+          r.platform_fee_percent != null ? Number(r.platform_fee_percent) : Number(PLATFORM_FEE_PERCENT || 0);
+        const fallbackSplit = this.calculateSplit(
+          amountPhp != null ? amountPhp : DEFAULT_CONSULTATION_PHP,
+          feePercent
+        );
+        const grossPhp = r.gross_amount_php != null ? Number(r.gross_amount_php) : fallbackSplit.grossAmountPhp;
+        const commissionPhp =
+          r.commission_amount_php != null ? Number(r.commission_amount_php) : fallbackSplit.commissionAmountPhp;
+        const specialistNetPhp =
+          r.net_amount_php != null ? Number(r.net_amount_php) : fallbackSplit.netAmountPhp;
+        return {
+          consultationId: r.consultation_id,
+          concernTitle: r.concern_title,
+          consultationStatus: r.status,
+          paymentStatus: r.payment_status,
+          clientName: r.user_name,
+          clientEmail: r.user_email,
+          specialistName: r.specialist_name,
+          specialistEmail: r.specialist_email,
+          amountPhp,
+          platformFeePercent: feePercent,
+          paidVerifiedAt: r.paid_verified_at,
+          completedAt: r.completed_at,
+          earningId: r.earning_id || null,
+          grossPhp,
+          commissionPhp,
+          specialistNetPhp,
+          earningStatus: r.earning_status || null,
+          payoutRequestId: r.payout_request_id || null,
+          payoutStatus: r.payout_status || null,
+          payoutRequestedAt: r.payout_requested_at || null,
+        };
+      }),
     };
   }
 
@@ -1932,6 +1946,50 @@ class ConsultationService {
           }
         : null,
     };
+  }
+
+  /**
+   * Specialist may read a client's routine only if:
+   * - They are the assigned specialist on at least one consultation with that client after accept
+   *   (awaiting_payment, scheduled, in_progress, completed), and
+   * - The client enabled share_routine_with_specialist on their profile.
+   */
+  async canSpecialistViewClientRoutine(actor, clientUserId) {
+    await this.ensureTable();
+    const profileService = require('./profileService');
+    await profileService.ensureProfileColumns();
+    if (!actor || actor.roleName !== 'specialist') {
+      return { ok: false, reason: 'not_specialist' };
+    }
+    const clientId = Number(clientUserId);
+    if (!Number.isFinite(clientId) || clientId <= 0) {
+      return { ok: false, reason: 'invalid_client' };
+    }
+    if (Number(clientId) === Number(actor.userId)) {
+      return { ok: false, reason: 'self' };
+    }
+    const [consRows] = await pool.query(
+      `SELECT COUNT(*) AS c
+       FROM consultations
+       WHERE specialist_user_id = ?
+         AND user_id = ?
+         AND status IN ('awaiting_payment','scheduled','in_progress','completed')`,
+      [actor.userId, clientId]
+    );
+    const linked = Number((consRows[0] && consRows[0].c) || 0) > 0;
+    if (!linked) {
+      return { ok: false, reason: 'no_accepted_consultation' };
+    }
+    const [profRows] = await pool.query(
+      'SELECT share_routine_with_specialist FROM user_profiles WHERE user_id = ? LIMIT 1',
+      [clientId]
+    );
+    const consent =
+      profRows.length > 0 && Number(profRows[0].share_routine_with_specialist) === 1;
+    if (!consent) {
+      return { ok: false, reason: 'consent_required' };
+    }
+    return { ok: true };
   }
 }
 

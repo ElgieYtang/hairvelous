@@ -1,6 +1,6 @@
 const express = require('express');
 const consultationController = require('../controllers/consultationController');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { uploadConsultationMessage, uploadConsultationPaymentReceipt } = require('../config/upload');
 
 const router = express.Router();
@@ -20,13 +20,13 @@ router.get('/specialist/revenue', requireAuth, (req, res, next) =>
 router.post('/specialist/payout-request', requireAuth, (req, res, next) =>
   consultationController.requestSpecialistPayout(req, res, next)
 );
-router.get('/admin/transactions', requireAuth, (req, res, next) =>
+router.get('/admin/transactions', requireAdmin, (req, res, next) =>
   consultationController.adminTransactionReport(req, res, next)
 );
-router.get('/admin/payout-requests', requireAuth, (req, res, next) =>
+router.get('/admin/payout-requests', requireAdmin, (req, res, next) =>
   consultationController.adminPayoutRequests(req, res, next)
 );
-router.patch('/admin/payout-requests/:payoutRequestId', requireAuth, (req, res, next) =>
+router.patch('/admin/payout-requests/:payoutRequestId', requireAdmin, (req, res, next) =>
   consultationController.adminProcessPayoutRequest(req, res, next)
 );
 router.get('/:consultationId/client-summary', requireAuth, (req, res, next) =>

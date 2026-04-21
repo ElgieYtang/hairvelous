@@ -638,6 +638,23 @@
     </div>
   </div>
 
+  <!-- Specialist: client routine (scoped + consent-enforced server-side) -->
+  <div id="clientRoutineModal" class="fixed inset-0 z-[126] hidden items-end justify-center bg-slate-950/75 p-3 sm:items-center sm:p-6">
+    <button type="button" id="clientRoutineModalBackdrop" class="absolute inset-0 cursor-default" aria-label="Close"></button>
+    <div class="relative z-[1] flex max-h-[min(88vh,640px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-600/80 bg-slate-900 shadow-2xl">
+      <div class="flex shrink-0 items-center justify-between border-b border-slate-700/80 px-4 py-3">
+        <div>
+          <h3 id="clientRoutineModalTitle" class="text-sm font-semibold text-white">Client routine</h3>
+          <p id="clientRoutineModalSubtitle" class="mt-1 text-[11px] text-slate-400">Read-only · same privacy rules as the API</p>
+        </div>
+        <button type="button" id="clientRoutineModalClose" class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">✕</button>
+      </div>
+      <div id="clientRoutineModalBody" class="chat-scroll min-h-0 flex-1 overflow-y-auto p-4 text-sm text-slate-300">
+        <p class="text-slate-500">Loading…</p>
+      </div>
+    </div>
+  </div>
+
   <!-- PayMongo QR Ph (scan with GCash / any QR Ph app) -->
   <div id="paymongoQrModal" class="fixed inset-0 z-[126] hidden items-center justify-center bg-slate-950/85 p-4">
     <div class="relative w-full max-w-sm rounded-2xl border border-slate-600/90 bg-slate-900 p-4 shadow-2xl">
@@ -683,7 +700,7 @@
     if (!requireAuth()) { /* redirects */ }
     const user = getUser();
     const role = user && (user.roleName || user.role);
-    const isReviewer = role === 'admin' || role === 'seller';
+    const isReviewer = role === 'admin';
     const isModerator = isReviewer;
     const isSpecialist = role === 'specialist';
     let specialistsForBooking = [];
@@ -802,6 +819,11 @@
       const closeCaseModal = document.getElementById('closeCaseModal');
       if (closeCaseModal && !closeCaseModal.classList.contains('hidden')) {
         closeCloseCaseModal();
+        return;
+      }
+      const clientRoutineModal = document.getElementById('clientRoutineModal');
+      if (clientRoutineModal && !clientRoutineModal.classList.contains('hidden')) {
+        closeClientRoutineModal();
         return;
       }
       closeChatKebabMenu();
@@ -1704,6 +1726,59 @@
       return `Findings: ${findings}\nPlan: ${plan}\nFollow-up: ${followUp}`;
     }
 
+    function closeClientRoutineModal() {
+      const modal = document.getElementById('clientRoutineModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function openClientRoutineModal(clientUserId, clientLabel) {
+      const modal = document.getElementById('clientRoutineModal');
+      const body = document.getElementById('clientRoutineModalBody');
+      const title = document.getElementById('clientRoutineModalTitle');
+      const sub = document.getElementById('clientRoutineModalSubtitle');
+      if (!modal || !body) return;
+      if (title) title.textContent = `Routine · ${clientLabel || 'Client'}`;
+      if (sub) sub.textContent = 'Loading…';
+      body.innerHTML = '<p class="text-slate-500">Loading…</p>';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      try {
+        const data = await api(`/routine/client/${clientUserId}/logs`);
+        const logs = (data && data.logs) || [];
+        const win =
+          data.appliedHistoryDays != null
+            ? `Last ${data.appliedHistoryDays} days (client plan limit)`
+            : 'Full history (Pro client)';
+        if (sub) sub.textContent = win;
+        if (!logs.length) {
+          body.innerHTML =
+            '<p class="text-slate-400">No routine logs in this window yet.</p>';
+          return;
+        }
+        body.innerHTML = `<div class="space-y-2">${logs
+          .map(
+            (row) => `
+          <div class="rounded-lg border border-slate-700/80 bg-slate-950/50 px-3 py-2">
+            <p class="text-xs font-medium text-white">${esc(String(row.dateLogged || ''))} · ${esc(String(row.activityType || ''))}</p>
+            ${row.notes ? `<p class="mt-1 text-[11px] text-slate-300">${esc(String(row.notes))}</p>` : ''}
+            ${
+              row.mediaUrl
+                ? `<p class="mt-1"><a href="${esc(String(row.mediaUrl))}" target="_blank" rel="noopener" class="text-[11px] text-cyan-300 underline">View attachment</a></p>`
+                : ''
+            }
+          </div>`
+          )
+          .join('')}</div>`;
+      } catch (err) {
+        const msg = err.error || err.message || 'Could not load routine';
+        body.innerHTML = `<p class="text-rose-300 text-sm">${esc(msg)}</p>`;
+        if (sub) sub.textContent = '';
+        showToast(msg, 'error');
+      }
+    }
+
     async function openClientConsultSummaryModal(consultationId) {
       const id = Number(consultationId);
       if (!Number.isFinite(id)) return;
@@ -2029,6 +2104,18 @@
                </button>
              </div>`
           : '';
+      const postAcceptForRoutine = ['awaiting_payment', 'scheduled', 'in_progress', 'completed'].includes(
+        String(c.status || '')
+      );
+      const specialistRoutineActions =
+        isSpecialist && isMySpecialistCase(c) && postAcceptForRoutine
+          ? `<div class="mt-2 flex flex-wrap items-center gap-2">
+               <button type="button" id="detailClientRoutineBtn" data-client-user-id="${Number(c.userId)}" class="rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3 py-2 text-xs font-medium text-emerald-100 transition hover:bg-emerald-600/35" title="View this client’s routine logs (requires their consent in Profile)" aria-label="View client routine">
+                 Client routine
+               </button>
+               <p class="w-full text-[10px] leading-snug text-slate-500">Only available if this client enabled routine sharing and you are their specialist for an accepted consultation.</p>
+             </div>`
+          : '';
       const payBadge =
         pay === 'verified'
           ? '<span class="mt-1 inline-block rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-300">Payment Verified</span>'
@@ -2167,6 +2254,7 @@
         ${pro}
         ${clientDetailActions}
         ${specialistPaidActions}
+        ${specialistRoutineActions}
         ${feeLine}
         ${meeting}
         <p class="mt-2 text-[11px] text-slate-400">Preferred: ${c.preferredDate ? esc(String(c.preferredDate).slice(0, 10)) : '—'}</p>
@@ -2200,6 +2288,13 @@
       const dsm = el.querySelector('#detailSetMeetingBtn');
       if (dvc) dvc.addEventListener('click', () => openClientConsultSummaryModal(c.consultationId));
       if (dsm) dsm.addEventListener('click', () => specialistSetMeetingUrl(c));
+      const droutine = el.querySelector('#detailClientRoutineBtn');
+      if (droutine) {
+        droutine.addEventListener('click', () => {
+          const uid = Number(droutine.getAttribute('data-client-user-id'));
+          if (Number.isFinite(uid)) openClientRoutineModal(uid, c.userName || 'Client');
+        });
+      }
       let chosenFeedbackStars = currentRating || 0;
       const starButtons = el.querySelectorAll('[data-feedback-star]');
       const starLabel = el.querySelector('#feedbackStarLabel');
@@ -2894,6 +2989,8 @@
         e.preventDefault();
         await submitCloseCaseSummary();
       });
+      document.getElementById('clientRoutineModalBackdrop')?.addEventListener('click', closeClientRoutineModal);
+      document.getElementById('clientRoutineModalClose')?.addEventListener('click', closeClientRoutineModal);
 
       document.getElementById('paymongoQrClose')?.addEventListener('click', closePaymongoQrModal);
       document.getElementById('paymongoQrModal')?.addEventListener('click', (ev) => {

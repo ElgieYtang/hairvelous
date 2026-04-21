@@ -76,63 +76,8 @@
   <script src="/js/app.js"></script>
   <script>
     if (!requireAuth() || !requireAdmin()) { /* redirects */ }
-
-    async function loadReports() {
-      const data = await api('/admin/reports');
-      const r = data.reports || {};
-      document.getElementById('reports-content').innerHTML = 'Total users: ' + (r.totalUsers ?? '-') + ' | Completed assessments: ' + (r.totalAssessments ?? '-') + (r.note ? '<br><span class="text-slate-500">' + r.note + '</span>' : '');
-    }
-
-    async function loadUsers() {
-      const data = await api('/users');
-      const users = data.users || [];
-      const tbody = document.getElementById('users-tbody');
-      tbody.innerHTML = '';
-      users.forEach(u => {
-        const tr = document.createElement('tr');
-        tr.className = 'bg-slate-800/30';
-        tr.innerHTML = '<td class="p-3">' + u.id + '</td><td class="p-3">' + escapeHtml(u.email) + '</td><td class="p-3">' + escapeHtml((u.first_name || '') + ' ' + (u.last_name || '')) + '</td><td class="p-3">' + (u.role_name || '') + '</td><td class="p-3">' + (u.is_suspended ? 'Yes' : 'No') + '</td><td class="p-3"><button type="button" class="reset-pw text-violet-400 hover:underline" data-id="' + u.id + '">Reset password</button> <button type="button" class="suspend text-amber-400 hover:underline" data-id="' + u.id + '" data-suspended="' + (u.is_suspended ? '1' : '0') + '">' + (u.is_suspended ? 'Unsuspend' : 'Suspend') + '</button></td>';
-        tbody.appendChild(tr);
-      });
-      tbody.querySelectorAll('.reset-pw').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const newPass = prompt('New password (min 6 chars):');
-          if (!newPass || newPass.length < 6) return;
-          api('/users/' + btn.dataset.id + '/reset-password', { method: 'POST', body: JSON.stringify({ newPassword: newPass }) }).then(() => showToast('Password reset', 'success')).catch(e => showToast(e.error || 'Failed', 'error'));
-        });
-      });
-      tbody.querySelectorAll('.suspend').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const suspended = btn.dataset.suspended === '1';
-          api('/users/' + btn.dataset.id, { method: 'PATCH', body: JSON.stringify({ isSuspended: !suspended }) }).then(() => { loadUsers(); showToast(suspended ? 'User unsuspended' : 'User suspended', 'success'); }).catch(e => showToast(e.error || 'Failed', 'error'));
-        });
-      });
-    }
-
-    async function loadConfig() {
-      const data = await api('/admin/config');
-      const c = data.config || {};
-      document.getElementById('config-content').innerHTML = Object.keys(c).length ? JSON.stringify(c, null, 2) : 'No config entries.';
-    }
-
-    document.getElementById('config-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const key = document.getElementById('config-key').value.trim();
-      if (!key) return;
-      await api('/admin/config', { method: 'PATCH', body: JSON.stringify({ key, value: document.getElementById('config-value').value }) });
-      showToast('Config updated');
-      loadConfig();
-    });
-
-    function escapeHtml(s) {
-      const d = document.createElement('div');
-      d.textContent = s || '';
-      return d.innerHTML;
-    }
-
-    loadReports();
-    loadUsers();
-    loadConfig();
+    // Legacy page kept for compatibility; use the current admin dashboard route.
+    window.location.replace('/admin_dashboard.html');
   </script>
 </body>
 </html>
