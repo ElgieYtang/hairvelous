@@ -11,12 +11,22 @@ const emailService = require('./emailService');
 
 class AuthService {
   async ensureUserProfileDemographicColumns() {
-    await pool.query(`
-      ALTER TABLE user_profiles
-        ADD COLUMN IF NOT EXISTS sex VARCHAR(32) NULL,
-        ADD COLUMN IF NOT EXISTS birthdate DATE NULL,
-        ADD COLUMN IF NOT EXISTS race VARCHAR(120) NULL
-    `);
+    const [columns] = await pool.query(
+      `SELECT LOWER(COLUMN_NAME) AS name
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'user_profiles'`
+    );
+    const have = new Set(columns.map((c) => c.name));
+    if (!have.has('sex')) {
+      await pool.query('ALTER TABLE user_profiles ADD COLUMN sex VARCHAR(32) NULL');
+    }
+    if (!have.has('birthdate')) {
+      await pool.query('ALTER TABLE user_profiles ADD COLUMN birthdate DATE NULL');
+    }
+    if (!have.has('race')) {
+      await pool.query('ALTER TABLE user_profiles ADD COLUMN race VARCHAR(120) NULL');
+    }
   }
 
   /**
