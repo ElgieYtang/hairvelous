@@ -6,9 +6,28 @@
   <title>Admin Dashboard – Hairvelous</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>body { font-family: 'Outfit', sans-serif; }</style>
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+    html,
+    body {
+      overflow-x: hidden;
+    }
+    body.admin-dashboard main {
+      overflow-x: clip;
+    }
+    /* Keep admin page stable: disable global hover/focus transforms that cause jitter. */
+    body.admin-dashboard a:hover,
+    body.admin-dashboard .card-hover:hover,
+    body.admin-dashboard .btn-primary:hover,
+    body.admin-dashboard .btn-primary:active,
+    body.admin-dashboard input:focus,
+    body.admin-dashboard textarea:focus,
+    body.admin-dashboard select:focus {
+      transform: none !important;
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
+<body class="admin-dashboard bg-slate-900 text-slate-100 min-h-screen">
   <div id="disclaimer-placeholder"></div>
   <div id="nav-placeholder"></div>
 
@@ -73,7 +92,7 @@
 
     <section id="commission-analytics" class="mb-10">
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-xl font-semibold text-white">Consultation Commission Analytics</h2>
+        <h2 class="text-xl font-semibold text-white">Consultation Payment Analytics</h2>
         <div class="flex flex-wrap items-center gap-2">
           <div id="commission-range-filters" class="inline-flex rounded-lg border border-slate-700/80 bg-slate-900/70 p-1">
             <button type="button" data-range="today" class="commission-range-btn rounded-md px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">Today</button>
@@ -252,9 +271,9 @@
         'Specialist Name',
         'Consultation Status',
         'Payment Status',
-        'Gross PHP',
-        'Commission PHP',
-        'Specialist Net PHP',
+        'Client Paid Total PHP',
+        'Platform Fee PHP',
+        'Specialist Fee PHP',
         'Payout Status',
         'Paid Verified At',
         'Completed At',
@@ -282,7 +301,7 @@
       const a = document.createElement('a');
       const stamp = new Date().toISOString().slice(0, 10);
       a.href = url;
-      a.download = `commission-report-${rangeKey}-${stamp}.csv`;
+      a.download = `consultation-payment-report-${rangeKey}-${stamp}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -311,7 +330,7 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Hairvelous Commission Report</title>
+  <title>Hairvelous Consultation Payment Report</title>
   <style>
     body { font-family: Arial, sans-serif; color: #111; margin: 24px; }
     h1 { font-size: 22px; margin: 0 0 4px; }
@@ -327,17 +346,17 @@
   </style>
 </head>
 <body>
-  <h1>Hairvelous Consultation Commission Report</h1>
+  <h1>Hairvelous Consultation Payment Report</h1>
   <p class="meta">Range: ${escapeCsv(rangeKey)} | Generated: ${now.toLocaleString()} | Records: ${filtered.length}</p>
   <div class="totals">
-    <div class="card"><div class="k">Consultation Gross</div><div class="v">${money(totals.gross)}</div></div>
-    <div class="card"><div class="k">Admin Commission</div><div class="v">${money(totals.commission)}</div></div>
-    <div class="card"><div class="k">Specialist Net</div><div class="v">${money(totals.net)}</div></div>
+    <div class="card"><div class="k">Client Paid Total</div><div class="v">${money(totals.gross)}</div></div>
+    <div class="card"><div class="k">Platform Fee</div><div class="v">${money(totals.commission)}</div></div>
+    <div class="card"><div class="k">Specialist Fee</div><div class="v">${money(totals.net)}</div></div>
   </div>
   <table>
     <thead>
       <tr>
-        <th>ID</th><th>Date</th><th>Concern</th><th>Client</th><th>Specialist</th><th>Status</th><th class="right">Gross</th><th class="right">Commission</th><th class="right">Net</th><th>Payout</th>
+        <th>ID</th><th>Date</th><th>Concern</th><th>Client</th><th>Specialist</th><th>Status</th><th class="right">Client Paid</th><th class="right">Platform Fee</th><th class="right">Specialist Fee</th><th>Payout</th>
       </tr>
     </thead>
     <tbody>
@@ -391,15 +410,15 @@
       root.innerHTML = `
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
             <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
-              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Consultation Gross</p>
+              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Client Paid Total</p>
               <p class="text-2xl font-bold text-cyan-300 tabular-nums">${money(totals.gross)}</p>
             </div>
             <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
-              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Admin Commission</p>
+              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Platform Fee</p>
               <p class="text-2xl font-bold text-amber-300 tabular-nums">${money(totals.commission)}</p>
             </div>
             <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
-              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Specialist Net</p>
+              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Specialist Fee</p>
               <p class="text-2xl font-bold text-emerald-300 tabular-nums">${money(totals.net)}</p>
             </div>
             <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
@@ -411,16 +430,16 @@
             <p class="text-sm text-slate-300 font-medium mb-3">Recent paid consultations (${filtered.length} in selected range)</p>
             ${
               recent.length
-                  ? `<div class="overflow-x-auto">
-                    <table class="w-full min-w-[840px] text-xs">
+                  ? `<div class="overflow-hidden rounded-lg border border-slate-800/70">
+                    <table class="w-full table-fixed text-xs">
                       <thead>
                         <tr class="text-left text-slate-500 border-b border-slate-700/70">
                           <th class="py-2 pr-3">Consultation</th>
                           <th class="py-2 pr-3">Date</th>
                           <th class="py-2 pr-3">Specialist</th>
-                          <th class="py-2 pr-3">Gross</th>
-                          <th class="py-2 pr-3">Commission</th>
-                          <th class="py-2 pr-3">Net</th>
+                          <th class="py-2 pr-3">Client Paid</th>
+                          <th class="py-2 pr-3">Platform Fee</th>
+                          <th class="py-2 pr-3">Specialist Fee</th>
                           <th class="py-2 pr-3">Payout</th>
                         </tr>
                       </thead>
@@ -428,13 +447,13 @@
                         ${recent
                           .map(
                             (r) => `<tr class="border-b border-slate-800/70">
-                              <td class="py-2 pr-3 text-slate-200">#${r.consultationId}</td>
-                              <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatConsultationDate(consultationDateValue(r))}</td>
-                              <td class="py-2 pr-3 text-slate-300">${r.specialistName || '—'}</td>
+                              <td class="py-2 pr-3 text-slate-200 truncate">#${r.consultationId}</td>
+                              <td class="py-2 pr-3 text-slate-300 truncate">${formatConsultationDate(consultationDateValue(r))}</td>
+                              <td class="py-2 pr-3 text-slate-300 truncate">${r.specialistName || '—'}</td>
                               <td class="py-2 pr-3 text-slate-200">${money(r.grossPhp != null ? r.grossPhp : r.amountPhp)}</td>
                               <td class="py-2 pr-3 text-amber-300">${money(r.commissionPhp)}</td>
                               <td class="py-2 pr-3 text-emerald-300">${money(r.specialistNetPhp)}</td>
-                              <td class="py-2 pr-3 text-slate-300">${payoutStatusLabel(r.payoutStatus)}</td>
+                              <td class="py-2 pr-3 text-slate-300 truncate">${payoutStatusLabel(r.payoutStatus)}</td>
                             </tr>`
                           )
                           .join('')}
@@ -476,8 +495,8 @@
           printBtn.addEventListener('click', () => printCommissionReport(rows, activeRange));
         }
       } catch (err) {
-        root.innerHTML = '<p class="text-rose-300">Failed to load commission analytics.</p>';
-        showToast(err.error || 'Failed to load commission analytics', 'error');
+        root.innerHTML = '<p class="text-rose-300">Failed to load payment analytics.</p>';
+        showToast(err.error || 'Failed to load payment analytics', 'error');
       }
     }
 

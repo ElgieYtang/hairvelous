@@ -14,6 +14,7 @@
     "db:fix-hair-assessment": "node scripts/fix-hair-assessment-tables.js",
     "db:fix-hair-profiles": "node scripts/fix-hair-profiles-table.js",
     "db:fix-product-categories": "node scripts/fix-product-categories-table.js",
+    "seed:demo-specialist": "node scripts/seed-demo-specialist.js",
     "paymongo:webhook": "node scripts/register-paymongo-webhook.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",

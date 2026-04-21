@@ -6,63 +6,434 @@
   <title>Hairvelous – Hair Care & Product Recommendation</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>body { font-family: 'Outfit', sans-serif; }</style>
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+    .hero-glow {
+      position: absolute;
+      border-radius: 9999px;
+      filter: blur(55px);
+      opacity: 0.4;
+      animation: floatGlow 6s ease-in-out infinite;
+    }
+    .hero-glow--one {
+      width: 18rem;
+      height: 18rem;
+      background: #8b5cf6;
+      top: -4rem;
+      right: -2rem;
+    }
+    .hero-glow--two {
+      width: 14rem;
+      height: 14rem;
+      background: #06b6d4;
+      bottom: -3rem;
+      left: -2rem;
+      animation-delay: 0.8s;
+    }
+    .hero-backdrop {
+      background-size: cover;
+    }
+    #hero-particles {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .hero-sheen {
+      position: absolute;
+      inset: -20%;
+      background: radial-gradient(circle at 25% 25%, rgba(139, 92, 246, 0.18), transparent 42%),
+                  radial-gradient(circle at 75% 70%, rgba(34, 211, 238, 0.14), transparent 46%);
+      opacity: 0.65;
+      animation: sheenDrift 14s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .hero-ribbons {
+      position: absolute;
+      inset: -30% -10%;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 15% 30%, rgba(34, 211, 238, 0.22), transparent 40%),
+        radial-gradient(ellipse at 80% 25%, rgba(139, 92, 246, 0.25), transparent 45%),
+        linear-gradient(115deg, transparent 20%, rgba(56, 189, 248, 0.12) 35%, transparent 52%, rgba(167, 139, 250, 0.16) 66%, transparent 82%);
+      filter: blur(10px);
+      mix-blend-mode: screen;
+      animation: ribbonsShift 7s ease-in-out infinite alternate;
+      opacity: 0.75;
+    }
+    .hero-orb {
+      position: absolute;
+      z-index: 2;
+      border-radius: 9999px;
+      pointer-events: none;
+      filter: blur(16px);
+      opacity: 0.55;
+    }
+    .hero-orb--a {
+      width: 230px;
+      height: 230px;
+      top: 6%;
+      left: 10%;
+      background: radial-gradient(circle, rgba(34, 211, 238, 0.75) 0%, rgba(34, 211, 238, 0.1) 55%, transparent 72%);
+      animation: orbFloatA 4.8s ease-in-out infinite;
+    }
+    .hero-orb--b {
+      width: 280px;
+      height: 280px;
+      top: 12%;
+      right: 6%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.72) 0%, rgba(139, 92, 246, 0.12) 56%, transparent 74%);
+      animation: orbFloatB 5.4s ease-in-out infinite;
+    }
+    .hero-image {
+      transition: transform 320ms ease, box-shadow 320ms ease, filter 320ms ease;
+    }
+    .hero-image:hover {
+      transform: translateY(-8px) scale(1.03);
+      box-shadow: 0 26px 60px rgba(2, 6, 23, 0.6);
+      filter: saturate(1.12);
+    }
+    .showcase-card {
+      transition: transform 260ms ease, border-color 260ms ease, background-color 260ms ease, box-shadow 260ms ease;
+    }
+    .showcase-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: rgba(139, 92, 246, 0.55);
+      background-color: rgba(51, 65, 85, 0.8);
+      box-shadow: 0 20px 42px rgba(76, 29, 149, 0.35);
+    }
+    .cta-glow {
+      position: relative;
+      overflow: hidden;
+      animation: ctaPulse 2s ease-in-out infinite;
+    }
+    .cta-glow::after {
+      content: '';
+      position: absolute;
+      inset: -30% auto -30% -120%;
+      width: 45%;
+      transform: skewX(-20deg);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      animation: ctaShine 2.1s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .card-media {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      background: #0f172a;
+    }
+    .card-media--tall {
+      aspect-ratio: 4 / 3;
+    }
+    .reveal-up {
+      opacity: 0;
+      transform: translateY(40px) scale(0.98);
+      transition: opacity 850ms cubic-bezier(.2,.8,.2,1), transform 850ms cubic-bezier(.2,.8,.2,1);
+      will-change: opacity, transform;
+    }
+    .reveal-up.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .hero-drift {
+      transition: transform 180ms ease-out;
+      will-change: transform;
+    }
+    @keyframes floatGlow {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-26px) scale(1.09); }
+    }
+    @keyframes sheenDrift {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }
+      50% { transform: translate3d(1.8%, -1.2%, 0) scale(1.04); opacity: 0.72; }
+    }
+    @keyframes ctaShine {
+      0% { left: -120%; }
+      45%, 100% { left: 130%; }
+    }
+    @keyframes ctaPulse {
+      0%, 100% { box-shadow: 0 0 0 rgba(124, 58, 237, 0.0); }
+      50% { box-shadow: 0 0 34px rgba(124, 58, 237, 0.5); }
+    }
+    @keyframes ribbonsShift {
+      0% { transform: translate3d(-4%, -3%, 0) rotate(-2deg) scale(1); }
+      50% { transform: translate3d(2%, 2%, 0) rotate(1.6deg) scale(1.05); }
+      100% { transform: translate3d(6%, -1%, 0) rotate(-1deg) scale(1.02); }
+    }
+    @keyframes orbFloatA {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(28px, 18px, 0) scale(1.08); }
+    }
+    @keyframes orbFloatB {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(-24px, 22px, 0) scale(1.06); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-glow,
+      .hero-sheen,
+      .hero-ribbons,
+      .hero-orb,
+      .cta-glow,
+      .cta-glow::after,
+      .showcase-card,
+      .hero-image,
+      .reveal-up,
+      .hero-drift {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+      }
+      .reveal-up {
+        opacity: 1 !important;
+      }
+    }
+  </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen">
   <div id="disclaimer-placeholder"></div>
   <div id="nav-placeholder"></div>
 
   <main>
-    <section class="relative overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-violet-900/20 to-slate-900"></div>
-      <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200')] bg-cover bg-center opacity-20"></div>
-      <div class="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
-        <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 fade-in">Discover Your Perfect <span class="text-violet-400">Hair Care Journey</span></h1>
-        <p class="text-slate-300 text-lg max-w-2xl mb-8 fade-in-delay-1">Get AI-powered personalized assessments, expert recommendations, and join a community dedicated to healthy, beautiful hair. Your transformation starts here.</p>
-        <div class="flex flex-wrap gap-4 fade-in-delay-2">
-          <a href="/register.html" class="btn-primary inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-3 rounded-lg transition-all">+ Get Started</a>
-          <a href="/login.html" class="card-hover inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-medium px-6 py-3 rounded-lg border border-slate-600 transition-all">Sign In</a>
-        </div>
-        <div class="flex flex-wrap gap-8 mt-10 text-slate-400 fade-in-delay-3">
-          <span class="flex items-center gap-2">500,000+ Users</span>
-          <span class="flex items-center gap-2">4.9 Rating</span>
-          <span class="flex items-center gap-2">✓ Expert Approved</span>
+    <section class="relative overflow-hidden border-b border-slate-800/70 reveal-up">
+      <div class="hero-backdrop absolute inset-0 bg-gradient-to-br from-slate-950 via-violet-950/20 to-slate-900"></div>
+      <div id="hero-particles" aria-hidden="true"></div>
+      <div class="hero-ribbons" aria-hidden="true"></div>
+      <div class="hero-orb hero-orb--a" aria-hidden="true"></div>
+      <div class="hero-orb hero-orb--b" aria-hidden="true"></div>
+      <div class="hero-sheen"></div>
+      <div class="hero-glow hero-glow--one"></div>
+      <div class="hero-glow hero-glow--two"></div>
+      <div class="relative z-10 max-w-6xl mx-auto px-4 py-16 md:py-24">
+        <div class="grid lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <p class="inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs tracking-wide text-violet-200">AI-guided haircare platform</p>
+            <h1 class="mt-5 text-4xl md:text-5xl font-bold text-white leading-tight">Personalized hair care for users, with specialist support when needed.</h1>
+            <p class="mt-4 text-slate-300 text-lg max-w-xl">Hairvelous helps users assess hair concerns, follow a routine, and consult verified specialists through one secure workspace.</p>
+            <div class="mt-8 flex flex-wrap gap-3">
+              <a href="/register.html" class="cta-glow inline-flex items-center gap-2 rounded-lg bg-violet-600 px-6 py-3 text-sm font-semibold text-white hover:bg-violet-500">Create account</a>
+              <a href="/login.html" class="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800/70 px-6 py-3 text-sm font-semibold text-slate-100 hover:bg-slate-700">Sign in</a>
+            </div>
+            <div class="mt-6 grid sm:grid-cols-3 gap-3 text-xs text-slate-400">
+              <div class="rounded-lg border border-slate-700/70 bg-slate-900/60 p-3">Assessment + profile tracking</div>
+              <div class="rounded-lg border border-slate-700/70 bg-slate-900/60 p-3">Routine logs and reminders</div>
+              <div class="rounded-lg border border-slate-700/70 bg-slate-900/60 p-3">Specialist consultation workflow</div>
+            </div>
+          </div>
+          <div class="space-y-4 hero-drift" id="heroVisual">
+            <div class="hero-image overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/70 shadow-2xl">
+              <img src="/assets/landing-hero.jpeg" alt="Healthy hair care routine visual" class="card-media card-media--tall" loading="lazy" onerror="this.onerror=null;this.src='/assets/landing-hero.svg';" />
+            </div>
+            <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-2xl">
+            <p class="text-sm font-semibold text-white">How Hairvelous works</p>
+            <div class="mt-5 space-y-4 text-sm">
+              <div class="flex gap-3">
+                <span class="mt-0.5 h-6 w-6 shrink-0 rounded-full bg-violet-600/30 text-violet-200 grid place-items-center text-xs font-bold">1</span>
+                <p class="text-slate-300">Take a guided assessment and build your hair profile.</p>
+              </div>
+              <div class="flex gap-3">
+                <span class="mt-0.5 h-6 w-6 shrink-0 rounded-full bg-violet-600/30 text-violet-200 grid place-items-center text-xs font-bold">2</span>
+                <p class="text-slate-300">Receive recommendations and follow a routine tracker.</p>
+              </div>
+              <div class="flex gap-3">
+                <span class="mt-0.5 h-6 w-6 shrink-0 rounded-full bg-violet-600/30 text-violet-200 grid place-items-center text-xs font-bold">3</span>
+                <p class="text-slate-300">Consult a specialist and continue care with monitored progress.</p>
+              </div>
+            </div>
+            <p class="mt-5 text-xs text-slate-500">For educational and awareness support. Not a medical diagnosis.</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="max-w-6xl mx-auto px-4 py-16">
-      <h2 class="text-3xl font-bold text-white mb-2">Everything You Need for <span class="text-violet-400">Healthy Hair</span></h2>
-      <p class="text-slate-400 mb-12">From AI-powered diagnostics to community support, we provide comprehensive tools for your hair care journey.</p>
-      <div class="grid md:grid-cols-3 gap-8">
-        <div class="card-hover bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 fade-in-delay-1">
-          <div class="w-12 h-12 rounded-lg bg-violet-600/30 flex items-center justify-center text-2xl mb-4 icon-bounce">🎯</div>
-          <h3 class="text-xl font-semibold text-white mb-2">AI Hair Analysis</h3>
-          <p class="text-slate-400">Upload a photo and let our AI detect your hair type and concerns. For awareness only—not a medical diagnosis.</p>
-        </div>
-        <div class="card-hover bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 fade-in-delay-2">
-          <div class="w-12 h-12 rounded-lg bg-violet-600/30 flex items-center justify-center mb-4 icon-bounce text-violet-200">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3.75 14.65 9.1l5.91.86-4.28 4.17 1.01 5.88L12 17.25l-5.29 2.78 1.01-5.88-4.28-4.17 5.91-.86L12 3.75Z"/></svg>
+    <section class="max-w-6xl mx-auto px-4 py-14 reveal-up">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl font-bold text-white">Built for both sides of care</h2>
+        <p class="text-slate-400 mt-2">A complete flow for users and specialists, with admin oversight.</p>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        <article class="showcase-card rounded-2xl border border-slate-700/70 bg-slate-800/50 p-6">
+          <p class="text-xs uppercase tracking-[0.18em] text-violet-300">For users</p>
+          <h3 class="mt-2 text-xl font-semibold text-white">Clarity and consistency for your routine</h3>
+          <ul class="mt-4 space-y-2 text-sm text-slate-300">
+            <li>- Guided assessment and profile snapshot</li>
+            <li>- Personalized recommendations and DIY guides</li>
+            <li>- Routine tracker with media logs</li>
+            <li>- Upgrade path for advanced features</li>
+          </ul>
+          <div class="mt-5 overflow-hidden rounded-xl border border-slate-700/70">
+            <img src="/assets/landing-user.jpeg" alt="User checking hair profile and routine" class="card-media" loading="lazy" onerror="this.onerror=null;this.src='/assets/landing-user.svg';" />
           </div>
-          <h3 class="text-xl font-semibold text-white mb-2">Smart Recommendations</h3>
-          <p class="text-slate-400">Product suggestions tailored to your profile and concerns.</p>
-        </div>
-        <div class="card-hover bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 fade-in-delay-3">
-          <div class="w-12 h-12 rounded-lg bg-violet-600/30 flex items-center justify-center mb-4 icon-bounce text-violet-200">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6.75v10.5m0-10.5C9.5 5.2 6.4 4.5 3.75 4.5v12c2.65 0 5.75.7 8.25 2.25m0-12C14.5 5.2 17.6 4.5 20.25 4.5v12c-2.65 0-5.75.7-8.25 2.25"/></svg>
+        </article>
+        <article class="showcase-card rounded-2xl border border-slate-700/70 bg-slate-800/50 p-6">
+          <p class="text-xs uppercase tracking-[0.18em] text-cyan-300">For specialists</p>
+          <h3 class="mt-2 text-xl font-semibold text-white">Structured consultations with privacy controls</h3>
+          <ul class="mt-4 space-y-2 text-sm text-slate-300">
+            <li>- Manage assigned client consultations</li>
+            <li>- Access client routine logs only with consent + accepted link</li>
+            <li>- Track consultation status and specialist analytics</li>
+            <li>- Keep communication and recommendations in one channel</li>
+          </ul>
+          <div class="mt-5 overflow-hidden rounded-xl border border-slate-700/70">
+            <img src="/assets/landing-specialist.jpeg" alt="Specialist consultation workflow" class="card-media" loading="lazy" onerror="this.onerror=null;this.src='/assets/landing-specialist.svg';" />
           </div>
-          <h3 class="text-xl font-semibold text-white mb-2">DIY Guides</h3>
-          <p class="text-slate-400">Discover home remedies and treat your hair with care. Educational only.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="max-w-6xl mx-auto px-4 pb-12 reveal-up">
+      <div class="grid md:grid-cols-3 gap-4">
+        <article class="showcase-card rounded-xl border border-slate-700/70 bg-slate-800/50 p-4">
+          <img src="/assets/landing-products.svg" alt="Hair product recommendations" class="card-media rounded-lg" loading="lazy" />
+          <p class="mt-3 text-sm font-semibold text-white">Product-matching engine</p>
+          <p class="mt-1 text-xs text-slate-400">Recommendations are aligned with your latest profile and routine needs.</p>
+        </article>
+        <article class="showcase-card rounded-xl border border-slate-700/70 bg-slate-800/50 p-4">
+          <img src="/assets/landing-progress.svg" alt="Routine progress tracking" class="card-media rounded-lg" loading="lazy" />
+          <p class="mt-3 text-sm font-semibold text-white">Progress timeline</p>
+          <p class="mt-1 text-xs text-slate-400">Track routine logs and view progress over time through one dashboard.</p>
+        </article>
+        <article class="showcase-card rounded-xl border border-slate-700/70 bg-slate-800/50 p-4">
+          <img src="/assets/landing-support.svg" alt="Specialist support and consultation" class="card-media rounded-lg" loading="lazy" />
+          <p class="mt-3 text-sm font-semibold text-white">Specialist support</p>
+          <p class="mt-1 text-xs text-slate-400">Consultation workflow is role-based with privacy and consent boundaries.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="max-w-6xl mx-auto px-4 pb-14 reveal-up">
+      <div class="rounded-2xl border border-slate-700/70 bg-slate-800/45 p-6 md:p-8">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
+          <div>
+            <p class="text-xs uppercase tracking-[0.18em] text-cyan-300">Specialist network</p>
+            <h3 class="mt-1 text-2xl font-bold text-white">Guidance from hair-focused specialists</h3>
+          </div>
+          <a href="/consultations.html" class="inline-flex items-center rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/20">Explore consultations</a>
+        </div>
+        <div class="grid md:grid-cols-3 gap-4">
+          <article class="showcase-card rounded-xl border border-slate-700/70 bg-slate-900/65 p-3">
+            <img src="/assets/landing-specialist.jpeg" alt="Hair specialist consulting a client" class="card-media rounded-lg" loading="lazy" onerror="this.onerror=null;this.src='/assets/landing-specialist.svg';" />
+            <p class="mt-3 text-sm font-semibold text-white">Consultation-first support</p>
+            <p class="mt-1 text-xs text-slate-400">Clients can request specialist guidance after profile assessment and routine tracking.</p>
+          </article>
+          <article class="showcase-card rounded-xl border border-slate-700/70 bg-slate-900/65 p-3">
+            <img src="/assets/landing-user.jpeg" alt="Healthy hair closeup and scalp care" class="card-media rounded-lg" loading="lazy" onerror="this.onerror=null;this.src='/assets/landing-user.svg';" />
+            <p class="mt-3 text-sm font-semibold text-white">Hair and scalp visibility</p>
+            <p class="mt-1 text-xs text-slate-400">Track outcomes with routine entries and media logs as part of your ongoing care timeline.</p>
+          </article>
+          <article class="showcase-card rounded-xl border border-slate-700/70 bg-slate-900/65 p-3">
+            <img src="/assets/landing-support.svg" alt="Professional specialist support context" class="card-media rounded-lg" loading="lazy" />
+            <p class="mt-3 text-sm font-semibold text-white">Professional treatment context</p>
+            <p class="mt-1 text-xs text-slate-400">The platform bridges home-care routines with specialist consultation decisions.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-6xl mx-auto px-4 pb-16 reveal-up">
+      <div class="rounded-2xl border border-violet-500/30 bg-gradient-to-r from-violet-900/25 to-slate-900 p-7 md:p-9">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+          <div>
+            <h3 class="text-2xl font-bold text-white">Ready to start your Hairvelous journey?</h3>
+            <p class="text-slate-300 mt-1">Create an account and begin with your first assessment in minutes.</p>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <a href="/register.html" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">Get started</a>
+            <a href="/login.html" class="inline-flex items-center rounded-lg border border-slate-500 bg-slate-800/70 px-5 py-2.5 text-sm font-semibold text-slate-100 hover:bg-slate-700">I already have an account</a>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
   <script src="/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@3/tsparticles.bundle.min.js"></script>
   <script>
     (function () {
       if (typeof isLoggedIn === 'function' && isLoggedIn() && typeof getHomePathForUser === 'function') {
         window.location.replace(getHomePathForUser());
+      }
+    })();
+
+    (function initLandingAnimations() {
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const revealEls = document.querySelectorAll('.reveal-up');
+      if (prefersReduced) {
+        revealEls.forEach((el) => el.classList.add('is-visible'));
+        return;
+      }
+
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.08, rootMargin: '0px 0px -2% 0px' });
+      revealEls.forEach((el) => obs.observe(el));
+
+      const hero = document.getElementById('heroVisual');
+      if (!hero) return;
+      window.addEventListener('mousemove', (ev) => {
+        const x = (ev.clientX / window.innerWidth - 0.5) * 22;
+        const y = (ev.clientY / window.innerHeight - 0.5) * 16;
+        hero.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      }, { passive: true });
+      window.addEventListener('mouseleave', () => {
+        hero.style.transform = 'translate3d(0,0,0)';
+      });
+    })();
+
+    (async function initHeroParticles() {
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const host = document.getElementById('hero-particles');
+      if (!host || prefersReduced) return;
+      if (!window.tsParticles) return;
+      try {
+        await window.tsParticles.load('hero-particles', {
+            background: { color: { value: 'transparent' } },
+            fullScreen: { enable: false },
+            fpsLimit: 60,
+            detectRetina: true,
+            particles: {
+              number: { value: 78, density: { enable: true, area: 920 } },
+              color: { value: ['#a78bfa', '#22d3ee', '#e2e8f0'] },
+              links: {
+                enable: true,
+                distance: 140,
+                opacity: 0.28,
+                color: '#a78bfa',
+                width: 1
+              },
+              move: {
+                enable: true,
+                speed: 1.05,
+                direction: 'none',
+                random: true,
+                outModes: { default: 'out' }
+              },
+              opacity: { value: { min: 0.25, max: 0.8 } },
+              size: { value: { min: 1.2, max: 4.2 } },
+            },
+            interactivity: {
+              events: {
+                onHover: { enable: true, mode: 'grab' },
+                resize: { enable: true }
+              },
+              modes: {
+                grab: { distance: 170, links: { opacity: 0.7 } }
+              }
+            }
+        });
+        host.classList.add('is-particles-ready');
+      } catch (_) {
+        // Decorative enhancement only; no-op on failure.
       }
     })();
   </script>

@@ -165,6 +165,10 @@ class ConsultationService {
     await tryAlter('ALTER TABLE consultations ADD COLUMN verified_by_admin_user_id INT NULL');
     await tryAlter('ALTER TABLE consultations ADD COLUMN paymongo_checkout_session_id VARCHAR(128) NULL');
     await tryAlter('ALTER TABLE consultations ADD COLUMN paymongo_payment_intent_id VARCHAR(128) NULL');
+    await tryAlter('ALTER TABLE consultations ADD COLUMN prescription_summary TEXT NULL');
+    await tryAlter('ALTER TABLE consultations ADD COLUMN prescription_products_text TEXT NULL');
+    await tryAlter('ALTER TABLE consultations ADD COLUMN prescription_plan_text TEXT NULL');
+    await tryAlter('ALTER TABLE consultations ADD COLUMN prescription_issued_at DATETIME NULL');
     try {
       await pool.query(`UPDATE consultations SET status = 'awaiting_payment' WHERE status = 'accepted'`);
     } catch (_e) {
@@ -261,7 +265,8 @@ class ConsultationService {
     const platformPct =
       r.platform_fee_percent != null ? Number(r.platform_fee_percent) : PLATFORM_FEE_PERCENT;
     const platformCut = amount != null && Number.isFinite(platformPct) ? (amount * platformPct) / 100 : null;
-    const specialistNet = amount != null && platformCut != null ? amount - platformCut : null;
+    const specialistNet = amount != null ? amount : null;
+    const clientTotal = amount != null && platformCut != null ? amount + platformCut : null;
     const pay = r.payment_status || 'unpaid';
     return {
       consultationId: r.consultation_id,
@@ -278,6 +283,10 @@ class ConsultationService {
       specialistNotes: r.specialist_notes,
       validatedProductsText: r.validated_products_text,
       finalRecommendation: r.final_recommendation,
+      prescriptionSummary: r.prescription_summary || null,
+      prescriptionProductsText: r.prescription_products_text || null,
+      prescriptionPlanText: r.prescription_plan_text || null,
+      prescriptionIssuedAt: r.prescription_issued_at || null,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
       isProUser: !!r.is_pro_user,
@@ -285,6 +294,7 @@ class ConsultationService {
       platformFeePercent: platformPct,
       platformFeePhp: platformCut != null ? Math.round(platformCut * 100) / 100 : null,
       specialistNetPhp: specialistNet != null ? Math.round(specialistNet * 100) / 100 : null,
+      clientTotalPhp: clientTotal != null ? Math.round(clientTotal * 100) / 100 : null,
       paymentStatus: pay,
       paymentReference: r.payment_reference || null,
       paymentReceiptUrl: r.payment_receipt_path ? this.toImageUrl(r.payment_receipt_path) : null,
@@ -309,15 +319,15 @@ class ConsultationService {
   }
 
   calculateSplit(amountPhp, commissionPercent) {
-    const gross = Number(amountPhp || 0);
+    const specialistFee = Number(amountPhp || 0);
     const pct = Number(commissionPercent || 0);
-    const normalizedCommission = Math.round(((gross * pct) / 100) * 100) / 100;
-    const net = Math.round((gross - normalizedCommission) * 100) / 100;
+    const normalizedCommission = Math.round(((specialistFee * pct) / 100) * 100) / 100;
+    const clientTotal = Math.round((specialistFee + normalizedCommission) * 100) / 100;
     return {
-      grossAmountPhp: Math.round(gross * 100) / 100,
+      grossAmountPhp: clientTotal,
       commissionPercent: Math.round(pct * 100) / 100,
       commissionAmountPhp: normalizedCommission,
-      netAmountPhp: net,
+      netAmountPhp: Math.round(specialistFee * 100) / 100,
     };
   }
 
@@ -360,21 +370,26 @@ class ConsultationService {
 
   async createRequest(userId, payload) {
     await this.ensureTable();
-    const ent = await billingService.getEntitlements(userId);
-    const maxActive = Number(ent && ent.maxActiveConsultations) || 1;
-    const [activeRows] = await pool.query(
-      `SELECT COUNT(*) AS total
-       FROM consultations
-       WHERE user_id = ?
-         AND status NOT IN ('completed', 'cancelled', 'declined')`,
-      [userId]
-    );
-    const activeTotal = Number((activeRows && activeRows[0] && activeRows[0].total) || 0);
-    if (activeTotal >= maxActive) {
-      if (maxActive <= 1) {
-        throw new Error('Free plan allows 1 active consultation at a time. Upgrade to Pro for more.');
+    const allowUnlimitedInDemo =
+      String(process.env.DEMO_UNLIMITED_CONSULTATIONS || '').trim().toLowerCase() === 'true' ||
+      String(process.env.NODE_ENV || 'development').trim().toLowerCase() !== 'production';
+    if (!allowUnlimitedInDemo) {
+      const ent = await billingService.getEntitlements(userId);
+      const maxActive = Number(ent && ent.maxActiveConsultations) || 1;
+      const [activeRows] = await pool.query(
+        `SELECT COUNT(*) AS total
+         FROM consultations
+         WHERE user_id = ?
+           AND status NOT IN ('completed', 'cancelled', 'declined')`,
+        [userId]
+      );
+      const activeTotal = Number((activeRows && activeRows[0] && activeRows[0].total) || 0);
+      if (activeTotal >= maxActive) {
+        if (maxActive <= 1) {
+          throw new Error('Free plan allows 1 active consultation at a time. Upgrade to Pro for more.');
+        }
+        throw new Error(`You can only keep up to ${maxActive} active consultations at once.`);
       }
-      throw new Error(`You can only keep up to ${maxActive} active consultations at once.`);
     }
     const concernTitle = String(payload.concernTitle || '').trim();
     const concernMessage = String(payload.concernMessage || '').trim();
@@ -445,7 +460,8 @@ class ConsultationService {
     const [rows] = await pool.query(
       `SELECT c.consultation_id, c.user_id, c.specialist_user_id, c.concern_title, c.concern_message,
               c.preferred_date, c.status, c.specialist_notes, c.validated_products_text,
-              c.final_recommendation, c.created_at, c.updated_at,
+              c.final_recommendation, c.prescription_summary, c.prescription_products_text,
+              c.prescription_plan_text, c.prescription_issued_at, c.created_at, c.updated_at,
               c.amount_php, c.platform_fee_percent, c.payment_status, c.payment_reference,
               c.payment_receipt_path, c.payment_submitted_at, c.meeting_url, c.scheduled_at, c.completed_at, c.decline_reason,
               c.paid_verified_at, c.verified_by_admin_user_id,
@@ -548,7 +564,9 @@ class ConsultationService {
     if (!Number.isFinite(id)) throw new Error('Invalid consultation ID');
 
     const [rows] = await pool.query(
-      `SELECT consultation_id, user_id, specialist_user_id, concern_title, status, payment_status, final_recommendation
+      `SELECT consultation_id, user_id, specialist_user_id, concern_title, status, payment_status,
+              specialist_notes, validated_products_text, final_recommendation,
+              prescription_summary, prescription_products_text, prescription_plan_text, prescription_issued_at
        FROM consultations WHERE consultation_id = ?`,
       [id]
     );
@@ -557,18 +575,60 @@ class ConsultationService {
     const existing = rows[0];
     const isOwner = existing.user_id === actor.userId;
     const canManage = canManageConsultation(actor, existing);
+    const hadPrescriptionBefore =
+      String(existing.prescription_summary || '').trim() ||
+      String(existing.prescription_products_text || '').trim() ||
+      String(existing.prescription_plan_text || '').trim();
 
     const fields = [];
     const values = [];
 
     const requestedStatus = payload.status;
     const action = payload.action ? String(payload.action).toLowerCase() : null;
-    const touchedReviewerContent =
-      payload.specialistNotes !== undefined ||
-      payload.validatedProductsText !== undefined ||
-      payload.finalRecommendation !== undefined;
-
+    const nextSpecialistNotes =
+      payload.specialistNotes !== undefined ? String(payload.specialistNotes || '').trim() || null : undefined;
+    const nextValidatedProductsText =
+      payload.validatedProductsText !== undefined
+        ? String(payload.validatedProductsText || '').trim() || null
+        : undefined;
+    const nextFinalRecommendation =
+      payload.finalRecommendation !== undefined
+        ? String(payload.finalRecommendation || '').trim() || null
+        : undefined;
+    const nextPrescriptionSummary =
+      payload.prescriptionSummary !== undefined
+        ? String(payload.prescriptionSummary || '').trim() || null
+        : undefined;
+    const nextPrescriptionProductsText =
+      payload.prescriptionProductsText !== undefined
+        ? String(payload.prescriptionProductsText || '').trim() || null
+        : undefined;
+    const nextPrescriptionPlanText =
+      payload.prescriptionPlanText !== undefined
+        ? String(payload.prescriptionPlanText || '').trim() || null
+        : undefined;
+    const attemptsPrescriptionChangeAfterIssuance =
+      !!hadPrescriptionBefore &&
+      ((nextPrescriptionSummary !== undefined &&
+        (existing.prescription_summary || null) !== nextPrescriptionSummary) ||
+        (nextPrescriptionProductsText !== undefined &&
+          (existing.prescription_products_text || null) !== nextPrescriptionProductsText) ||
+        (nextPrescriptionPlanText !== undefined &&
+          (existing.prescription_plan_text || null) !== nextPrescriptionPlanText));
+    if (attemptsPrescriptionChangeAfterIssuance) {
+      const e = new Error('Care prescription is already issued and locked');
+      e.status = 409;
+      throw e;
+    }
+    let touchedReviewerContent = false;
+    let touchedPrescriptionContent = false;
+    let willHavePrescriptionAfter = !!hadPrescriptionBefore;
     if (canManage) {
+      if ((action === 'accept' || action === 'decline') && actor.roleName !== 'specialist') {
+        const e = new Error('Only specialists can accept or decline consultation requests');
+        e.status = 403;
+        throw e;
+      }
       if (action === 'accept') {
         if (existing.status !== 'pending') throw new Error('Only pending requests can be accepted');
         fields.push('status = ?');
@@ -608,17 +668,58 @@ class ConsultationService {
           fields.push('completed_at = COALESCE(completed_at, NOW())');
         }
       }
-      if (payload.specialistNotes !== undefined) {
+      if (nextSpecialistNotes !== undefined && (existing.specialist_notes || null) !== nextSpecialistNotes) {
         fields.push('specialist_notes = ?');
-        values.push(payload.specialistNotes || null);
+        values.push(nextSpecialistNotes);
+        touchedReviewerContent = true;
       }
-      if (payload.validatedProductsText !== undefined) {
+      if (
+        nextValidatedProductsText !== undefined &&
+        (existing.validated_products_text || null) !== nextValidatedProductsText
+      ) {
         fields.push('validated_products_text = ?');
-        values.push(payload.validatedProductsText || null);
+        values.push(nextValidatedProductsText);
+        touchedReviewerContent = true;
       }
-      if (payload.finalRecommendation !== undefined) {
+      if (nextFinalRecommendation !== undefined && (existing.final_recommendation || null) !== nextFinalRecommendation) {
         fields.push('final_recommendation = ?');
-        values.push(payload.finalRecommendation || null);
+        values.push(nextFinalRecommendation);
+        touchedReviewerContent = true;
+      }
+      if (
+        nextPrescriptionSummary !== undefined &&
+        (existing.prescription_summary || null) !== nextPrescriptionSummary
+      ) {
+        fields.push('prescription_summary = ?');
+        values.push(nextPrescriptionSummary);
+        touchedPrescriptionContent = true;
+      }
+      if (
+        nextPrescriptionProductsText !== undefined &&
+        (existing.prescription_products_text || null) !== nextPrescriptionProductsText
+      ) {
+        fields.push('prescription_products_text = ?');
+        values.push(nextPrescriptionProductsText);
+        touchedPrescriptionContent = true;
+      }
+      if (
+        nextPrescriptionPlanText !== undefined &&
+        (existing.prescription_plan_text || null) !== nextPrescriptionPlanText
+      ) {
+        fields.push('prescription_plan_text = ?');
+        values.push(nextPrescriptionPlanText);
+        touchedPrescriptionContent = true;
+      }
+      if (touchedPrescriptionContent && !hadPrescriptionBefore) {
+        fields.push('prescription_issued_at = COALESCE(prescription_issued_at, NOW())');
+        willHavePrescriptionAfter =
+          String(nextPrescriptionSummary !== undefined ? nextPrescriptionSummary : existing.prescription_summary || '').trim() ||
+          String(
+            nextPrescriptionProductsText !== undefined
+              ? nextPrescriptionProductsText
+              : existing.prescription_products_text || ''
+          ).trim() ||
+          String(nextPrescriptionPlanText !== undefined ? nextPrescriptionPlanText : existing.prescription_plan_text || '').trim();
       }
       if (payload.meetingUrl !== undefined) {
         const payOk = String(existing.payment_status || '') === 'verified';
@@ -673,7 +774,9 @@ class ConsultationService {
       throw new Error('Not allowed to update this consultation');
     }
 
-    if (!fields.length) throw new Error('No fields to update');
+    if (!fields.length) {
+      return { consultationId: id, updated: false, noChanges: true };
+    }
 
     values.push(id);
     await pool.query(`UPDATE consultations SET ${fields.join(', ')} WHERE consultation_id = ?`, values);
@@ -702,7 +805,14 @@ class ConsultationService {
       if (action === 'decline' && existing.specialist_user_id) {
         /* already notified user above */
       }
-      if (touchedReviewerContent) {
+      if (touchedPrescriptionContent && !hadPrescriptionBefore && !!willHavePrescriptionAfter) {
+        await notificationService.createForUser(existing.user_id, {
+          type: 'consultation_update',
+          title: 'Care prescription is ready',
+          message: `Your specialist added a care prescription for "${existing.concern_title}".`,
+          linkUrl: '/consultations.html',
+        });
+      } else if (touchedReviewerContent) {
         await notificationService.createForUser(existing.user_id, {
           type: 'consultation_update',
           title: 'Specialist updated your consultation',
@@ -832,7 +942,8 @@ class ConsultationService {
     if (!Number.isFinite(id)) throw new Error('Invalid consultation ID');
 
     const [rows] = await pool.query(
-      `SELECT consultation_id, user_id, specialist_user_id, concern_title, payment_status, status
+      `SELECT consultation_id, user_id, specialist_user_id, concern_title, payment_status, status,
+              payment_reference, payment_receipt_path
        FROM consultations WHERE consultation_id = ?`,
       [id]
     );
@@ -840,9 +951,15 @@ class ConsultationService {
     const c = rows[0];
     const canDirectVerify =
       c.status === 'awaiting_payment' &&
-      (c.payment_status === 'pending_review' || c.payment_status === 'unpaid' || c.payment_status === 'rejected');
+      c.payment_status === 'pending_review';
     if (!canDirectVerify) {
       throw new Error('This consultation is not eligible for payment verification');
+    }
+    const ref = String(c.payment_reference || '').trim();
+    const hasManualProof = !!String(c.payment_receipt_path || '').trim();
+    const hasDemoMarker = /^DEMO-/i.test(ref);
+    if (!hasManualProof && !hasDemoMarker) {
+      throw new Error('Payment proof is required before verification');
     }
 
     await pool.query(
@@ -1069,7 +1186,7 @@ class ConsultationService {
     if (!Number.isFinite(id)) throw new Error('Invalid consultation ID');
 
     const [rows] = await pool.query(
-      `SELECT consultation_id, user_id, specialist_user_id, concern_title, amount_php, payment_status, status
+      `SELECT consultation_id, user_id, specialist_user_id, concern_title, amount_php, platform_fee_percent, payment_status, status
        FROM consultations WHERE consultation_id = ?`,
       [id]
     );
@@ -1086,7 +1203,11 @@ class ConsultationService {
     }
 
     const amountPhp = c.amount_php != null ? Number(c.amount_php) : DEFAULT_CONSULTATION_PHP;
-    const centavos = Math.round(amountPhp * 100);
+    const split = this.calculateSplit(
+      amountPhp,
+      c.platform_fee_percent != null ? Number(c.platform_fee_percent) : PLATFORM_FEE_PERCENT
+    );
+    const centavos = Math.round(split.grossAmountPhp * 100);
     const port = process.env.PORT || 3000;
     const base = (process.env.APP_PUBLIC_URL || `http://localhost:${port}`).replace(/\/+$/, '');
     const successUrl = `${base}/consultations.html?chat=${id}&paymongo=success`;
@@ -1147,7 +1268,7 @@ class ConsultationService {
     if (!Number.isFinite(id)) throw new Error('Invalid consultation ID');
 
     const [rows] = await pool.query(
-      `SELECT consultation_id, user_id, specialist_user_id, concern_title, amount_php, payment_status, status
+      `SELECT consultation_id, user_id, specialist_user_id, concern_title, amount_php, platform_fee_percent, payment_status, status
        FROM consultations WHERE consultation_id = ?`,
       [id]
     );
@@ -1164,7 +1285,11 @@ class ConsultationService {
     }
 
     const amountPhp = c.amount_php != null ? Number(c.amount_php) : DEFAULT_CONSULTATION_PHP;
-    let centavos = Math.round(amountPhp * 100);
+    const split = this.calculateSplit(
+      amountPhp,
+      c.platform_fee_percent != null ? Number(c.platform_fee_percent) : PLATFORM_FEE_PERCENT
+    );
+    let centavos = Math.round(split.grossAmountPhp * 100);
     /** PayMongo PaymentIntent minimum (see API docs; typically ₱20.00). */
     const minCentavos = 2000;
     if (centavos < minCentavos) {
@@ -1275,9 +1400,11 @@ class ConsultationService {
       throw new Error('metadata user_id does not match consultation owner');
     }
 
-    const expectedCentavos = Math.round(
-      Number(c.amount_php != null ? c.amount_php : DEFAULT_CONSULTATION_PHP) * 100
+    const split = this.calculateSplit(
+      Number(c.amount_php != null ? c.amount_php : DEFAULT_CONSULTATION_PHP),
+      Number(c.platform_fee_percent != null ? c.platform_fee_percent : PLATFORM_FEE_PERCENT)
     );
+    const expectedCentavos = Math.round(split.grossAmountPhp * 100);
     if (opts.paidAmountCentavos != null && Number(opts.paidAmountCentavos) !== expectedCentavos) {
       throw new Error(
         `PayMongo amount mismatch: expected ${expectedCentavos} centavos, webhook had ${opts.paidAmountCentavos}`

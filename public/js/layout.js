@@ -629,9 +629,21 @@ function initLayout() {
 
   // Add smooth transitions to buttons
   document.querySelectorAll('button, .btn-primary').forEach(btn => {
+    if (btn.hasAttribute('data-no-btn-primary') || btn.classList.contains('no-btn-primary')) return;
     if (!btn.classList.contains('btn-primary')) {
       btn.classList.add('btn-primary');
     }
+  });
+
+  // Ensure lazy-loaded images become visible once loaded.
+  document.querySelectorAll('img[loading="lazy"]').forEach((img) => {
+    const markLoaded = () => img.classList.add('loaded');
+    if (img.complete && img.naturalWidth > 0) {
+      markLoaded();
+      return;
+    }
+    img.addEventListener('load', markLoaded, { once: true });
+    img.addEventListener('error', markLoaded, { once: true });
   });
 
   // Apply slide-in animation with blur

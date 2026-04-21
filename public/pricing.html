@@ -46,6 +46,7 @@
       <div class="text-center">
         <h1 class="text-4xl font-bold text-white">Hairvelous Pro Plans</h1>
         <p class="text-slate-400 mt-2 text-sm">Choose a card-type subscription plan for premium features.</p>
+        <p class="text-xs text-slate-500 mt-2">Demo mode: activation here is simulated. Production flow uses payment verification.</p>
         <div id="status-badge" class="inline-block mt-5 px-3 py-1 text-sm rounded-full bg-slate-800 text-slate-300 border border-slate-700">Loading plan status...</div>
       </div>
     </section>
@@ -54,6 +55,20 @@
       <div class="plan-card plan-card--regular p-7 text-slate-400">Loading plans...</div>
     </section>
   </main>
+
+  <div id="demoConfirmModal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-slate-950/80 p-4">
+    <button type="button" id="demoConfirmBackdrop" class="absolute inset-0 cursor-default" aria-label="Close"></button>
+    <div class="relative z-[1] w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
+      <h2 class="text-lg font-semibold text-white">Confirm Demo Activation</h2>
+      <p id="demoConfirmText" class="mt-2 text-sm text-slate-300">
+        This action uses the demo flow. In production, users proceed through payment verification before plan activation.
+      </p>
+      <div class="mt-4 flex justify-end gap-2">
+        <button type="button" id="demoConfirmCancel" class="rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">Cancel</button>
+        <button type="button" id="demoConfirmOk" class="rounded-lg bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500">Continue</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/js/app.js"></script>
   <script src="/js/layout.js"></script>
@@ -67,6 +82,51 @@
       const d = document.createElement('div');
       d.textContent = v || '';
       return d.innerHTML;
+    }
+
+    function setDemoModalOpen(open) {
+      const modal = document.getElementById('demoConfirmModal');
+      if (!modal) return;
+      modal.classList.toggle('hidden', !open);
+      modal.classList.toggle('flex', open);
+    }
+
+    function confirmDemoActivation(planCode) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('demoConfirmModal');
+        const txt = document.getElementById('demoConfirmText');
+        const ok = document.getElementById('demoConfirmOk');
+        const cancel = document.getElementById('demoConfirmCancel');
+        const backdrop = document.getElementById('demoConfirmBackdrop');
+        if (!modal || !ok || !cancel || !backdrop) {
+          resolve(true);
+          return;
+        }
+        if (txt) {
+          txt.textContent =
+            planCode === 'free'
+              ? 'Switching to Free is in demo mode. Production usage should still record billing transitions and audits.'
+              : 'This upgrades your account via demo activation. In production, users complete payment verification first.';
+        }
+        const finish = (accepted) => {
+          ok.removeEventListener('click', onOk);
+          cancel.removeEventListener('click', onCancel);
+          backdrop.removeEventListener('click', onCancel);
+          document.removeEventListener('keydown', onKey);
+          setDemoModalOpen(false);
+          resolve(accepted);
+        };
+        const onOk = () => finish(true);
+        const onCancel = () => finish(false);
+        const onKey = (ev) => {
+          if (ev.key === 'Escape') onCancel();
+        };
+        ok.addEventListener('click', onOk);
+        cancel.addEventListener('click', onCancel);
+        backdrop.addEventListener('click', onCancel);
+        document.addEventListener('keydown', onKey);
+        setDemoModalOpen(true);
+      });
     }
 
     function renderPlans() {
@@ -127,7 +187,7 @@
           >${
             String(p.planCode).toLowerCase() === 'free'
               ? (hasActivePro ? 'Free plan locked' : 'Current free plan')
-              : ((hasActivePro && ['pro', 'pro_monthly'].includes(statusTier)) ? 'Current pro plan' : 'Get started')
+              : ((hasActivePro && ['pro', 'pro_monthly'].includes(statusTier)) ? 'Current pro plan' : 'Activate Pro (Demo)')
           }</button>
         </article>
       `).join('');
@@ -136,6 +196,8 @@
         btn.addEventListener('click', async () => {
           const planCode = String(btn.dataset.planCode || '');
           if (!planCode) return;
+          const confirmed = await confirmDemoActivation(planCode);
+          if (!confirmed) return;
           const originalLabel = btn.textContent;
           btn.disabled = true;
           btn.textContent = planCode === 'free' ? 'Switching...' : 'Activating...';
