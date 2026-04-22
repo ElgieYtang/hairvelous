@@ -178,7 +178,6 @@ function renderNav() {
                  ${navLink('/login.html', 'Login')}
                  <a href="/register.html" class="bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-xs btn-primary transition-all">Sign Up</a>
                </div>`
-            : ''
         }
       </div>
       ${
