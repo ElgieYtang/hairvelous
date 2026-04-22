@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-label="Hair care dashboard illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg)"/>
+  <circle cx="980" cy="90" r="140" fill="#7c3aed" opacity=".25"/>
+  <circle cx="170" cy="620" r="130" fill="#06b6d4" opacity=".2"/>
+  <rect x="120" y="100" width="420" height="500" rx="24" fill="url(#card)" stroke="#334155"/>
+  <rect x="170" y="160" width="90" height="90" rx="45" fill="#334155"/>
+  <rect x="285" y="170" width="200" height="18" rx="9" fill="#c4b5fd"/>
+  <rect x="285" y="202" width="140" height="14" rx="7" fill="#64748b"/>
+  <rect x="170" y="290" width="320" height="14" rx="7" fill="#475569"/>
+  <rect x="170" y="322" width="280" height="14" rx="7" fill="#475569"/>
+  <rect x="170" y="354" width="240" height="14" rx="7" fill="#475569"/>
+  <rect x="170" y="430" width="260" height="52" rx="12" fill="#7c3aed"/>
+  <rect x="600" y="130" width="480" height="180" rx="22" fill="url(#card)" stroke="#334155"/>
+  <rect x="640" y="170" width="170" height="16" rx="8" fill="#a78bfa"/>
+  <rect x="640" y="204" width="300" height="12" rx="6" fill="#475569"/>
+  <rect x="640" y="234" width="250" height="12" rx="6" fill="#475569"/>
+  <rect x="600" y="340" width="230" height="220" rx="22" fill="url(#card)" stroke="#334155"/>
+  <rect x="850" y="340" width="230" height="220" rx="22" fill="url(#card)" stroke="#334155"/>
+  <path d="M715 460c0-36 24-64 59-64s59 28 59 64" fill="none" stroke="#22d3ee" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="774" cy="456" r="26" fill="#334155" stroke="#22d3ee" stroke-width="4"/>
+  <path d="M940 500c35-20 57-54 57-95 0-27-10-53-27-72" fill="none" stroke="#a78bfa" stroke-width="8" stroke-linecap="round"/>
+  <path d="M910 495c20-12 33-34 33-59 0-17-6-32-16-44" fill="none" stroke="#c4b5fd" stroke-width="8" stroke-linecap="round"/>
+</svg>

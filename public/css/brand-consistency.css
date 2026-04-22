@@ -1,0 +1,72 @@
+:root {
+  --hv-surface: rgba(15, 23, 42, 0.72);
+  --hv-surface-strong: rgba(15, 23, 42, 0.9);
+  --hv-border: rgba(100, 116, 139, 0.35);
+  --hv-border-hover: rgba(139, 92, 246, 0.45);
+  --hv-focus: rgba(139, 92, 246, 0.65);
+}
+
+html,
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Keep interactions visually consistent but subtle */
+a,
+button,
+input,
+select,
+textarea {
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--hv-focus);
+}
+
+/* Normalize card-like containers used across pages */
+.panel,
+.mini-tile {
+  border-color: var(--hv-border) !important;
+}
+
+.panel:hover,
+.mini-tile:hover {
+  border-color: var(--hv-border-hover);
+}
+
+/* Normalize form controls (many pages already use Tailwind utility classes) */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='date'],
+select,
+textarea {
+  background-color: var(--hv-surface);
+  border-color: var(--hv-border);
+}
+
+input[type='text']:focus,
+input[type='email']:focus,
+input[type='password']:focus,
+input[type='number']:focus,
+input[type='date']:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--hv-focus);
+}
+
+/* Ensure icon-only buttons don't feel oversized or playful */
+button svg,
+a svg {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

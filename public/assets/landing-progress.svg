@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Progress timeline illustration">
+  <rect width="900" height="520" fill="#0b1220"/>
+  <rect x="90" y="80" width="720" height="360" rx="22" fill="#111827" stroke="#334155"/>
+  <path d="M140 350 L250 280 L360 300 L470 220 L580 250 L690 170" fill="none" stroke="#22d3ee" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="140" cy="350" r="10" fill="#22d3ee"/>
+  <circle cx="250" cy="280" r="10" fill="#22d3ee"/>
+  <circle cx="360" cy="300" r="10" fill="#22d3ee"/>
+  <circle cx="470" cy="220" r="10" fill="#22d3ee"/>
+  <circle cx="580" cy="250" r="10" fill="#22d3ee"/>
+  <circle cx="690" cy="170" r="10" fill="#22d3ee"/>
+  <rect x="140" y="130" width="120" height="16" rx="8" fill="#64748b"/>
+  <rect x="300" y="130" width="120" height="16" rx="8" fill="#64748b"/>
+  <rect x="460" y="130" width="120" height="16" rx="8" fill="#64748b"/>
+  <rect x="620" y="130" width="120" height="16" rx="8" fill="#64748b"/>
+  <rect x="700" y="300" width="80" height="100" rx="12" fill="#1e293b" stroke="#475569"/>
+  <rect x="715" y="320" width="50" height="8" rx="4" fill="#a78bfa"/>
+  <rect x="715" y="340" width="40" height="8" rx="4" fill="#94a3b8"/>
+  <rect x="715" y="360" width="52" height="8" rx="4" fill="#94a3b8"/>
+</svg>

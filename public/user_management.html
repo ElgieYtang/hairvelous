@@ -34,11 +34,11 @@
     </section>
 
     <div class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
+      <div class="overflow-hidden">
+        <table class="w-full table-fixed">
           <thead class="bg-slate-800">
             <tr>
-              <th class="text-left p-4 text-slate-300">ID</th>
+              <th class="text-left p-4 text-slate-300 w-16">ID</th>
               <th class="text-left p-4 text-slate-300">Name</th>
               <th class="text-left p-4 text-slate-300">Email</th>
               <th class="text-left p-4 text-slate-300">Role</th>
@@ -136,23 +136,25 @@
         : '';
       return `
         <tr class="bg-slate-800/30 hover:bg-slate-800/50">
-          <td class="p-4">${u.userId}</td>
-          <td class="p-4">${escapeHtml(u.name || '')}</td>
-          <td class="p-4">${escapeHtml(u.email)}</td>
-          <td class="p-4"><span class="px-2 py-1 rounded text-xs ${u.roleName === 'admin' ? 'bg-amber-600/30 text-amber-300' : 'bg-slate-700 text-slate-300'}">${u.roleName}</span></td>
-          <td class="p-4">${idBadge}</td>
-          <td class="p-4">
+          <td class="p-4 align-top">${u.userId}</td>
+          <td class="p-4 align-top break-words">${escapeHtml(u.name || '')}</td>
+          <td class="p-4 align-top break-all">${escapeHtml(u.email)}</td>
+          <td class="p-4 align-top"><span class="px-2 py-1 rounded text-xs ${u.roleName === 'admin' ? 'bg-amber-600/30 text-amber-300' : 'bg-slate-700 text-slate-300'}">${u.roleName}</span></td>
+          <td class="p-4 align-top">${idBadge}</td>
+          <td class="p-4 align-top">
             <span class="px-2 py-1 rounded text-xs ${u.isSuspended ? 'bg-rose-600/20 text-rose-300 border border-rose-500/40' : 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/40'}">
               ${u.isSuspended ? 'Suspended' : 'Active'}
             </span>
           </td>
-          <td class="p-4">${u.assessmentCount || 0}</td>
-          <td class="p-4">
+          <td class="p-4 align-top">${u.assessmentCount || 0}</td>
+          <td class="p-4 align-top">
+            <div class="flex flex-wrap gap-x-3 gap-y-1">
             ${reviewBtn}
-            <button onclick="resetPassword(${u.userId})" class="text-violet-400 hover:underline text-sm mr-3">Reset Password</button>
+            <button onclick="resetPassword(${u.userId})" class="text-violet-400 hover:underline text-sm">Reset Password</button>
             ${u.roleName === 'admin'
               ? '<span class="text-slate-500 text-sm">Protected</span>'
               : `<button onclick="toggleStatus(${u.userId}, ${u.isSuspended || false})" class="${u.isSuspended ? 'text-emerald-400' : 'text-amber-400'} hover:underline text-sm">${u.isSuspended ? 'Unsuspend' : 'Suspend'}</button>`}
+            </div>
           </td>
         </tr>
       `;

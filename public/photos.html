@@ -11,7 +11,10 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen">
   <nav class="border-b border-slate-700/50 bg-slate-900/95">
     <div class="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
-      <a href="/" class="flex items-center gap-2 text-white font-semibold">✨ Hairvelous</a>
+      <a href="/" class="flex items-center gap-2 text-white font-semibold">
+        <svg class="h-5 w-5 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M6 15c0-5.25 3.9-9 9-9 1.05 0 2.02.15 3 .45-.6 4.65-3.15 7.5-7.35 8.55M6 15c0 1.95 1.05 3.9 2.85 5.25M6 15c2.1.15 4.35.9 5.85 2.7M11.85 20.25c.45-1.5 1.5-2.85 3-3.75"/></svg>
+        <span>Hairvelous</span>
+      </a>
       <div class="flex gap-4">
         <a href="/" class="text-slate-400 hover:text-white">Home</a>
         <a href="/assessment.html" class="text-slate-400 hover:text-white">Assessment</a>
@@ -51,7 +54,7 @@
 
       <!-- AI result panel (shown after upload) -->
       <div id="ai-result-panel" class="hidden mb-8 bg-slate-800/50 rounded-xl p-6 border border-violet-700">
-        <h2 class="text-xl font-semibold text-violet-400 mb-4">🔬 AI Hair Analysis Result</h2>
+        <h2 class="text-xl font-semibold text-violet-400 mb-4">AI Hair Analysis Result</h2>
         <div id="ai-result-content" class="space-y-4 text-slate-300"></div>
       </div>
 
@@ -145,19 +148,19 @@
       `;
 
       if (ai.careTips && ai.careTips.length > 0) {
-        html += `<p class="text-violet-400 font-medium mb-2">💡 Care Tips:</p><ul class="list-disc list-inside text-slate-300 mb-4 space-y-1">`;
+        html += `<p class="text-violet-400 font-medium mb-2">Care Tips:</p><ul class="list-disc list-inside text-slate-300 mb-4 space-y-1">`;
         ai.careTips.forEach(tip => { html += `<li>${escapeHtml(tip)}</li>`; });
         html += `</ul>`;
       }
 
       if (ai.recommendations && ai.recommendations.length > 0) {
-        html += `<p class="text-violet-400 font-medium mb-2">🧴 Product Recommendations:</p><div class="space-y-3 mb-4">`;
+        html += `<p class="text-violet-400 font-medium mb-2">Product Recommendations:</p><div class="space-y-3 mb-4">`;
         ai.recommendations.forEach(rec => {
           html += `
             <div class="bg-slate-900/50 rounded-lg p-3">
               <p class="text-white font-medium">${escapeHtml(rec.title || '')}</p>
               <p class="text-slate-400 text-sm">${escapeHtml(rec.description || '')}</p>
-              ${rec.usageHint ? `<p class="text-slate-500 text-xs mt-1">💡 ${escapeHtml(rec.usageHint)}</p>` : ''}
+              ${rec.usageHint ? `<p class="text-slate-500 text-xs mt-1">${escapeHtml(rec.usageHint)}</p>` : ''}
               ${rec.exampleProducts && rec.exampleProducts.length > 0
                 ? `<p class="text-slate-500 text-xs mt-1">Examples: ${rec.exampleProducts.map(escapeHtml).join(', ')}</p>`
                 : ''}
@@ -169,12 +172,12 @@
 
       if (ai.whenToSeeProfessional) {
         html += `<div class="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mb-4">
-          <p class="text-amber-200 text-sm"><strong>👨‍⚕️ When to see a professional:</strong> ${escapeHtml(ai.whenToSeeProfessional)}</p>
+          <p class="text-amber-200 text-sm"><strong>When to see a professional:</strong> ${escapeHtml(ai.whenToSeeProfessional)}</p>
         </div>`;
       }
 
       if (ai.disclaimer) {
-        html += `<p class="text-slate-500 text-xs italic">⚠️ ${escapeHtml(ai.disclaimer)}</p>`;
+        html += `<p class="text-slate-500 text-xs italic">${escapeHtml(ai.disclaimer)}</p>`;
       }
 
       content.innerHTML = html;
