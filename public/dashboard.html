@@ -25,15 +25,15 @@
   <div id="disclaimer-placeholder"></div>
   <div id="nav-placeholder"></div>
 
-  <main class="max-w-7xl mx-auto px-6 py-8">
-    <div class="grid xl:grid-cols-12 gap-6">
-      <section class="xl:col-span-3 panel p-5">
+  <main class="max-w-7xl mx-auto w-full min-w-0 px-4 py-6 sm:px-6 sm:py-8">
+    <div class="grid xl:grid-cols-12 gap-6 min-w-0">
+      <section class="xl:col-span-3 panel p-4 sm:p-5 min-w-0">
         <div class="text-center border-b border-slate-700 pb-5 mb-5">
           <div class="w-20 h-20 mx-auto rounded-full overflow-hidden bg-violet-500/20 border-2 border-violet-400/70 flex items-center justify-center text-2xl font-bold text-violet-200 mb-3" id="user-avatar">U</div>
           <p class="text-xs tracking-[0.2em] uppercase text-slate-500">Welcome</p>
-          <h1 id="user-name" class="text-2xl font-bold text-white mt-1">Hairvelous User</h1>
-          <p id="user-email" class="text-slate-400 text-sm mt-1"></p>
-          <div id="plan-indicator" class="inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700">
+          <h1 id="user-name" class="text-xl sm:text-2xl font-bold text-white mt-1 break-words px-1">Hairvelous User</h1>
+          <p id="user-email" class="text-slate-400 text-sm mt-1 break-all px-1"></p>
+          <div id="plan-indicator" class="mx-auto mt-3 max-w-full px-3 py-2 rounded-xl text-xs border bg-slate-800 text-slate-300 border-slate-700 text-left leading-snug break-words">
             Plan: Loading...
           </div>
         </div>
@@ -57,14 +57,14 @@
         </div>
       </section>
 
-      <section class="xl:col-span-9 space-y-6">
-        <div class="panel p-5">
-          <div class="flex items-center justify-between mb-4">
-            <div>
+      <section class="xl:col-span-9 space-y-6 min-w-0">
+        <div class="panel p-4 sm:p-5 min-w-0">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div class="min-w-0">
               <h2 class="text-xl font-semibold text-white">My Statistics</h2>
               <p class="text-slate-400 text-sm">Quick view of your journey status</p>
             </div>
-            <span class="text-xs rounded-full px-3 py-1 bg-emerald-500/20 text-emerald-300">Live</span>
+            <span class="shrink-0 self-start text-xs rounded-full px-3 py-1 bg-emerald-500/20 text-emerald-300">Live</span>
           </div>
           <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div class="mini-tile p-4">
@@ -86,14 +86,14 @@
           </div>
         </div>
 
-        <div class="grid lg:grid-cols-5 gap-6">
-          <div class="lg:col-span-3 panel p-5">
+        <div class="grid lg:grid-cols-5 gap-6 min-w-0">
+          <div class="lg:col-span-3 panel p-4 sm:p-5 min-w-0">
             <h3 class="text-lg font-semibold text-white mb-3">Hair Profile Snapshot</h3>
-            <div id="profile-content" class="text-slate-400">
+            <div id="profile-content" class="text-slate-400 min-w-0 break-words">
               <p>Complete an assessment to populate your profile.</p>
             </div>
           </div>
-          <div class="lg:col-span-2 panel p-5">
+          <div class="lg:col-span-2 panel p-4 sm:p-5 min-w-0">
             <h3 class="text-lg font-semibold text-white mb-3">Progress Checklist</h3>
             <div id="progress-list" class="space-y-2 text-sm">
               <p class="text-slate-400">Loading...</p>
@@ -101,20 +101,20 @@
           </div>
         </div>
 
-        <div class="panel p-5">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-white">Recent Recommendations</h3>
-            <a href="/recommendations.html" class="text-violet-300 hover:text-violet-200 text-sm">View all</a>
+        <div class="panel p-4 sm:p-5 min-w-0">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white min-w-0">Recent Recommendations</h3>
+            <a href="/recommendations.html" class="shrink-0 text-violet-300 hover:text-violet-200 text-sm">View all</a>
           </div>
           <div id="recs-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <p class="text-slate-400">No recommendations yet.</p>
           </div>
         </div>
 
-        <div class="panel p-5">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-white">My Consultations</h3>
-            <a href="/consultations.html" class="text-violet-300 hover:text-violet-200 text-sm">Open consultations</a>
+        <div class="panel p-4 sm:p-5 min-w-0">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white min-w-0">My Consultations</h3>
+            <a href="/consultations.html" class="shrink-0 text-violet-300 hover:text-violet-200 text-sm">Open consultations</a>
           </div>
           <div id="consults-list" class="space-y-2">
             <p class="text-slate-400">No consultations yet. Create one to chat with a specialist.</p>
@@ -200,7 +200,8 @@
         if (status.isPro) {
           const until = status.activeUntil ? ` until ${String(status.activeUntil).slice(0, 10)}` : '';
           indicator.textContent = `Plan: Pro (${status.planName || 'Active'}${until})`;
-          indicator.className = 'inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-emerald-900/30 text-emerald-300 border-emerald-700/40';
+          indicator.className =
+            'mx-auto mt-3 max-w-full px-3 py-2 rounded-xl text-xs border bg-emerald-900/30 text-emerald-300 border-emerald-700/40 text-left leading-snug break-words';
           if (consultLink) {
             consultLink.href = '/consultations.html';
             consultLink.className = 'block mini-tile px-4 py-3 hover:border-violet-400/60';
@@ -208,7 +209,8 @@
           }
         } else {
           indicator.textContent = `Plan: ${status.planName || 'Free'}`;
-          indicator.className = 'inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700';
+          indicator.className =
+            'mx-auto mt-3 max-w-full px-3 py-2 rounded-xl text-xs border bg-slate-800 text-slate-300 border-slate-700 text-left leading-snug break-words';
           if (consultLink) {
             consultLink.href = '/consultations.html';
             consultLink.className = 'block mini-tile px-4 py-3 hover:border-violet-400/60';
@@ -218,7 +220,8 @@
         return status;
       } catch (_err) {
         indicator.textContent = 'Plan: Free';
-        indicator.className = 'inline-block mt-3 px-3 py-1 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700';
+        indicator.className =
+          'mx-auto mt-3 max-w-full px-3 py-2 rounded-xl text-xs border bg-slate-800 text-slate-300 border-slate-700 text-left leading-snug break-words';
         if (consultLink) {
           consultLink.href = '/consultations.html';
           consultLink.className = 'block mini-tile px-4 py-3 hover:border-violet-400/60';
@@ -276,9 +279,9 @@
               : String(hp.issuesDetected);
           document.getElementById('profile-content').innerHTML = `
             <div class="grid sm:grid-cols-2 gap-3 text-sm">
-              <div class="mini-tile p-3"><p class="text-slate-400">Hair Type</p><p class="text-white font-medium">${esc(hp.hairType || 'Not set')}</p></div>
-              <div class="mini-tile p-3"><p class="text-slate-400">Scalp Condition</p><p class="text-white font-medium">${esc(hp.scalpCondition || 'Not set')}</p></div>
-              <div class="mini-tile p-3 sm:col-span-2"><p class="text-slate-400">Detected Indicators</p><p class="text-white font-medium">${esc(issues)}</p></div>
+              <div class="mini-tile p-3 min-w-0"><p class="text-slate-400">Hair Type</p><p class="text-white font-medium break-words">${esc(hp.hairType || 'Not set')}</p></div>
+              <div class="mini-tile p-3 min-w-0"><p class="text-slate-400">Scalp Condition</p><p class="text-white font-medium break-words">${esc(hp.scalpCondition || 'Not set')}</p></div>
+              <div class="mini-tile p-3 sm:col-span-2 min-w-0"><p class="text-slate-400">Detected Indicators</p><p class="text-white font-medium break-words">${esc(issues)}</p></div>
             </div>
             <a href="/results.html" class="inline-block mt-3 text-violet-300 hover:text-violet-200">Open full assessment result →</a>
           `;

@@ -144,6 +144,7 @@ function renderNav() {
     `
     : `
       ${mobileLink('/dashboard.html', 'Home', 'home')}
+      ${mobileLink('/profile-edit.html', 'Profile', 'users')}
       ${mobileLink('/assessment.html', 'Assessment', 'assessment')}
       ${mobileLink('/recommendations.html', 'Products', 'products')}
       ${mobileLink('/consultations.html', 'Consultations', 'consult')}
@@ -168,14 +169,14 @@ function renderNav() {
 
   return `
     <nav class="z-40">
-      <div class="md:hidden sticky top-0 z-[58] bg-slate-900/95 backdrop-blur border-b border-slate-700/40 px-4 py-2 flex items-center justify-between gap-2">
-        <a href="/" class="flex items-center gap-2 text-white font-semibold">
-          <span class="text-xl icon-bounce">${brandMark('h-6 w-6 text-violet-300')}</span>
-          <span>Hairvelous</span>
+      <div class="md:hidden sticky top-0 z-[58] w-full max-w-full min-w-0 bg-slate-900/95 backdrop-blur border-b border-slate-700/40 px-4 py-2 flex items-center justify-between gap-2">
+        <a href="/" class="flex min-w-0 flex-1 items-center gap-2 text-white font-semibold">
+          <span class="shrink-0 text-xl icon-bounce">${brandMark('h-6 w-6 text-violet-300')}</span>
+          <span class="truncate">Hairvelous</span>
         </a>
         ${
           isLoggedIn
-            ? `<button type="button" id="mobile-menu-toggle" class="inline-flex items-center rounded-lg border border-slate-700/80 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800/70 hover:text-white transition-colors" aria-expanded="false" aria-controls="mobile-menu-panel">Menu</button>`
+            ? `<button type="button" id="mobile-menu-toggle" class="inline-flex shrink-0 items-center rounded-lg border border-slate-700/80 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800/70 hover:text-white transition-colors" aria-expanded="false" aria-controls="mobile-menu-panel">Menu</button>`
             : `<div class="flex items-center gap-2">
                  ${navLink('/landing.html', 'Home')}
                  ${navLink('/login.html', 'Login')}
@@ -200,6 +201,16 @@ function renderNav() {
                         </div>`
                      : ''
                  }
+                <a href="/profile-edit.html" class="mb-3 flex items-center gap-3 rounded-xl border border-slate-700/80 bg-slate-800/55 px-3 py-2.5 hover:bg-slate-800/80 transition-colors">
+                  <div class="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-500/35 bg-gradient-to-b from-violet-500/25 to-slate-900 text-xs font-semibold text-violet-100">
+                    <img id="mobile-account-photo"${profilePhotoSrc ? ` src="${escapeHtml(profilePhotoSrc)}"` : ''} alt="" class="absolute inset-0 h-full w-full object-cover ${profilePhotoSrc ? '' : 'hidden'}" decoding="async" />
+                    <span id="mobile-account-initial" class="${profilePhotoSrc ? 'hidden' : ''}">${accountInitial}</span>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-[11px] uppercase tracking-wide text-slate-500">Account</p>
+                    <p class="truncate text-sm font-medium text-slate-200">${escapeHtml((user && user.name) || (user && user.email) || 'Profile')}</p>
+                  </div>
+                </a>
                  <nav class="space-y-2">${mobileUserLinks}</nav>
                  <button type="button" onclick="logout()" class="mt-5 w-full rounded-xl border border-slate-700/80 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 hover:text-white">Logout</button>
                </div>
@@ -346,32 +357,36 @@ function escapeHtml(v) {
 
 /** Profile picture in the sidebar; falls back to initial letter. Keeps localStorage user.profilePhotoUrl in sync when called from profile-edit. */
 function syncAccountAvatarFromProfile(url) {
-  const img = document.getElementById('sidebar-account-photo');
-  const initial = document.getElementById('sidebar-account-initial');
-  if (!img || !initial) return;
   const safe = url && typeof url === 'string' && url.trim().startsWith('/') ? url.trim() : '';
-  if (!safe) {
-    img.removeAttribute('src');
-    img.classList.add('hidden');
-    initial.classList.remove('hidden');
-    return;
-  }
-  img.alt = 'Profile';
-  const showPhoto = () => {
-    img.classList.remove('hidden');
-    initial.classList.add('hidden');
-  };
-  const showInitial = () => {
-    img.classList.add('hidden');
-    initial.classList.remove('hidden');
-  };
-  img.onload = () => showPhoto();
-  img.onerror = () => showInitial();
-  if (img.getAttribute('src') === safe) {
-    if (img.complete && img.naturalWidth > 0) showPhoto();
-    return;
-  }
-  img.src = safe;
+  const targets = [
+    { img: document.getElementById('sidebar-account-photo'), initial: document.getElementById('sidebar-account-initial') },
+    { img: document.getElementById('mobile-account-photo'), initial: document.getElementById('mobile-account-initial') },
+  ];
+  targets.forEach(({ img, initial }) => {
+    if (!img || !initial) return;
+    if (!safe) {
+      img.removeAttribute('src');
+      img.classList.add('hidden');
+      initial.classList.remove('hidden');
+      return;
+    }
+    img.alt = 'Profile';
+    const showPhoto = () => {
+      img.classList.remove('hidden');
+      initial.classList.add('hidden');
+    };
+    const showInitial = () => {
+      img.classList.add('hidden');
+      initial.classList.remove('hidden');
+    };
+    img.onload = () => showPhoto();
+    img.onerror = () => showInitial();
+    if (img.getAttribute('src') === safe) {
+      if (img.complete && img.naturalWidth > 0) showPhoto();
+      return;
+    }
+    img.src = safe;
+  });
 }
 
 window.HairvelousUpdateAccountAvatar = syncAccountAvatarFromProfile;

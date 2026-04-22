@@ -232,9 +232,12 @@
     }
 
     function expiryText(p) {
-      if (p.expiryType === 'date' && p.expiryDate) return 'Expires: ' + p.expiryDate;
-      if (p.expiryType === 'period_after_opening' && p.expiryPeriodMonths) {
-        return 'Use within ' + p.expiryPeriodMonths + ' months after opening';
+      const type = p.expiryType || p.expiry_type || 'not_applicable';
+      const date = p.expiryDate || p.expiry_date;
+      const months = p.expiryPeriodMonths != null ? p.expiryPeriodMonths : p.expiry_period_months;
+      if (type === 'date' && date) return 'Expires: ' + date;
+      if (type === 'period_after_opening' && months) {
+        return 'Use within ' + months + ' months after opening';
       }
       return 'Expiry: Not applicable';
     }
@@ -357,7 +360,7 @@
       const noMatch = document.getElementById('no-match');
       const showingCount = document.getElementById('showing-count');
 
-      const items = getFilteredAndSortedItems();
+      const items = getFilteredAndSortedItems().filter((p) => p.productId != null);
 
       noProducts.classList.add('hidden');
       noMatch.classList.add('hidden');
@@ -379,9 +382,10 @@
       grid.innerHTML = items.map(p => `
         <div class="bg-slate-800/55 rounded-xl border border-slate-700/80 overflow-hidden hover:border-violet-500/50 transition-all duration-200 flex flex-col shadow-sm">
           <div class="aspect-[4/3] bg-white flex items-center justify-center text-slate-500 overflow-hidden p-2" data-thumb-wrap>
-            ${p.imageUrl
-              ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" class="w-full h-full object-contain" data-thumb-img />`
-              : `<svg class="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`
+            ${
+              p.imageUrl
+                ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" class="w-full h-full object-contain" data-thumb-img decoding="async" onerror="this.classList.add('hidden');var ph=this.parentElement&&this.parentElement.querySelector('[data-thumb-fallback]');if(ph)ph.classList.remove('hidden');" /><div class="hidden h-full w-full flex items-center justify-center text-slate-500" data-thumb-fallback><svg class="h-16 w-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>`
+                : `<svg class="h-16 w-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`
             }
           </div>
           <div class="p-4 flex flex-col flex-1">
@@ -433,22 +437,82 @@
       if (showingCount) showingCount.textContent = 'Showing 0 products';
     }
 
+    function parseCategoriesField(raw) {
+      if (raw == null || raw === '') return [];
+      if (Array.isArray(raw)) {
+        return raw.map((c) => String(c).trim()).filter(Boolean);
+      }
+      if (typeof raw === 'string') {
+        return raw.split(',').map((c) => c.trim()).filter(Boolean);
+      }
+      return [];
+    }
+
+    function coerceProductId(p) {
+      const v = p.productId ?? p.product_id ?? p.id;
+      if (v == null || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    /** Match server logic: absolute URLs and leading / stay; bare paths get a leading slash. */
+    function normalizeCatalogImageUrl(img) {
+      if (img == null || img === '') return null;
+      const s = String(img).trim();
+      if (!s) return null;
+      if (/^https?:\/\//i.test(s)) return s;
+      if (s.startsWith('/')) return s;
+      return '/' + s.replace(/^\//, '');
+    }
+
     function normalizeProductToRecommendation(p) {
-      const cats = (p.categories || []);
-      const categoryList = Array.isArray(cats) ? cats.map(c => (typeof c === 'string' ? c.trim() : c)).filter(Boolean) : [];
+      if (!p || typeof p !== 'object') {
+        return {
+          productId: null,
+          name: 'Untitled product',
+          brand: null,
+          description: null,
+          imageUrl: null,
+          price: 0,
+          reason: '',
+          matchScore: 0,
+          isRecommended: false,
+          expiryType: 'not_applicable',
+          expiryDate: null,
+          expiryPeriodMonths: null,
+          categories: [],
+        };
+      }
+      const productId = coerceProductId(p);
+      const rawName =
+        (p.name != null && String(p.name).trim()) ||
+        (p.title != null && String(p.title).trim()) ||
+        '';
+      const name = rawName || 'Untitled product';
+      const brandRaw = p.brand != null ? String(p.brand).trim() : '';
+      const brand = brandRaw ? brandRaw : null;
+      const categoryList = parseCategoriesField(p.categories);
+      const expiryType = p.expiryType || p.expiry_type || 'not_applicable';
+      const expiryDate = p.expiryDate || p.expiry_date || null;
+      const periodRaw = p.expiryPeriodMonths ?? p.expiry_period_months;
       return {
-        productId: p.productId,
-        name: p.name,
-        brand: p.brand || null,
-        description: p.description || null,
-        imageUrl: p.imageUrl || null,
-        price: p.price != null ? Number(p.price) : 0,
-        reason: p.reason || '',
-        matchScore: p.matchScore != null ? Number(p.matchScore) : 0,
+        productId,
+        name,
+        brand,
+        description: p.description != null ? String(p.description) : null,
+        imageUrl: normalizeCatalogImageUrl(p.imageUrl ?? p.image_url),
+        price: p.price != null && p.price !== '' ? Number(p.price) : 0,
+        reason: p.reason != null ? String(p.reason) : '',
+        matchScore:
+          p.matchScore != null
+            ? Number(p.matchScore)
+            : p.match_score != null
+              ? Number(p.match_score)
+              : 0,
         isRecommended: !!p.isRecommended,
-        expiryType: p.expiryType || 'not_applicable',
-        expiryDate: p.expiryDate || null,
-        expiryPeriodMonths: p.expiryPeriodMonths != null ? Number(p.expiryPeriodMonths) : null,
+        expiryType,
+        expiryDate,
+        expiryPeriodMonths: periodRaw != null && periodRaw !== '' ? Number(periodRaw) : null,
         categories: categoryList,
       };
     }
