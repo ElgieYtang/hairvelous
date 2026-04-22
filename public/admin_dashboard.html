@@ -112,6 +112,22 @@
         <p class="text-slate-400">Loading...</p>
       </div>
     </section>
+
+    <section id="payout-requests" class="mb-10">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-xl font-semibold text-white">Specialist Payout Requests</h2>
+        <button
+          type="button"
+          id="payout-refresh-btn"
+          class="rounded-md border border-slate-600/80 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700"
+        >
+          Refresh
+        </button>
+      </div>
+      <div id="payout-requests-content" class="bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80">
+        <p class="text-slate-400">Loading...</p>
+      </div>
+    </section>
   </main>
 
   <script src="/js/app.js"></script>
@@ -240,8 +256,32 @@
       return map[s] || (s ? s : '—');
     }
 
+    function payoutStatusBadgeClass(v) {
+      const s = String(v || '').toLowerCase();
+      if (s === 'requested') return 'bg-amber-500/20 text-amber-200 border border-amber-500/40';
+      if (s === 'approved') return 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40';
+      if (s === 'paid') return 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40';
+      if (s === 'rejected') return 'bg-rose-500/20 text-rose-200 border border-rose-500/40';
+      return 'bg-slate-700/60 text-slate-200 border border-slate-600/60';
+    }
+
     function consultationDateValue(r) {
       return r.paidVerifiedAt || r.completedAt || null;
+    }
+
+    function consultationDateTime(r) {
+      const value = consultationDateValue(r);
+      if (!value) return 0;
+      const dt = new Date(value);
+      return Number.isNaN(dt.getTime()) ? 0 : dt.getTime();
+    }
+
+    function sortTransactionsByNewest(rows) {
+      return [...(rows || [])].sort((a, b) => {
+        const dateDiff = consultationDateTime(b) - consultationDateTime(a);
+        if (dateDiff !== 0) return dateDiff;
+        return Number(b.consultationId || 0) - Number(a.consultationId || 0);
+      });
     }
 
     function formatConsultationDate(value) {
@@ -257,8 +297,21 @@
       });
     }
 
+    function formatSimpleDate(value) {
+      if (!value) return '—';
+      const dt = new Date(value);
+      if (Number.isNaN(dt.getTime())) return String(value);
+      return dt.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
     function downloadCommissionCsv(rows, rangeKey) {
-      const filtered = applyCommissionRange(rows, rangeKey);
+      const filtered = sortTransactionsByNewest(applyCommissionRange(rows, rangeKey));
       if (!filtered.length) {
         showToast('No transactions to export for selected range.', 'info');
         return;
@@ -310,7 +363,7 @@
     }
 
     function printCommissionReport(rows, rangeKey) {
-      const filtered = applyCommissionRange(rows, rangeKey);
+      const filtered = sortTransactionsByNewest(applyCommissionRange(rows, rangeKey));
       if (!filtered.length) {
         showToast('No transactions to print for selected range.', 'info');
         return;
@@ -393,19 +446,25 @@
     function renderCommissionAnalytics(rows, rangeKey) {
       const root = document.getElementById('commission-content');
       if (!root) return;
-      const filtered = applyCommissionRange(rows, rangeKey);
+      const filtered = sortTransactionsByNewest(applyCommissionRange(rows, rangeKey));
       const totals = filtered.reduce(
         (acc, r) => {
           acc.gross += Number(r.grossPhp != null ? r.grossPhp : r.amountPhp || 0);
           acc.commission += Number(r.commissionPhp || 0);
           acc.net += Number(r.specialistNetPhp || 0);
-          if (String(r.payoutStatus || '').toLowerCase() === 'paid') acc.paidOut += Number(r.specialistNetPhp || 0);
+          const payoutStatus = String(r.payoutStatus || '').toLowerCase();
+          if (payoutStatus === 'paid') {
+            acc.paidOut += Number(r.specialistNetPhp || 0);
+          }
+          if (payoutStatus === 'requested' || payoutStatus === 'approved') {
+            acc.pendingRequested += Number(r.specialistNetPhp || 0);
+          }
           return acc;
         },
-        { gross: 0, commission: 0, net: 0, paidOut: 0 }
+        { gross: 0, commission: 0, net: 0, paidOut: 0, pendingRequested: 0 }
       );
-      const pendingPayout = Math.max(0, totals.net - totals.paidOut);
-      const recent = filtered.slice(0, 8);
+      const pendingPayout = Math.max(0, totals.pendingRequested);
+      const recent = filtered;
 
       root.innerHTML = `
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
@@ -427,7 +486,7 @@
             </div>
           </div>
           <div class="mt-5 pt-4 border-t border-slate-700/60">
-            <p class="text-sm text-slate-300 font-medium mb-3">Recent paid consultations (${filtered.length} in selected range)</p>
+            <p class="text-sm text-slate-300 font-medium mb-3">Paid consultations (${filtered.length} in selected range)</p>
             ${
               recent.length
                   ? `<div class="overflow-x-auto rounded-lg border border-slate-800/70">
@@ -500,9 +559,172 @@
       }
     }
 
+    function actionButtonsForPayout(row) {
+      const status = String((row && row.status) || '').toLowerCase();
+      const id = Number(row && row.payoutRequestId);
+      if (!Number.isFinite(id)) return '';
+
+      if (status === 'requested') {
+        return `
+          <div class="flex flex-wrap gap-2">
+            <button type="button" data-action="approve" data-id="${id}" class="payout-action-btn rounded-md border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-xs font-medium text-cyan-200 hover:bg-cyan-500/20">Approve</button>
+            <button type="button" data-action="paid" data-id="${id}" class="payout-action-btn rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-200 hover:bg-emerald-500/20">Mark Paid</button>
+            <button type="button" data-action="reject" data-id="${id}" class="payout-action-btn rounded-md border border-rose-500/40 bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-200 hover:bg-rose-500/20">Reject</button>
+          </div>
+        `;
+      }
+
+      if (status === 'approved') {
+        return `
+          <div class="flex flex-wrap gap-2">
+            <button type="button" data-action="paid" data-id="${id}" class="payout-action-btn rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-200 hover:bg-emerald-500/20">Mark Paid</button>
+            <button type="button" data-action="reject" data-id="${id}" class="payout-action-btn rounded-md border border-rose-500/40 bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-200 hover:bg-rose-500/20">Reject</button>
+          </div>
+        `;
+      }
+
+      return '<span class="text-slate-500 text-xs">No actions</span>';
+    }
+
+    async function processPayoutAction(payoutRequestId, action) {
+      const id = Number(payoutRequestId);
+      if (!Number.isFinite(id)) return;
+
+      const actionText = action === 'paid' ? 'mark as paid' : action;
+      const confirmed = window.confirm(`Are you sure you want to ${actionText} payout request #${id}?`);
+      if (!confirmed) return;
+
+      const note = window.prompt('Optional admin note (leave blank to skip):', '') || '';
+      try {
+        await api(`/consultations/admin/payout-requests/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, note: note.trim() || null }),
+        });
+        showToast(`Payout request #${id} updated.`, 'success');
+        await Promise.all([loadPayoutRequests(), loadCommissionAnalytics()]);
+      } catch (err) {
+        showToast(err.error || 'Failed to process payout request', 'error');
+      }
+    }
+
+    function bindPayoutActionButtons() {
+      document.querySelectorAll('.payout-action-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const payoutRequestId = btn.getAttribute('data-id');
+          const action = btn.getAttribute('data-action');
+          processPayoutAction(payoutRequestId, action);
+        });
+      });
+    }
+
+    function renderPayoutRequests(rows) {
+      const root = document.getElementById('payout-requests-content');
+      if (!root) return;
+
+      const list = [...(rows || [])].sort((a, b) => {
+        const aTime = new Date(a.requestedAt || 0).getTime() || 0;
+        const bTime = new Date(b.requestedAt || 0).getTime() || 0;
+        if (bTime !== aTime) return bTime - aTime;
+        return Number(b.payoutRequestId || 0) - Number(a.payoutRequestId || 0);
+      });
+
+      const totals = list.reduce(
+        (acc, r) => {
+          const amount = Number(r.netPhp || 0);
+          const status = String(r.status || '').toLowerCase();
+          if (status === 'requested') acc.pending += amount;
+          if (status === 'approved') acc.approved += amount;
+          if (status === 'paid') acc.paid += amount;
+          return acc;
+        },
+        { pending: 0, approved: 0, paid: 0 }
+      );
+
+      root.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-5">
+          <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+            <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Pending Requests</p>
+            <p class="text-xl font-bold text-amber-300 tabular-nums break-words">${money(totals.pending)}</p>
+          </div>
+          <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+            <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Approved Awaiting Release</p>
+            <p class="text-xl font-bold text-cyan-300 tabular-nums break-words">${money(totals.approved)}</p>
+          </div>
+          <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+            <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Paid Out</p>
+            <p class="text-xl font-bold text-emerald-300 tabular-nums break-words">${money(totals.paid)}</p>
+          </div>
+        </div>
+        ${
+          list.length
+            ? `<div class="overflow-x-auto rounded-lg border border-slate-800/70">
+                <table class="min-w-[980px] w-full text-xs md:text-sm">
+                  <thead>
+                    <tr class="text-left text-slate-500 border-b border-slate-700/70">
+                      <th class="py-2 pr-3 whitespace-nowrap">Request</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Specialist</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Period</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Requested At</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Amount</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Items</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Status</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Processed At</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Note</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${list
+                      .map(
+                        (r) => `<tr class="border-b border-slate-800/70 align-top">
+                          <td class="py-2 pr-3 text-slate-200 whitespace-nowrap">#${r.payoutRequestId || '—'}</td>
+                          <td class="py-2 pr-3 text-slate-300">
+                            <div class="font-medium text-slate-200">${r.specialistName || '—'}</div>
+                            <div class="text-[11px] text-slate-500">${r.specialistEmail || ''}</div>
+                          </td>
+                          <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatSimpleDate(r.periodStart)} - ${formatSimpleDate(r.periodEnd)}</td>
+                          <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatSimpleDate(r.requestedAt)}</td>
+                          <td class="py-2 pr-3 text-slate-200 whitespace-nowrap">${money(r.netPhp)}</td>
+                          <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${Number(r.itemCount || 0)}</td>
+                          <td class="py-2 pr-3 whitespace-nowrap">
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${payoutStatusBadgeClass(r.status)}">${payoutStatusLabel(r.status)}</span>
+                          </td>
+                          <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatSimpleDate(r.processedAt)}</td>
+                          <td class="py-2 pr-3 text-slate-400">${r.adminNote || '—'}</td>
+                          <td class="py-2 pr-3 whitespace-nowrap">${actionButtonsForPayout(r)}</td>
+                        </tr>`
+                      )
+                      .join('')}
+                  </tbody>
+                </table>
+              </div>`
+            : '<p class="text-slate-500 text-sm">No payout requests found yet.</p>'
+        }
+      `;
+
+      bindPayoutActionButtons();
+    }
+
+    async function loadPayoutRequests() {
+      const root = document.getElementById('payout-requests-content');
+      if (!root) return;
+      try {
+        const data = await api('/consultations/admin/payout-requests');
+        const rows = Array.isArray(data.payoutRequests) ? data.payoutRequests : [];
+        renderPayoutRequests(rows);
+      } catch (err) {
+        root.innerHTML = '<p class="text-rose-300">Failed to load payout requests.</p>';
+        showToast(err.error || 'Failed to load payout requests', 'error');
+      }
+    }
+
     loadReports();
     loadConsultationQueueSummary();
     loadCommissionAnalytics();
+    loadPayoutRequests();
+    const payoutRefreshBtn = document.getElementById('payout-refresh-btn');
+    if (payoutRefreshBtn) payoutRefreshBtn.addEventListener('click', loadPayoutRequests);
   </script>
 </body>
 </html>

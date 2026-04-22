@@ -4,6 +4,10 @@
  * Purpose: Comprehensive rule-based product recommendations with routine plans
  */
 const pool = require('../config/db');
+const MAX_RECOMMENDED_RESULTS = (() => {
+  const n = Number(process.env.MAX_RECOMMENDED_RESULTS || 20);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 20;
+})();
 
 /** GROUP_CONCAT returns a string, but follow-up code may pass an array — never call .split on non-strings. */
 function parseCategoryList(raw) {
@@ -196,11 +200,11 @@ class RecommendationService {
 
     // Sort by score and take top matches; if nothing scores, still show catalog picks
     scoredProducts.sort((a, b) => b.score - a.score);
-    let topProducts = scoredProducts.slice(0, 10).filter((p) => p.score > 0);
+    let topProducts = scoredProducts.slice(0, MAX_RECOMMENDED_RESULTS).filter((p) => p.score > 0);
     let usedFallback = false;
     if (topProducts.length === 0 && scoredProducts.length > 0) {
       usedFallback = true;
-      topProducts = scoredProducts.slice(0, 8).map((p) => ({
+      topProducts = scoredProducts.slice(0, Math.min(8, MAX_RECOMMENDED_RESULTS)).map((p) => ({
         ...p,
         score: Math.max(0.01, Number(p.score) || 0),
       }));
@@ -261,7 +265,7 @@ class RecommendationService {
     }
 
     const result = {
-      recommendations: recommendations.slice(0, 10), // Max 10 products
+      recommendations: recommendations.slice(0, MAX_RECOMMENDED_RESULTS),
       routinePlan,
       warnings,
       diyGuides,

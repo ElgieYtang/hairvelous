@@ -285,9 +285,52 @@
     }
 
     function getFilteredAndSortedItems() {
+      const preferredType = (document.getElementById('productType')?.value || 'all').toLowerCase();
+      const typeMap = {
+        shampoo: {
+          keywords: ['shampoo', 'cleanser', 'scalp wash'],
+          categoryHints: ['anti-dandruff', 'clarifying/oily scalp'],
+        },
+        conditioner: {
+          keywords: ['conditioner', 'rinse-out', 'daily treatment'],
+          categoryHints: ['moisturizing'],
+        },
+        serum: {
+          keywords: ['serum', 'oil', 'tonic', 'elixir', 'leave-on'],
+          categoryHints: ['anti-frizz', 'clarifying/oily scalp'],
+        },
+        mask: {
+          keywords: ['mask', 'treatment', 'deep repair', 'hair butter'],
+          categoryHints: ['moisturizing', 'anti-frizz'],
+        },
+      };
+      const matchesSelectedType = (item) => {
+        if (preferredType === 'all') return true;
+        const conf = typeMap[preferredType];
+        if (!conf) return true;
+        const haystack = `${item.name || ''} ${item.description || ''}`.toLowerCase();
+        const categories = Array.isArray(item.categories)
+          ? item.categories.map((c) => String(c || '').toLowerCase())
+          : [];
+        const keywordHit = (conf.keywords || []).some((kw) => haystack.includes(kw));
+        const categoryHit = (conf.categoryHints || []).some((hint) => categories.includes(hint));
+
+        if (preferredType === 'conditioner') {
+          // Avoid broad moisturizing-only false positives for conditioner.
+          return keywordHit;
+        }
+        if (preferredType === 'mask') {
+          // Mask should be strict to avoid pulling regular shampoos/conditioners.
+          return keywordHit;
+        }
+        // Shampoo/serum: keyword is primary, category hint is fallback.
+        return keywordHit || categoryHit;
+      };
+
       let items = allRecommendations.filter(r => {
         if (selectedCategory && (!r.categories || !r.categories.includes(selectedCategory))) return false;
         if (selectedBrands.size > 0 && (!r.brand || !selectedBrands.has(r.brand))) return false;
+        if (!matchesSelectedType(r)) return false;
         const q = (document.getElementById('search-products')?.value || '').trim().toLowerCase();
         if (q && !(r.name && r.name.toLowerCase().includes(q)) && !(r.brand && r.brand.toLowerCase().includes(q))) return false;
         return true;
@@ -335,9 +378,9 @@
 
       grid.innerHTML = items.map(p => `
         <div class="bg-slate-800/55 rounded-xl border border-slate-700/80 overflow-hidden hover:border-violet-500/50 transition-all duration-200 flex flex-col shadow-sm">
-          <div class="aspect-[4/3] bg-slate-700/40 flex items-center justify-center text-slate-500 overflow-hidden" data-thumb-wrap>
+          <div class="aspect-[4/3] bg-white flex items-center justify-center text-slate-500 overflow-hidden p-2" data-thumb-wrap>
             ${p.imageUrl
-              ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" class="w-full h-full object-cover" data-thumb-img />`
+              ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" class="w-full h-full object-contain" data-thumb-img />`
               : `<svg class="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`
             }
           </div>

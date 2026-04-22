@@ -10,6 +10,7 @@
     "db:bootstrap": "node scripts/bootstrap-db.js",
     "db:seed": "node scripts/seed-db.js",
     "db:sync-core-products": "node scripts/sync-core-products.js",
+    "db:sync-ph-products": "node scripts/sync-ph-products.js",
     "db:prepare-defense-demo": "node scripts/prepare-defense-demo.js",
     "db:fix-products-columns": "node scripts/fix-products-columns.js",
     "db:fix-hair-photos": "node scripts/fix-hair-photos-table.js",

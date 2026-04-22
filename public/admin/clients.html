@@ -75,7 +75,11 @@
         <tr class="hover:bg-slate-800/30">
           <td class="p-4">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-violet-600/30 flex items-center justify-center text-lg shrink-0">U</div>
+              ${
+                c.profilePhotoUrl
+                  ? `<img src="${escapeHtml(c.profilePhotoUrl)}" alt="${escapeHtml(c.name || 'Client')}" class="w-10 h-10 rounded-full object-cover shrink-0 ring-1 ring-slate-600/70" />`
+                  : `<div class="w-10 h-10 rounded-full bg-violet-600/30 flex items-center justify-center text-sm font-semibold shrink-0">${escapeHtml(initials(c.name || 'U'))}</div>`
+              }
               <span class="font-medium text-white">${escapeHtml(c.name || '—')}</span>
             </div>
           </td>
@@ -90,6 +94,13 @@
       const div = document.createElement('div');
       div.textContent = s;
       return div.innerHTML;
+    }
+
+    function initials(name) {
+      const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return 'U';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
 
     function filterClients() {

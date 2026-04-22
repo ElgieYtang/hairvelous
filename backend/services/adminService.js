@@ -6,6 +6,13 @@
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
 
+function toUrl(filePath) {
+  if (!filePath) return null;
+  const normalized = String(filePath).replace(/\\/g, '/');
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) return normalized;
+  return '/' + normalized.replace(/^\/+/, '');
+}
+
 class AdminService {
   constructor() {
     this.userSuspensionColumnReady = false;
@@ -42,9 +49,10 @@ class AdminService {
   async listClients() {
     await this.ensureUserSuspensionColumn();
     const [rows] = await pool.query(
-      `SELECT u.user_id, u.name, u.email, u.date_created, u.is_suspended
+      `SELECT u.user_id, u.name, u.email, u.date_created, u.is_suspended, up.profile_photo_path
        FROM users u
        JOIN roles r ON u.role_id = r.role_id
+       LEFT JOIN user_profiles up ON up.user_id = u.user_id
        WHERE r.role_name = 'user'
        ORDER BY u.date_created DESC`
     );
@@ -54,6 +62,7 @@ class AdminService {
       email: r.email,
       dateCreated: r.date_created,
       isSuspended: !!r.is_suspended,
+      profilePhotoUrl: toUrl(r.profile_photo_path),
     }));
   }
 

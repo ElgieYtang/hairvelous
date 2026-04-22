@@ -528,6 +528,10 @@ class ConsultationService {
       specialistUserId: r.specialist_user_id,
       specialistName: r.specialist_name,
       specialistEmail: r.specialist_email,
+      userProfilePhotoUrl: r.user_profile_photo_path ? this.toImageUrl(r.user_profile_photo_path) : null,
+      specialistProfilePhotoUrl: r.specialist_profile_photo_path
+        ? this.toImageUrl(r.specialist_profile_photo_path)
+        : null,
       concernTitle: r.concern_title,
       concernMessage: r.concern_message,
       preferredDate: r.preferred_date,
@@ -714,11 +718,15 @@ class ConsultationService {
               cf.rating AS feedback_rating, cf.feedback_text, cf.created_at AS feedback_created_at,
               u.name AS user_name, u.email AS user_email,
               s.name AS specialist_name, s.email AS specialist_email,
+              up_user.profile_photo_path AS user_profile_photo_path,
+              up_spec.profile_photo_path AS specialist_profile_photo_path,
               sr.avg_rating AS specialist_rating_avg, sr.total_reviews AS specialist_rating_count,
               CASE WHEN pro_sub.subscription_id IS NULL THEN 0 ELSE 1 END AS is_pro_user
        FROM consultations c
        JOIN users u ON u.user_id = c.user_id
        LEFT JOIN users s ON s.user_id = c.specialist_user_id
+       LEFT JOIN user_profiles up_user ON up_user.user_id = c.user_id
+       LEFT JOIN user_profiles up_spec ON up_spec.user_id = c.specialist_user_id
        LEFT JOIN consultation_feedback cf ON cf.consultation_id = c.consultation_id AND cf.user_id = c.user_id
        LEFT JOIN (
          SELECT specialist_user_id, ROUND(AVG(rating), 2) AS avg_rating, COUNT(*) AS total_reviews
@@ -890,6 +898,11 @@ class ConsultationService {
         values.push(payload.declineReason != null ? String(payload.declineReason).trim() || null : null);
       } else if (payload.status !== undefined) {
         const st = assertStatusTransition(existing.status, payload.status);
+        if (st === 'cancelled' && String(existing.payment_status || '') === 'verified') {
+          const e = new Error('Cannot cancel a paid consultation directly. Use refund flow first.');
+          e.status = 409;
+          throw e;
+        }
         if (st === 'scheduled' && (!payload.meetingUrl || !String(payload.meetingUrl).trim())) {
           throw new Error('Meeting link is required before scheduling a paid consultation');
         }
@@ -1304,9 +1317,10 @@ class ConsultationService {
 
     const [rows] = await pool.query(
       `SELECT cm.message_id, cm.sender_user_id, cm.sender_role, cm.message_text, cm.image_path, cm.created_at,
-              u.name AS sender_name
+              u.name AS sender_name, up.profile_photo_path AS sender_profile_photo_path
        FROM consultation_messages cm
        JOIN users u ON u.user_id = cm.sender_user_id
+       LEFT JOIN user_profiles up ON up.user_id = cm.sender_user_id
        WHERE cm.consultation_id = ?
        ORDER BY cm.created_at ASC, cm.message_id ASC`,
       [id]
@@ -1316,6 +1330,7 @@ class ConsultationService {
       senderUserId: r.sender_user_id,
       senderRole: r.sender_role,
       senderName: r.sender_name,
+      senderPhotoUrl: r.sender_profile_photo_path ? this.toImageUrl(r.sender_profile_photo_path) : null,
       messageText: r.message_text,
       imageUrl: r.image_path ? this.toImageUrl(r.image_path) : null,
       createdAt: r.created_at,
@@ -1939,7 +1954,7 @@ class ConsultationService {
        LEFT JOIN specialist_earnings_ledger el ON el.consultation_id = c.consultation_id
        LEFT JOIN specialist_payout_requests pr ON pr.payout_request_id = el.payout_request_id
        WHERE c.payment_status = 'verified'
-       ORDER BY c.updated_at DESC
+       ORDER BY COALESCE(c.paid_verified_at, c.completed_at, c.updated_at) DESC, c.consultation_id DESC
        LIMIT 500`
     );
     return {

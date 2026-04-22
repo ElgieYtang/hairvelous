@@ -2785,6 +2785,10 @@
       const modBtn = 'rounded-lg px-3 py-2 text-xs font-medium transition';
       let staffActions = '';
       if (isModerator) {
+        const canAdminCancel = pay !== 'verified';
+        const cancelControl = canAdminCancel
+          ? `<button type="button" data-act="cancelled" data-id="${c.consultationId}" class="${modBtn} bg-red-600/35 text-red-100 hover:bg-red-600/55">Cancel</button>`
+          : `<span class="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-[11px] font-medium text-amber-200">Paid consultation: cancel is disabled</span>`;
         const verifyBlock =
           pay === 'pending_review'
             ? `<div class="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/[0.08] p-3">
@@ -2816,7 +2820,7 @@
               <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Case</p>
               <div class="flex flex-wrap gap-2">
                 <button type="button" data-notes="${c.consultationId}" class="${modBtn} bg-violet-600/35 text-violet-100 hover:bg-violet-600/55">Notes</button>
-                <button type="button" data-act="cancelled" data-id="${c.consultationId}" class="${modBtn} bg-red-600/35 text-red-100 hover:bg-red-600/55">Cancel</button>
+                ${cancelControl}
               </div>
             </div>
           </div>${verifyBlock}`;
@@ -3148,12 +3152,15 @@
           return true;
         });
       }
-      if (!(isSpecialist && !isModerator)) return rows;
+      if (!(isSpecialist && !isModerator)) {
+        // Client view: hide admin-cancelled threads from conversation list to reduce clutter.
+        return (rows || []).filter((c) => String((c && c.status) || '') !== 'cancelled');
+      }
       const mode = specialistInboxMode === 'requests' ? 'requests' : 'conversations';
       return (rows || []).filter((c) => {
         const st = String((c && c.status) || '');
         if (mode === 'requests') return st === 'pending';
-        return st !== 'pending' && st !== 'declined';
+        return st !== 'pending' && st !== 'declined' && st !== 'cancelled';
       });
     }
 
@@ -3207,9 +3214,13 @@
           const snippet = (c.concernMessage || '').replace(/\s+/g, ' ').slice(0, 56);
           const partner = partnerNameForList(c);
           const initials = listAvatarInitials(partner);
+          const partnerPhoto = partnerPhotoForList(c);
+          const avatarHtml = partnerPhoto
+            ? `<img src="${esc(partnerPhoto)}" alt="${esc(partner)}" class="h-11 w-11 shrink-0 rounded-full object-cover ring-1 ring-slate-600/60" />`
+            : `<span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600/90 to-slate-800 text-[11px] font-bold tracking-tight text-white ring-1 ring-slate-600/50" aria-hidden="true">${esc(initials)}</span>`;
           return `
           <button type="button" data-cid="${id}" class="mb-1.5 flex w-full gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors ${active ? 'bg-violet-600/20 ring-1 ring-violet-500/35 shadow-[0_4px_20px_rgba(91,33,182,0.12)]' : 'hover:bg-slate-800/70'}">
-            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600/90 to-slate-800 text-[11px] font-bold tracking-tight text-white ring-1 ring-slate-600/50" aria-hidden="true">${esc(initials)}</span>
+            ${avatarHtml}
             <div class="min-w-0 flex-1">
               <div class="flex items-start justify-between gap-1.5">
                 <span class="truncate text-sm font-semibold text-white">${esc(partner)}</span>
@@ -3262,8 +3273,7 @@
 
         if (
           activeChatId &&
-          ((isSpecialist &&
-            !isModerator &&
+          (((!isModerator) &&
             !getVisibleConsultationsForList(rows).some((c) => Number(c.consultationId) === Number(activeChatId))) ||
             !findConsultation(activeChatId))
         ) {
@@ -3356,6 +3366,12 @@
       return 'Hair specialist';
     }
 
+    function partnerPhotoForList(c) {
+      if (!c) return null;
+      if (isModerator || isSpecialist) return c.userProfilePhotoUrl || null;
+      return c.specialistProfilePhotoUrl || null;
+    }
+
     function toDateOnly(v) {
       const d = new Date(v);
       if (Number.isNaN(d.getTime())) return '—';
@@ -3425,9 +3441,14 @@
           : 'max-w-[min(92%,28rem)] rounded-2xl rounded-bl-md border border-slate-600/45 bg-slate-700/85 px-4 py-3 text-slate-100 shadow-md shadow-black/20';
       const metaMine = 'text-violet-100/85';
       const metaOther = 'text-slate-400';
+      const senderAvatar = mine
+        ? ''
+        : m.senderPhotoUrl
+          ? '<img src="' + esc(m.senderPhotoUrl) + '" alt="' + esc(m.senderName || 'Sender') + '" class="mt-1 h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-600/60" />'
+          : '<span class="mt-1 h-8 w-8 shrink-0 rounded-full bg-slate-700/90 text-center text-[10px] font-bold leading-8 text-slate-300 ring-1 ring-slate-600/60" aria-hidden="true">' + esc(listAvatarInitials(m.senderName || '?')) + '</span>';
       return `
         <div class="flex gap-2 ${mine ? 'justify-end' : 'justify-start'}">
-          ${mine ? '' : '<span class="mt-1 h-8 w-8 shrink-0 rounded-full bg-slate-700/90 text-center text-[10px] font-bold leading-8 text-slate-300 ring-1 ring-slate-600/60" aria-hidden="true">' + esc(listAvatarInitials(m.senderName || '?')) + '</span>'}
+          ${senderAvatar}
           <div class="${bubble}">
             <div class="mb-1.5 text-[11px] font-medium ${mine ? metaMine : metaOther}">${esc(senderTag)}${assistantBadge}</div>
             ${textBlock}
