@@ -67,6 +67,33 @@ class AdminService {
   }
 
   /**
+   * List specialists only.
+   */
+  async listSpecialists() {
+    await this.ensureUserSuspensionColumn();
+    await this.ensureUserVerificationColumns();
+    const [rows] = await pool.query(
+      `SELECT u.user_id, u.name, u.email, u.date_created, u.is_suspended,
+              up.profile_photo_path, up.id_verification_status, up.consultation_rate
+       FROM users u
+       JOIN roles r ON u.role_id = r.role_id
+       LEFT JOIN user_profiles up ON up.user_id = u.user_id
+       WHERE r.role_name = 'specialist'
+       ORDER BY u.date_created DESC`
+    );
+    return rows.map(r => ({
+      userId: r.user_id,
+      name: r.name,
+      email: r.email,
+      dateCreated: r.date_created,
+      isSuspended: !!r.is_suspended,
+      consultationRate: r.consultation_rate != null ? Number(r.consultation_rate) : null,
+      idVerificationStatus: r.id_verification_status || 'not_submitted',
+      profilePhotoUrl: toUrl(r.profile_photo_path),
+    }));
+  }
+
+  /**
    * List all users
    */
   async listUsers() {

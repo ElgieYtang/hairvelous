@@ -30,6 +30,7 @@ function iconSvg(name, classes = 'h-5 w-5') {
   const icons = {
     home: `<svg class="${cls}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m2.25 12 8.954-8.955a1.125 1.125 0 0 1 1.592 0L21.75 12M4.5 9.75v10.125A1.125 1.125 0 0 0 5.625 21h12.75a1.125 1.125 0 0 0 1.125-1.125V9.75"/></svg>`,
     users: `<svg class="${cls}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18 18.72a8.96 8.96 0 0 0-6-2.22 8.96 8.96 0 0 0-6 2.22M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Zm7.5 11.25a7.5 7.5 0 0 0-5.799-7.297M16.5 3.75a3.75 3.75 0 0 1 0 7.5"/></svg>`,
+    specialist: `<svg class="${cls}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 7.5A4.5 4.5 0 1 1 12 3a4.5 4.5 0 0 1 4.5 4.5ZM5.25 19.125c0-2.9 3.022-5.25 6.75-5.25s6.75 2.35 6.75 5.25M12 9.75v3m-1.5-1.5h3"/></svg>`,
     products: `<svg class="${cls}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m2.25 7.5 9.75 4.5 9.75-4.5M4.5 6.462V17.25A2.25 2.25 0 0 0 6.75 19.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.462M3 6l8.487-3.918a1.25 1.25 0 0 1 1.026 0L21 6"/></svg>`,
     consult: `<svg class="${cls}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8.625 9.75h6.75m-6.75 3h4.5M7.5 18h9A2.25 2.25 0 0 0 18.75 15.75v-9A2.25 2.25 0 0 0 16.5 4.5h-9A2.25 2.25 0 0 0 5.25 6.75v9A2.25 2.25 0 0 0 7.5 18Zm11.25 2.25-2.44-2.44"/></svg>`,
     billing: `<svg class="${cls}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.25 8.25h19.5m-18 0V6.75A2.25 2.25 0 0 1 6 4.5h12a2.25 2.25 0 0 1 2.25 2.25v10.5A2.25 2.25 0 0 1 18 19.5H6a2.25 2.25 0 0 1-2.25-2.25V8.25Zm12 7.5h3"/></svg>`,
@@ -96,6 +97,7 @@ function renderNav() {
     ? `
       ${railLink('/admin_dashboard.html', 'Dashboard', 'home', 'Admin')}
       ${railLink('/admin/clients.html', 'Clients', 'users', 'Clients')}
+      ${railLink('/admin/specialists.html', 'Specialists', 'specialist', 'Specialists')}
       ${railLink('/product_management.html', 'Products', 'products', 'Products')}
       ${railLink('/consultations.html', 'Consultations', 'consult', 'Consult')}
       ${railLink('/admin/billing.html', 'Billing', 'billing', 'Billing')}
@@ -124,6 +126,7 @@ function renderNav() {
     ? `
       ${mobileLink('/admin_dashboard.html', 'Admin Dashboard', 'home')}
       ${mobileLink('/admin/clients.html', 'Clients', 'users')}
+      ${mobileLink('/admin/specialists.html', 'Specialists', 'specialist')}
       ${mobileLink('/product_management.html', 'Products', 'products')}
       ${mobileLink('/consultations.html', 'Consultations', 'consult')}
       ${mobileLink('/admin/billing.html', 'Billing', 'billing')}

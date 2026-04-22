@@ -10,6 +10,7 @@ const { requireAdmin } = require('../middleware/auth');
 const { body } = require('express-validator');
 
 router.get('/clients', requireAdmin, adminController.listClients);
+router.get('/specialists', requireAdmin, adminController.listSpecialists);
 router.get('/users', requireAdmin, adminController.listUsers);
 router.post('/users', requireAdmin, [
   body('name').trim().notEmpty().withMessage('Name is required'),
