@@ -12,7 +12,7 @@
   <div id="nav-placeholder"></div>
   <main class="max-w-6xl mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold text-white mb-2">Billing Review</h1>
-    <p class="text-slate-400 mb-6">Approve or reject GCash/Card payment submissions for Pro activation.</p>
+    <p class="text-slate-400 mb-6">Subscription payment records (GCash/Card) and activation audit trail.</p>
     <div class="mb-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-xs text-cyan-100">
       This page is for <strong>subscription plan billing</strong> (Free/Pro). For consultation payment verification and commission split, use <a href="/consultations.html" class="underline text-cyan-200 hover:text-cyan-100">Consultation Finance</a>.
     </div>
@@ -36,7 +36,7 @@
             <th class="text-left py-2 px-3">Reference</th>
             <th class="text-left py-2 px-3">Receipt</th>
             <th class="text-left py-2 px-3">Status</th>
-            <th class="text-left py-2 px-3">Action</th>
+            <th class="text-left py-2 px-3">Reviewed At</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -68,7 +68,7 @@
         const rows = data.payments || [];
         const body = document.getElementById('rows');
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-slate-400">No plan payments found for this filter. Try switching to <strong>All</strong>, or submit a test Pro payment from the pricing page.</td></tr>';
+          body.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-slate-400">No plan payments found for this filter. Submit a Pro payment from the pricing page to record a transaction.</td></tr>';
           return;
         }
         body.innerHTML = rows.map((p) => `
@@ -80,38 +80,13 @@
             <td class="px-3 py-2">${esc(p.method === 'card' ? (p.cardReference || p.cardLast4 || '') : (p.gcashReference || ''))}</td>
             <td class="px-3 py-2">${p.receiptPath ? `<a class="text-violet-300 hover:text-violet-200" target="_blank" href="${esc(p.receiptPath)}">View</a>` : '<span class="text-slate-500">None</span>'}</td>
             <td class="px-3 py-2">${esc(paymentStatusLabel(p.status))}</td>
-            <td class="px-3 py-2">
-              ${p.status === 'pending' ? `
-                <button onclick="approvePayment(${p.paymentId})" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded text-xs">Approve</button>
-                <button onclick="rejectPayment(${p.paymentId})" class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs ml-1">Reject</button>
-              ` : '<span class="text-slate-500">Reviewed</span>'}
-            </td>
+            <td class="px-3 py-2">${esc(p.reviewedAt ? new Date(p.reviewedAt).toLocaleString() : '—')}</td>
           </tr>
         `).join('');
       } catch (err) {
         showToast(err.error || 'Failed to load payments', 'error');
       }
     }
-    window.approvePayment = async (id) => {
-      const note = prompt('Admin note (optional):') || '';
-      try {
-        await api('/billing/payments/' + id + '/approve', { method: 'PATCH', body: JSON.stringify({ adminNote: note }) });
-        showToast('Payment approved', 'success');
-        loadPayments();
-      } catch (err) {
-        showToast(err.error || 'Failed to approve', 'error');
-      }
-    };
-    window.rejectPayment = async (id) => {
-      const note = prompt('Reason for rejection:') || '';
-      try {
-        await api('/billing/payments/' + id + '/reject', { method: 'PATCH', body: JSON.stringify({ adminNote: note }) });
-        showToast('Payment rejected', 'success');
-        loadPayments();
-      } catch (err) {
-        showToast(err.error || 'Failed to reject', 'error');
-      }
-    };
     document.getElementById('refreshBtn').addEventListener('click', loadPayments);
     document.getElementById('statusFilter').addEventListener('change', loadPayments);
     loadPayments();

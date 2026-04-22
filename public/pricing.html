@@ -46,7 +46,7 @@
       <div class="text-center">
         <h1 class="text-4xl font-bold text-white">Hairvelous Pro Plans</h1>
         <p class="text-slate-400 mt-2 text-sm">Choose a card-type subscription plan for premium features.</p>
-        <p class="text-xs text-slate-500 mt-2">Demo mode: activation here is simulated. Production flow uses payment verification.</p>
+        <p class="text-xs text-slate-500 mt-2">Pro activation is instant after payment submission. Admin can review the billing record.</p>
         <div id="status-badge" class="inline-block mt-5 px-3 py-1 text-sm rounded-full bg-slate-800 text-slate-300 border border-slate-700">Loading plan status...</div>
       </div>
     </section>
@@ -56,16 +56,44 @@
     </section>
   </main>
 
-  <div id="demoConfirmModal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-slate-950/80 p-4">
-    <button type="button" id="demoConfirmBackdrop" class="absolute inset-0 cursor-default" aria-label="Close"></button>
+  <div id="paymentModal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-slate-950/80 p-4">
+    <button type="button" id="paymentModalBackdrop" class="absolute inset-0 cursor-default" aria-label="Close"></button>
     <div class="relative z-[1] w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
-      <h2 class="text-lg font-semibold text-white">Confirm Demo Activation</h2>
-      <p id="demoConfirmText" class="mt-2 text-sm text-slate-300">
-        This action uses the demo flow. In production, users proceed through payment verification before plan activation.
-      </p>
-      <div class="mt-4 flex justify-end gap-2">
-        <button type="button" id="demoConfirmCancel" class="rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">Cancel</button>
-        <button type="button" id="demoConfirmOk" class="rounded-lg bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500">Continue</button>
+      <h2 class="text-lg font-semibold text-white">Submit Pro Payment</h2>
+      <p class="mt-2 text-sm text-slate-300">Your payment will be recorded and your Pro plan will activate right away.</p>
+      <form id="paymentForm" class="mt-4 space-y-3">
+        <div>
+          <label for="paymentMethod" class="block text-xs text-slate-400 mb-1">Method</label>
+          <select id="paymentMethod" class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2 text-sm">
+            <option value="gcash">GCash</option>
+            <option value="card">Card</option>
+          </select>
+        </div>
+
+        <div id="gcashFields" class="space-y-3">
+          <input id="gcashName" type="text" placeholder="GCash Name" class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2 text-sm" />
+          <input id="gcashNumber" type="text" placeholder="GCash Number" class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2 text-sm" />
+          <input id="gcashReference" type="text" placeholder="GCash Reference Number" class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2 text-sm" />
+        </div>
+
+        <div id="cardFields" class="space-y-3 hidden">
+          <input id="cardName" type="text" placeholder="Cardholder Name" class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2 text-sm" />
+          <input id="cardLast4" type="text" maxlength="4" placeholder="Card Last 4 Digits" class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2 text-sm" />
+          <input id="cardReference" type="text" placeholder="Card Reference Number" class="w-full rounded-lg bg-slate-800 border border-slate-600 text-white px-3 py-2 text-sm" />
+        </div>
+
+        <div>
+          <label for="paymentReceipt" class="block text-xs text-slate-400 mb-1">Receipt (optional)</label>
+          <input id="paymentReceipt" type="file" accept="image/*,.pdf" class="w-full rounded-lg bg-slate-800 border border-slate-600 text-slate-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-violet-500" />
+        </div>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button type="button" id="paymentCancelBtn" class="rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">Cancel</button>
+          <button type="submit" id="paymentSubmitBtn" class="rounded-lg bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500">Submit Payment</button>
+        </div>
+      </form>
+      <div class="mt-2 text-[11px] text-slate-500">
+        Admin can audit recorded payments in <a href="/admin/billing.html" class="underline text-violet-300 hover:text-violet-200">Billing Review</a>.
       </div>
     </div>
   </div>
@@ -84,49 +112,70 @@
       return d.innerHTML;
     }
 
-    function setDemoModalOpen(open) {
-      const modal = document.getElementById('demoConfirmModal');
+    let selectedPlanCode = null;
+
+    function setPaymentModalOpen(open) {
+      const modal = document.getElementById('paymentModal');
       if (!modal) return;
       modal.classList.toggle('hidden', !open);
       modal.classList.toggle('flex', open);
     }
 
-    function confirmDemoActivation(planCode) {
-      return new Promise((resolve) => {
-        const modal = document.getElementById('demoConfirmModal');
-        const txt = document.getElementById('demoConfirmText');
-        const ok = document.getElementById('demoConfirmOk');
-        const cancel = document.getElementById('demoConfirmCancel');
-        const backdrop = document.getElementById('demoConfirmBackdrop');
-        if (!modal || !ok || !cancel || !backdrop) {
-          resolve(true);
-          return;
+    function syncPaymentMethodFields() {
+      const method = document.getElementById('paymentMethod')?.value || 'gcash';
+      document.getElementById('gcashFields')?.classList.toggle('hidden', method !== 'gcash');
+      document.getElementById('cardFields')?.classList.toggle('hidden', method !== 'card');
+    }
+
+    function openPaymentModal(planCode) {
+      selectedPlanCode = planCode;
+      const form = document.getElementById('paymentForm');
+      if (form) form.reset();
+      syncPaymentMethodFields();
+      setPaymentModalOpen(true);
+    }
+
+    function closePaymentModal() {
+      setPaymentModalOpen(false);
+      selectedPlanCode = null;
+    }
+
+    async function submitPaymentRequest() {
+      if (!selectedPlanCode) throw new Error('No plan selected');
+      const method = document.getElementById('paymentMethod')?.value || 'gcash';
+      const formData = new FormData();
+      formData.append('planCode', selectedPlanCode);
+
+      if (method === 'gcash') {
+        const gcashName = String(document.getElementById('gcashName')?.value || '').trim();
+        const gcashNumber = String(document.getElementById('gcashNumber')?.value || '').trim();
+        const gcashReference = String(document.getElementById('gcashReference')?.value || '').trim();
+        if (!gcashName || !gcashNumber || !gcashReference) {
+          throw new Error('Please complete all GCash fields.');
         }
-        if (txt) {
-          txt.textContent =
-            planCode === 'free'
-              ? 'Switching to Free is in demo mode. Production usage should still record billing transitions and audits.'
-              : 'This upgrades your account via demo activation. In production, users complete payment verification first.';
+        formData.append('gcashName', gcashName);
+        formData.append('gcashNumber', gcashNumber);
+        formData.append('gcashReference', gcashReference);
+      } else {
+        const cardName = String(document.getElementById('cardName')?.value || '').trim();
+        const cardLast4 = String(document.getElementById('cardLast4')?.value || '').trim();
+        const cardReference = String(document.getElementById('cardReference')?.value || '').trim();
+        if (!cardName || !cardLast4 || !cardReference) {
+          throw new Error('Please complete all card fields.');
         }
-        const finish = (accepted) => {
-          ok.removeEventListener('click', onOk);
-          cancel.removeEventListener('click', onCancel);
-          backdrop.removeEventListener('click', onCancel);
-          document.removeEventListener('keydown', onKey);
-          setDemoModalOpen(false);
-          resolve(accepted);
-        };
-        const onOk = () => finish(true);
-        const onCancel = () => finish(false);
-        const onKey = (ev) => {
-          if (ev.key === 'Escape') onCancel();
-        };
-        ok.addEventListener('click', onOk);
-        cancel.addEventListener('click', onCancel);
-        backdrop.addEventListener('click', onCancel);
-        document.addEventListener('keydown', onKey);
-        setDemoModalOpen(true);
-      });
+        if (!/^\d{4}$/.test(cardLast4)) {
+          throw new Error('Card last 4 must be exactly 4 digits.');
+        }
+        formData.append('cardName', cardName);
+        formData.append('cardLast4', cardLast4);
+        formData.append('cardReference', cardReference);
+      }
+
+      const file = document.getElementById('paymentReceipt')?.files?.[0];
+      if (file) formData.append('receipt', file);
+
+      const endpoint = method === 'gcash' ? '/billing/gcash/submit' : '/billing/card/submit';
+      await apiForm(endpoint, formData, 'POST');
     }
 
     function renderPlans() {
@@ -187,7 +236,7 @@
           >${
             String(p.planCode).toLowerCase() === 'free'
               ? (hasActivePro ? 'Free plan locked' : 'Current free plan')
-              : ((hasActivePro && ['pro', 'pro_monthly'].includes(statusTier)) ? 'Current pro plan' : 'Activate Pro (Demo)')
+              : ((hasActivePro && ['pro', 'pro_monthly'].includes(statusTier)) ? 'Current pro plan' : 'Submit Pro Payment')
           }</button>
         </article>
       `).join('');
@@ -196,26 +245,17 @@
         btn.addEventListener('click', async () => {
           const planCode = String(btn.dataset.planCode || '');
           if (!planCode) return;
-          const confirmed = await confirmDemoActivation(planCode);
-          if (!confirmed) return;
           const originalLabel = btn.textContent;
-          btn.disabled = true;
-          btn.textContent = planCode === 'free' ? 'Switching...' : 'Activating...';
           try {
             if (planCode === 'free') {
+              btn.disabled = true;
+              btn.textContent = 'Switching...';
               await api('/billing/activate-free', { method: 'POST' });
               localStorage.setItem('hairvelous_plan_flash', 'free');
               window.location.href = '/dashboard.html';
               return;
             }
-            await api('/billing/activate-pro', { method: 'POST' });
-            const statusCheck = await api('/billing/status');
-            if (!(statusCheck && statusCheck.status && statusCheck.status.isPro)) {
-              throw new Error('Plan activation is still processing. Please refresh in a few seconds.');
-            }
-            localStorage.setItem('hairvelous_plan_flash', 'pro');
-            await loadPlansAndStatus();
-            window.location.href = '/dashboard.html';
+            openPaymentModal(planCode);
           } catch (err) {
             const backendMessage = (err && (err.error || err.message)) || 'Unable to update plan right now';
             if (err && err.status === 404) {
@@ -224,8 +264,10 @@
               alert(backendMessage);
             }
           } finally {
-            btn.disabled = false;
-            btn.textContent = originalLabel;
+            if (planCode === 'free') {
+              btn.disabled = false;
+              btn.textContent = originalLabel;
+            }
           }
         });
       });
@@ -258,6 +300,34 @@
         badge.className = 'inline-block mt-5 px-3 py-1 text-sm rounded-full border bg-slate-800 text-slate-300 border-slate-700';
       }
     }
+
+    document.getElementById('paymentMethod')?.addEventListener('change', syncPaymentMethodFields);
+    document.getElementById('paymentCancelBtn')?.addEventListener('click', closePaymentModal);
+    document.getElementById('paymentModalBackdrop')?.addEventListener('click', closePaymentModal);
+    document.getElementById('paymentForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('paymentSubmitBtn');
+      const original = submitBtn ? submitBtn.textContent : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+      }
+      try {
+        await submitPaymentRequest();
+        showToast('Payment recorded. Pro is now active.', 'success');
+        closePaymentModal();
+        localStorage.setItem('hairvelous_plan_flash', 'pro');
+        await loadPlansAndStatus();
+        window.location.href = '/dashboard.html';
+      } catch (err) {
+        showToast(err.error || err.message || 'Failed to submit payment', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = original;
+        }
+      }
+    });
 
     loadPlansAndStatus();
   </script>
