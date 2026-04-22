@@ -37,14 +37,12 @@ const projectRoot = path.join(__dirname, '..');
 const execFileAsync = promisify(execFile);
 
 async function runStartupDbTasksIfEnabled() {
-  const env = String(process.env.NODE_ENV || 'development').trim().toLowerCase();
-  const isProduction = env === 'production';
   const autoBootstrap =
-    String(process.env.AUTO_BOOTSTRAP_DB_ON_START || (isProduction ? 'false' : 'true'))
+    String(process.env.AUTO_BOOTSTRAP_DB_ON_START || 'false')
       .trim()
       .toLowerCase() === 'true';
   const autoSeed =
-    String(process.env.AUTO_SEED_DB_ON_START || (isProduction ? 'false' : 'true'))
+    String(process.env.AUTO_SEED_DB_ON_START || 'false')
       .trim()
       .toLowerCase() === 'true';
 

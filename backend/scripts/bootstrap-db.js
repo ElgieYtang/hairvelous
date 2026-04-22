@@ -61,7 +61,12 @@ async function run() {
     schemaSql = schemaSql
       .replace(/CREATE DATABASE IF NOT EXISTS\s+`?hairvelous`?\s*;/i, `CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
     schemaSql = retargetDatabaseName(schemaSql);
-    await conn.query(schemaSql);
+    await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+    try {
+      await conn.query(schemaSql);
+    } finally {
+      await conn.query('SET FOREIGN_KEY_CHECKS = 1');
+    }
     console.log('Base schema applied.');
 
     await conn.query(`USE \`${database}\``);
@@ -80,6 +85,17 @@ async function run() {
         throw err;
       }
     }
+
+    // Remove local demo/sample content while keeping required lookup data (e.g. roles).
+    await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+    try {
+      await conn.query('DELETE FROM product_categories');
+      await conn.query('DELETE FROM products');
+      await conn.query('DELETE FROM diy_guides');
+    } finally {
+      await conn.query('SET FOREIGN_KEY_CHECKS = 1');
+    }
+    console.log('Demo seed data cleared (products, categories, diy guides).');
 
     const [rows] = await conn.query('SHOW TABLES');
     console.log(`Done. ${rows.length} tables currently exist in \`${database}\`.`);

@@ -165,7 +165,7 @@ function renderNav() {
 
   return `
     <nav class="z-40">
-      <div class="md:hidden sticky top-0 z-[58] bg-slate-900/95 backdrop-blur border-b border-slate-700/40 px-4 py-2 flex items-center justify-between">
+      <div class="md:hidden sticky top-0 z-[58] bg-slate-900/95 backdrop-blur border-b border-slate-700/40 px-4 py-2 flex items-center justify-between gap-2">
         <a href="/" class="flex items-center gap-2 text-white font-semibold">
           <span class="text-xl icon-bounce">${brandMark('h-6 w-6 text-violet-300')}</span>
           <span>Hairvelous</span>
@@ -173,6 +173,11 @@ function renderNav() {
         ${
           isLoggedIn
             ? `<button type="button" id="mobile-menu-toggle" class="inline-flex items-center rounded-lg border border-slate-700/80 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800/70 hover:text-white transition-colors" aria-expanded="false" aria-controls="mobile-menu-panel">Menu</button>`
+            : `<div class="flex items-center gap-2">
+                 ${navLink('/landing.html', 'Home')}
+                 ${navLink('/login.html', 'Login')}
+                 <a href="/register.html" class="bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg text-xs btn-primary transition-all">Sign Up</a>
+               </div>`
             : ''
         }
       </div>
@@ -201,7 +206,7 @@ function renderNav() {
       }
       ${
         !isLoggedIn
-          ? `<div class="sticky top-0 bg-slate-900/95 backdrop-blur border-b border-slate-700/40 px-4 py-2 flex items-center justify-between">
+          ? `<div class="hidden md:flex sticky top-0 bg-slate-900/95 backdrop-blur border-b border-slate-700/40 px-4 py-2 items-center justify-between">
                <a href="/" class="flex items-center gap-2 text-white font-semibold"><span class="text-xl icon-bounce">${brandMark('h-6 w-6 text-violet-300')}</span><span>Hairvelous</span></a>
                <div class="flex items-center gap-2">
                  ${navLink('/landing.html', 'Home')}

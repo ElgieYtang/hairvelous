@@ -402,11 +402,11 @@ class ProfileService {
       // Database may be partially restored (missing profile/suspension columns).
       // Fallback still returns specialist cards using core user data.
       const [fallbackRows] = await pool.query(
-        `SELECT u.user_id, u.name,
-                NULL AS specialty, NULL AS location, NULL AS consultation_rate, NULL AS profile_photo_path,
-                NULL AS expertise_json, NULL AS skills_json
+        `SELECT u.user_id, u.name, up.specialty, up.location, up.consultation_rate, up.profile_photo_path,
+                up.expertise_json, up.skills_json
          FROM users u
          JOIN roles r ON r.role_id = u.role_id
+         LEFT JOIN user_profiles up ON up.user_id = u.user_id
          WHERE r.role_name IN ('seller', 'specialist')
          ORDER BY u.name ASC`
       );

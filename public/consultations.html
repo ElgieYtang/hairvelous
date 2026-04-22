@@ -467,6 +467,21 @@
       </aside>
   </div>
 
+  <div id="specialist-feedback-backdrop" class="pv-backdrop fixed inset-0 z-[102] p-4 sm:p-6 md:p-10">
+    <div class="pv-modal mx-auto w-full max-w-2xl md:max-h-[88vh] overflow-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+      <div class="flex items-start justify-between gap-3 border-b border-slate-700 p-4 sm:p-5">
+        <div class="min-w-0 flex-1">
+          <h3 id="specialistFeedbackTitle" class="text-base font-semibold text-white">Specialist feedback</h3>
+          <p id="specialistFeedbackSubtitle" class="mt-1 text-xs text-slate-400">Recent client comments</p>
+        </div>
+        <button type="button" id="specialistFeedbackClose" class="shrink-0 text-sm text-slate-400 hover:text-white" aria-label="Close">Close ✕</button>
+      </div>
+      <div id="specialistFeedbackList" class="space-y-3 p-4 sm:p-5">
+        <p class="text-sm text-slate-400">Loading feedback...</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Request popup (aligned with product modal on recommendations.html) -->
   <div id="consultation-request-backdrop" class="pv-backdrop fixed inset-0 z-[100] p-4 sm:p-6 md:p-10">
     <div class="pv-modal mx-auto w-full max-w-lg md:max-h-[90vh] overflow-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
@@ -1572,6 +1587,64 @@
     }
 
     let selectedSpecialistUserId = '';
+    const specialistFeedbackBackdrop = document.getElementById('specialist-feedback-backdrop');
+    const specialistFeedbackClose = document.getElementById('specialistFeedbackClose');
+    const specialistFeedbackTitle = document.getElementById('specialistFeedbackTitle');
+    const specialistFeedbackSubtitle = document.getElementById('specialistFeedbackSubtitle');
+    const specialistFeedbackList = document.getElementById('specialistFeedbackList');
+
+    function closeSpecialistFeedbackModal() {
+      if (specialistFeedbackBackdrop) specialistFeedbackBackdrop.classList.remove('open');
+    }
+
+    function renderFeedbackStars(rating) {
+      const n = Math.max(0, Math.min(5, Number(rating) || 0));
+      return '★'.repeat(n) + '☆'.repeat(5 - n);
+    }
+
+    function formatFeedbackDate(v) {
+      const d = v ? new Date(v) : null;
+      if (!d || Number.isNaN(d.getTime())) return '';
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    async function openSpecialistFeedbackModal(userId) {
+      const uid = Number(userId);
+      if (!Number.isFinite(uid) || uid <= 0 || !specialistFeedbackBackdrop || !specialistFeedbackList) return;
+      const specialist = specialistsForBooking.find((s) => Number(s.userId) === uid);
+      if (specialistFeedbackTitle) {
+        specialistFeedbackTitle.textContent = `Feedback for ${specialist && specialist.name ? specialist.name : 'specialist'}`;
+      }
+      if (specialistFeedbackSubtitle) specialistFeedbackSubtitle.textContent = 'Recent client comments and ratings';
+      specialistFeedbackList.innerHTML = '<p class="text-sm text-slate-400">Loading feedback...</p>';
+      specialistFeedbackBackdrop.classList.add('open');
+      try {
+        const data = await api('/consultations/specialist-feedback/' + uid + '?limit=20');
+        const rows = Array.isArray(data && data.feedbacks) ? data.feedbacks : [];
+        if (!rows.length) {
+          specialistFeedbackList.innerHTML =
+            '<p class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3 text-sm text-slate-400">No feedback comments yet.</p>';
+          return;
+        }
+        specialistFeedbackList.innerHTML = rows
+          .map((r) => {
+            const txt = String(r.feedbackText || '').trim();
+            const rating = Number(r.rating || 0);
+            return `<article class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="text-sm font-semibold text-amber-300">${esc(renderFeedbackStars(rating))} <span class="text-slate-300">(${esc(String(rating))}/5)</span></p>
+                <p class="text-[11px] text-slate-500">${esc(formatFeedbackDate(r.createdAt))}</p>
+              </div>
+              <p class="mt-2 text-sm text-slate-200">${esc(txt || 'No comment text provided.')}</p>
+              <p class="mt-2 text-[11px] font-medium text-slate-500">- ${esc(r.clientName || 'Client')}</p>
+            </article>`;
+          })
+          .join('');
+      } catch (err) {
+        specialistFeedbackList.innerHTML =
+          `<p class="rounded-xl border border-rose-500/30 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">${esc(err.error || 'Could not load feedback')}</p>`;
+      }
+    }
 
     function syncSpecialistCardsVisual() {
       const root = document.getElementById('specialistCards');
@@ -1663,6 +1736,15 @@
       const loc =
         s.location && String(s.location).trim() ? String(s.location).trim() : 'Philippines';
       const bio = (s.bioSnippet && String(s.bioSnippet).trim()) || category;
+      const feedbacks = Array.isArray(s.recentFeedbacks) ? s.recentFeedbacks : [];
+      const topFeedback = feedbacks.length ? feedbacks[0] : null;
+      const feedbackPreview = topFeedback
+        ? String(topFeedback.feedbackText || '').trim().replace(/\s+/g, ' ').slice(0, 120)
+        : '';
+      const feedbackLabel = topFeedback
+        ? `“${feedbackPreview}${feedbackPreview.length >= 120 ? '…' : ''}”`
+        : 'No client comments yet.';
+      const feedbackBy = topFeedback && topFeedback.clientName ? `- ${topFeedback.clientName}` : '';
       const bannerImg = s.profilePhotoUrl
         ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-full min-h-[6.5rem] w-full object-cover opacity-95" />`
         : `<div class="flex h-full min-h-[6.5rem] w-full items-center justify-center bg-gradient-to-br from-violet-900/80 via-slate-900 to-slate-950"><span class="text-3xl font-bold text-violet-200/90">${esc(specialistInitials(s.name))}</span></div>`;
@@ -1697,6 +1779,13 @@
           </div>
         </div>
         <p class="mt-2 text-[11px] text-amber-300/90">${esc(ratingLabel)}</p>
+        <p class="mt-1 line-clamp-2 text-[11px] italic text-slate-400">${esc(feedbackLabel)}</p>
+        ${feedbackBy ? `<p class="mt-0.5 text-[10px] font-medium text-slate-500">${esc(feedbackBy)}</p>` : ''}
+        ${
+          Number(s.ratingCount || 0) > 0
+            ? `<span role="button" tabindex="0" data-view-feedback="${esc(String(s.userId))}" class="mt-1 inline-flex cursor-pointer select-none items-center text-[11px] font-semibold text-violet-300 hover:text-violet-200">Browse user feedback (${esc(String(s.ratingCount))})</span>`
+            : ''
+        }
         <h3 class="mt-3 line-clamp-2 text-[15px] font-bold leading-snug text-white sm:text-base">
           ${esc(s.name || 'Specialist')}<span class="font-normal text-slate-400"> · ${esc(hook.length > 48 ? hook.slice(0, 46) + '…' : hook)}</span>
         </h3>
@@ -1716,6 +1805,11 @@
     }
 
     function showRequestForm() {
+      // If page is in forced chat-focus mode (?chat=...&focus=chat), switch back to normal browse mode.
+      if (chatFocusFromQuery) {
+        window.location.href = '/consultations.html';
+        return;
+      }
       browseSpecialistsOverride = true;
       closeConsultMessenger();
       if (consultationTrackerSection) consultationTrackerSection.classList.add('hidden');
@@ -3693,6 +3787,7 @@
                 ...s,
                 ratingAvg: stats.avgRating != null ? Number(stats.avgRating) : null,
                 ratingCount: Number(stats.totalReviews || 0),
+                recentFeedbacks: Array.isArray(stats.recentFeedbacks) ? stats.recentFeedbacks : [],
               };
             });
           } catch (_err) {
@@ -3700,6 +3795,7 @@
               ...s,
               ratingAvg: null,
               ratingCount: 0,
+              recentFeedbacks: [],
             }));
           }
         }
@@ -3905,11 +4001,30 @@
     const specialistCardsEl = document.getElementById('specialistCards');
     if (specialistCardsEl) {
       specialistCardsEl.addEventListener('click', (e) => {
+        const feedbackBtn = e.target.closest('[data-view-feedback]');
+        if (feedbackBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          openSpecialistFeedbackModal(feedbackBtn.getAttribute('data-view-feedback'));
+          return;
+        }
         const btn = e.target.closest('[data-specialist-id]');
         if (!btn) return;
         openConsultationRequestModal(btn.getAttribute('data-specialist-id'));
       });
+      specialistCardsEl.addEventListener('keydown', (e) => {
+        const feedbackBtn = e.target.closest('[data-view-feedback]');
+        if (!feedbackBtn) return;
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        openSpecialistFeedbackModal(feedbackBtn.getAttribute('data-view-feedback'));
+      });
     }
+
+    specialistFeedbackClose?.addEventListener('click', () => closeSpecialistFeedbackModal());
+    specialistFeedbackBackdrop?.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'specialist-feedback-backdrop') closeSpecialistFeedbackModal();
+    });
 
     const consultReqBackdrop = document.getElementById('consultation-request-backdrop');
     const consultReqClose = document.getElementById('consultationRequestModalClose');

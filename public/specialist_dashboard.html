@@ -70,21 +70,21 @@
       </div>
     </div>
 
-    <div class="panel p-5">
-      <div class="flex items-center justify-between mb-4">
+    <div class="panel p-4 sm:p-5">
+      <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-4">
         <h2 class="text-lg font-semibold text-white">Clients (from your consultations)</h2>
         <p class="text-xs text-slate-500">Data comes from the live database</p>
       </div>
       <div class="overflow-x-auto rounded-xl border border-slate-700/60">
-        <table class="min-w-full text-sm">
+        <table class="min-w-[760px] w-full text-xs sm:text-sm">
           <thead class="bg-slate-800/80 text-left text-xs uppercase tracking-wide text-slate-400">
             <tr>
-              <th class="px-4 py-3">Name</th>
-              <th class="px-4 py-3">Email</th>
-              <th class="px-4 py-3">Cases</th>
-              <th class="px-4 py-3">Paid</th>
-              <th class="px-4 py-3">Client type</th>
-              <th class="px-4 py-3">Last consult</th>
+              <th class="px-4 py-3 whitespace-nowrap">Name</th>
+              <th class="px-4 py-3 whitespace-nowrap">Email</th>
+              <th class="px-4 py-3 whitespace-nowrap">Cases</th>
+              <th class="px-4 py-3 whitespace-nowrap">Paid</th>
+              <th class="px-4 py-3 whitespace-nowrap">Client type</th>
+              <th class="px-4 py-3 whitespace-nowrap">Last consult</th>
             </tr>
           </thead>
           <tbody id="clients-tbody" class="divide-y divide-slate-700/60"></tbody>
@@ -206,18 +206,18 @@
         .map(
           (c) => `
         <tr class="bg-slate-900/40">
-          <td class="px-4 py-3 text-white font-medium">${esc(c.name)}</td>
-          <td class="px-4 py-3 text-slate-300">${esc(c.email)}</td>
-          <td class="px-4 py-3 text-slate-300">${esc(String(c.consultationCount))}</td>
-          <td class="px-4 py-3 text-slate-300">${esc(String(c.paidConsultationCount || 0))}</td>
-          <td class="px-4 py-3 text-xs">
+          <td class="px-4 py-3 text-white font-medium whitespace-nowrap">${esc(c.name)}</td>
+          <td class="px-4 py-3 text-slate-300 whitespace-nowrap">${esc(c.email)}</td>
+          <td class="px-4 py-3 text-slate-300 whitespace-nowrap">${esc(String(c.consultationCount))}</td>
+          <td class="px-4 py-3 text-slate-300 whitespace-nowrap">${esc(String(c.paidConsultationCount || 0))}</td>
+          <td class="px-4 py-3 text-xs whitespace-nowrap">
             ${
               c.hasPaid
                 ? '<span class="rounded-full border border-emerald-500/40 bg-emerald-600/20 px-2 py-0.5 text-emerald-300">Paid client</span>'
                 : '<span class="rounded-full border border-slate-600 bg-slate-800/80 px-2 py-0.5 text-slate-300">Registered only</span>'
             }
           </td>
-          <td class="px-4 py-3 text-slate-400 text-xs">${esc(fmtDate(c.lastConsultAt))}</td>
+          <td class="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">${esc(fmtDate(c.lastConsultAt))}</td>
         </tr>`
         )
         .join('');

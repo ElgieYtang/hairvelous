@@ -14,6 +14,9 @@ router.get('/specialist/analytics', requireAuth, (req, res, next) =>
 router.get('/specialist-feedback-summaries', requireAuth, (req, res, next) =>
   consultationController.specialistFeedbackSummaries(req, res, next)
 );
+router.get('/specialist-feedback/:specialistUserId', requireAuth, (req, res, next) =>
+  consultationController.specialistFeedbackList(req, res, next)
+);
 router.get('/specialist/revenue', requireAuth, (req, res, next) =>
   consultationController.specialistRevenue(req, res, next)
 );

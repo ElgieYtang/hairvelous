@@ -1898,17 +1898,71 @@ class ConsultationService {
        GROUP BY specialist_user_id`,
       ids
     );
+    const [feedbackRows] = await pool.query(
+      `SELECT cf.specialist_user_id, cf.rating, cf.feedback_text, cf.created_at, u.name AS client_name
+       FROM consultation_feedback cf
+       JOIN users u ON u.user_id = cf.user_id
+       WHERE cf.specialist_user_id IN (${placeholders})
+         AND cf.feedback_text IS NOT NULL
+         AND TRIM(cf.feedback_text) <> ''
+       ORDER BY cf.created_at DESC`,
+      ids
+    );
     const summaries = {};
     ids.forEach((specId) => {
-      summaries[specId] = { avgRating: null, totalReviews: 0 };
+      summaries[specId] = { avgRating: null, totalReviews: 0, recentFeedbacks: [] };
     });
     rows.forEach((r) => {
       summaries[r.specialist_user_id] = {
         avgRating: r.avg_rating != null ? Number(r.avg_rating) : null,
         totalReviews: Number(r.total_reviews || 0),
+        recentFeedbacks: summaries[r.specialist_user_id]
+          ? summaries[r.specialist_user_id].recentFeedbacks
+          : [],
       };
     });
+    feedbackRows.forEach((r) => {
+      const sid = Number(r.specialist_user_id);
+      if (!summaries[sid]) return;
+      if (summaries[sid].recentFeedbacks.length >= 2) return;
+      summaries[sid].recentFeedbacks.push({
+        rating: r.rating != null ? Number(r.rating) : null,
+        feedbackText: String(r.feedback_text || '').trim(),
+        clientName: String(r.client_name || '').trim() || 'Client',
+        createdAt: r.created_at,
+      });
+    });
     return { summaries };
+  }
+
+  async getSpecialistFeedbackList(specialistUserId, limit = 20) {
+    await this.ensureTable();
+    const sid = Number(specialistUserId);
+    if (!Number.isFinite(sid) || sid <= 0) {
+      const err = new Error('Invalid specialist ID');
+      err.status = 400;
+      throw err;
+    }
+    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const [rows] = await pool.query(
+      `SELECT cf.feedback_id, cf.rating, cf.feedback_text, cf.created_at, u.name AS client_name
+       FROM consultation_feedback cf
+       JOIN users u ON u.user_id = cf.user_id
+       WHERE cf.specialist_user_id = ?
+       ORDER BY cf.created_at DESC
+       LIMIT ?`,
+      [sid, safeLimit]
+    );
+    return {
+      specialistUserId: sid,
+      feedbacks: (rows || []).map((r) => ({
+        feedbackId: r.feedback_id,
+        rating: r.rating != null ? Number(r.rating) : null,
+        feedbackText: String(r.feedback_text || '').trim(),
+        clientName: String(r.client_name || '').trim() || 'Client',
+        createdAt: r.created_at,
+      })),
+    };
   }
 
   /**

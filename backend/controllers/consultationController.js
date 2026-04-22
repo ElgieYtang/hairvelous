@@ -187,6 +187,17 @@ class ConsultationController {
     }
   }
 
+  async specialistFeedbackList(req, res, next) {
+    try {
+      const specialistUserId = Number(req.params.specialistUserId);
+      const limit = Number(req.query.limit || 20);
+      const result = await consultationService.getSpecialistFeedbackList(specialistUserId, limit);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async specialistRevenue(req, res, next) {
     try {
       const result = await consultationService.getSpecialistRevenue(req.user);

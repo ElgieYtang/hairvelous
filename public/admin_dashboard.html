@@ -411,49 +411,49 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
             <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
               <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Client Paid Total</p>
-              <p class="text-2xl font-bold text-cyan-300 tabular-nums">${money(totals.gross)}</p>
+              <p class="text-xl sm:text-2xl font-bold text-cyan-300 tabular-nums break-words">${money(totals.gross)}</p>
             </div>
             <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
               <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Platform Fee</p>
-              <p class="text-2xl font-bold text-amber-300 tabular-nums">${money(totals.commission)}</p>
+              <p class="text-xl sm:text-2xl font-bold text-amber-300 tabular-nums break-words">${money(totals.commission)}</p>
             </div>
             <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
               <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Specialist Fee</p>
-              <p class="text-2xl font-bold text-emerald-300 tabular-nums">${money(totals.net)}</p>
+              <p class="text-xl sm:text-2xl font-bold text-emerald-300 tabular-nums break-words">${money(totals.net)}</p>
             </div>
             <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
               <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Pending Specialist Payout</p>
-              <p class="text-2xl font-bold text-violet-300 tabular-nums">${money(pendingPayout)}</p>
+              <p class="text-xl sm:text-2xl font-bold text-violet-300 tabular-nums break-words">${money(pendingPayout)}</p>
             </div>
           </div>
           <div class="mt-5 pt-4 border-t border-slate-700/60">
             <p class="text-sm text-slate-300 font-medium mb-3">Recent paid consultations (${filtered.length} in selected range)</p>
             ${
               recent.length
-                  ? `<div class="overflow-hidden rounded-lg border border-slate-800/70">
-                    <table class="w-full table-fixed text-xs">
+                  ? `<div class="overflow-x-auto rounded-lg border border-slate-800/70">
+                    <table class="min-w-[760px] w-full text-xs md:text-sm">
                       <thead>
                         <tr class="text-left text-slate-500 border-b border-slate-700/70">
-                          <th class="py-2 pr-3">Consultation</th>
-                          <th class="py-2 pr-3">Date</th>
-                          <th class="py-2 pr-3">Specialist</th>
-                          <th class="py-2 pr-3">Client Paid</th>
-                          <th class="py-2 pr-3">Platform Fee</th>
-                          <th class="py-2 pr-3">Specialist Fee</th>
-                          <th class="py-2 pr-3">Payout</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Consultation</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Date</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Specialist</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Client Paid</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Platform Fee</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Specialist Fee</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Payout</th>
                         </tr>
                       </thead>
                       <tbody>
                         ${recent
                           .map(
                             (r) => `<tr class="border-b border-slate-800/70">
-                              <td class="py-2 pr-3 text-slate-200 truncate">#${r.consultationId}</td>
-                              <td class="py-2 pr-3 text-slate-300 truncate">${formatConsultationDate(consultationDateValue(r))}</td>
-                              <td class="py-2 pr-3 text-slate-300 truncate">${r.specialistName || '—'}</td>
-                              <td class="py-2 pr-3 text-slate-200">${money(r.grossPhp != null ? r.grossPhp : r.amountPhp)}</td>
-                              <td class="py-2 pr-3 text-amber-300">${money(r.commissionPhp)}</td>
-                              <td class="py-2 pr-3 text-emerald-300">${money(r.specialistNetPhp)}</td>
-                              <td class="py-2 pr-3 text-slate-300 truncate">${payoutStatusLabel(r.payoutStatus)}</td>
+                              <td class="py-2 pr-3 text-slate-200 whitespace-nowrap">#${r.consultationId}</td>
+                              <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatConsultationDate(consultationDateValue(r))}</td>
+                              <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${r.specialistName || '—'}</td>
+                              <td class="py-2 pr-3 text-slate-200 whitespace-nowrap">${money(r.grossPhp != null ? r.grossPhp : r.amountPhp)}</td>
+                              <td class="py-2 pr-3 text-amber-300 whitespace-nowrap">${money(r.commissionPhp)}</td>
+                              <td class="py-2 pr-3 text-emerald-300 whitespace-nowrap">${money(r.specialistNetPhp)}</td>
+                              <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${payoutStatusLabel(r.payoutStatus)}</td>
                             </tr>`
                           )
                           .join('')}
