@@ -159,6 +159,29 @@
       flex: 1 1 0%;
       min-height: 0;
     }
+    @media (max-width: 767px) {
+      #consultationsWorkspace.mobile-chat-active {
+        display: block !important;
+      }
+      #consultationsWorkspace.mobile-chat-active #consultColList {
+        display: none !important;
+      }
+      #consultationsWorkspace.mobile-chat-active #consultColChat {
+        min-height: calc(100dvh - 11rem) !important;
+        max-height: none !important;
+      }
+      #consultationsWorkspace.mobile-chat-active #consultColDetail {
+        display: none !important;
+      }
+      #consultationsWorkspace.mobile-chat-active.show-mobile-detail #consultColChat {
+        display: none !important;
+      }
+      #consultationsWorkspace.mobile-chat-active.show-mobile-detail #consultColDetail {
+        display: flex !important;
+        min-height: calc(100dvh - 11rem) !important;
+        max-height: none !important;
+      }
+    }
     #drawerWorkspaceSlot #chatBlurWrap {
       min-height: 0;
       flex: 1 1 0%;
@@ -405,6 +428,9 @@
             <button type="button" id="closeChatBtn" class="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white md:hidden">
               Clear
             </button>
+            <button type="button" id="mobileDetailBtn" class="hidden shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white md:hidden">
+              Details
+            </button>
           </div>
         </header>
 
@@ -455,8 +481,11 @@
         id="consultColDetail"
         class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/45 md:rounded-none md:border-0"
       >
-        <div class="shrink-0 border-b border-slate-700/60 px-3 py-2.5 md:px-4">
+        <div class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-700/60 px-3 py-2.5 md:px-4">
           <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Details</p>
+          <button type="button" id="mobileBackToChatBtn" class="hidden rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white md:hidden">
+            Back to chat
+          </button>
         </div>
         <div id="detailPanel" class="chat-scroll min-h-0 flex-1 overflow-y-auto p-3 md:p-4">
           <p class="text-xs text-slate-400">Select a consultation to see details.</p>
@@ -782,6 +811,38 @@
     const consultMessengerBackdrop = document.getElementById('consultMessengerBackdrop');
     const consultMessengerPanel = document.getElementById('consultMessengerPanel');
     const closeConsultMessengerBtn = document.getElementById('closeConsultMessengerBtn');
+    const closeChatBtn = document.getElementById('closeChatBtn');
+    const mobileDetailBtn = document.getElementById('mobileDetailBtn');
+    const mobileBackToChatBtn = document.getElementById('mobileBackToChatBtn');
+
+    function isMobileViewport() {
+      return window.matchMedia('(max-width: 767px)').matches;
+    }
+
+    function setMobileWorkspacePane(pane) {
+      if (!consultationsWorkspaceEl) return;
+      consultationsWorkspaceEl.classList.toggle('show-mobile-detail', pane === 'detail');
+      if (mobileDetailBtn) {
+        mobileDetailBtn.classList.toggle('hidden', pane === 'detail' || !activeChatId || !isMobileViewport());
+      }
+      if (mobileBackToChatBtn) {
+        mobileBackToChatBtn.classList.toggle('hidden', pane !== 'detail' || !activeChatId || !isMobileViewport());
+      }
+    }
+
+    function syncMobileWorkspaceLayout() {
+      if (!consultationsWorkspaceEl) return;
+      const mobile = isMobileViewport();
+      const chatOpen = !!activeChatId && !isModerator;
+      consultationsWorkspaceEl.classList.toggle('mobile-chat-active', mobile && chatOpen);
+      if (closeChatBtn) {
+        closeChatBtn.textContent = mobile && chatOpen ? 'Back' : 'Clear';
+      }
+      if (!mobile || !chatOpen) {
+        consultationsWorkspaceEl.classList.remove('show-mobile-detail');
+      }
+      setMobileWorkspacePane('chat');
+    }
 
     function openConsultMessenger() {
       if (isModerator || isSpecialist) return;
@@ -3196,6 +3257,7 @@
         updateRequestUi(rows.length);
 
         setChatLocked();
+        syncMobileWorkspaceLayout();
         syncCancelRequestUi();
 
         if (
@@ -3491,6 +3553,8 @@
       activeChatId = Number(consultationId);
       const c = findConsultation(activeChatId);
       renderConsultationList(consultationRowsCache);
+      syncMobileWorkspaceLayout();
+      setMobileWorkspacePane('chat');
 
       if (isModerator) {
         if (!c) {
@@ -3527,6 +3591,7 @@
         renderDetail(null, document.getElementById('adminApprovalModalBody'));
         renderConsultationList(consultationRowsCache);
         syncCancelRequestUi();
+        syncMobileWorkspaceLayout();
         return;
       }
       activeChatId = null;
@@ -3546,12 +3611,16 @@
       setChatLocked();
       updateChatHeaderMenu();
       syncCancelRequestUi();
+      syncMobileWorkspaceLayout();
     }
 
     window.openChat = openChat;
 
     document.getElementById('consultSearch').addEventListener('input', () => renderConsultationList(consultationRowsCache));
-    document.getElementById('closeChatBtn').addEventListener('click', closeChat);
+    closeChatBtn?.addEventListener('click', closeChat);
+    mobileDetailBtn?.addEventListener('click', () => setMobileWorkspacePane('detail'));
+    mobileBackToChatBtn?.addEventListener('click', () => setMobileWorkspacePane('chat'));
+    window.addEventListener('resize', () => syncMobileWorkspaceLayout());
     document.getElementById('adminApprovalModalClose')?.addEventListener('click', () => closeChat());
     document.getElementById('adminApprovalModalBackdrop')?.addEventListener('click', (e) => {
       if (e.target && e.target.id === 'adminApprovalModalBackdrop') closeChat();
@@ -4096,6 +4165,7 @@
     })();
 
     loadConsultations();
+    syncMobileWorkspaceLayout();
   </script>
 </body>
 </html>
