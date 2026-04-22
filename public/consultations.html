@@ -3100,6 +3100,11 @@
       const list = document.getElementById('consultList');
       const q = (document.getElementById('consultSearch').value || '').trim().toLowerCase();
       const scopedRows = getVisibleConsultationsForList(rows);
+      const byRecentActivityDesc = (a, b) => {
+        const ta = new Date((a && (a.updatedAt || a.createdAt)) || 0).getTime();
+        const tb = new Date((b && (b.updatedAt || b.createdAt)) || 0).getTime();
+        return tb - ta;
+      };
       const baseRows = isModerator
         ? [...scopedRows].sort((a, b) => {
             const pa = String((a && a.paymentStatus) || '');
@@ -3110,9 +3115,11 @@
               if (v === 'verified') return 2;
               return 3;
             };
-            return score(pa) - score(pb);
+            const rankDiff = score(pa) - score(pb);
+            if (rankDiff !== 0) return rankDiff;
+            return byRecentActivityDesc(a, b);
           })
-        : scopedRows;
+        : [...scopedRows].sort(byRecentActivityDesc);
       const filtered = q
         ? baseRows.filter((c) => {
             const t = `${c.concernTitle || ''} ${c.concernMessage || ''} ${c.userName || ''} ${c.specialistName || ''}`.toLowerCase();
@@ -3403,6 +3410,14 @@
           }
           blocks.push(messageBubble(m));
         });
+        if (messages.length) {
+          const row = findConsultation(activeChatId);
+          const latestMessageAt = messages[messages.length - 1].createdAt;
+          if (row && latestMessageAt) {
+            row.updatedAt = latestMessageAt;
+            renderConsultationList(consultationRowsCache);
+          }
+        }
         chatMessages.innerHTML = blocks.length ? blocks.join('') : '';
         wireChatMessageImages();
         hydrateChatMessageImages().catch(() => {});
