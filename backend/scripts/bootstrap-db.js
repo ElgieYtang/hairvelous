@@ -61,7 +61,13 @@ async function run() {
     schemaSql = schemaSql
       .replace(/CREATE DATABASE IF NOT EXISTS\s+`?hairvelous`?\s*;/i, `CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
     schemaSql = retargetDatabaseName(schemaSql);
-    await conn.query(schemaSql);
+    // Some schema rebuild steps can fail on existing FK dependencies unless checks are temporarily disabled.
+    await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+    try {
+      await conn.query(schemaSql);
+    } finally {
+      await conn.query('SET FOREIGN_KEY_CHECKS = 1');
+    }
     console.log('Base schema applied.');
 
     await conn.query(`USE \`${database}\``);
@@ -70,7 +76,12 @@ async function run() {
       const filePath = path.join(dbRoot, file);
       try {
         const sql = retargetDatabaseName(await readSql(filePath));
-        await conn.query(sql);
+        await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+        try {
+          await conn.query(sql);
+        } finally {
+          await conn.query('SET FOREIGN_KEY_CHECKS = 1');
+        }
         console.log(`Migration applied: ${file}`);
       } catch (err) {
         if (shouldIgnoreMigrationError(err)) {
