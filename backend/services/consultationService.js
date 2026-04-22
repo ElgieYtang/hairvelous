@@ -636,10 +636,21 @@ class ConsultationService {
       [userId]
     );
     const activeTotal = Number((activeRows && activeRows[0] && activeRows[0].total) || 0);
-    if (activeTotal >= GLOBAL_MAX_ACTIVE_CONSULTATIONS) {
-      throw new Error(
-        `You can only keep up to ${GLOBAL_MAX_ACTIVE_CONSULTATIONS} active consultations at once.`
+    const ent = await billingService.getEntitlements(userId);
+    const planCap = Number(ent.maxActiveConsultations);
+    const planMax =
+      Number.isFinite(planCap) && planCap >= 0 ? Math.min(GLOBAL_MAX_ACTIVE_CONSULTATIONS, planCap) : 0;
+    if (planMax <= 0) {
+      const e = new Error(
+        'Consultations require a Pro subscription. Upgrade on the Pricing page to book a specialist.'
       );
+      e.status = 403;
+      throw e;
+    }
+    if (activeTotal >= planMax) {
+      const e = new Error(`You can only keep up to ${planMax} active consultation(s) on your current plan.`);
+      e.status = 403;
+      throw e;
     }
     const concernTitle = String(payload.concernTitle || '').trim();
     const concernMessage = String(payload.concernMessage || '').trim();

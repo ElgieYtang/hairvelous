@@ -212,9 +212,10 @@
           indicator.className =
             'mx-auto mt-3 max-w-full px-3 py-2 rounded-xl text-xs border bg-slate-800 text-slate-300 border-slate-700 text-left leading-snug break-words';
           if (consultLink) {
-            consultLink.href = '/consultations.html';
+            consultLink.href = '/pricing.html?reason=consultations';
             consultLink.className = 'block mini-tile px-4 py-3 hover:border-violet-400/60';
-            consultLink.querySelector('p.text-slate-400').textContent = 'Start consultation (Free plan has limits)';
+            consultLink.querySelector('p.text-slate-400').textContent =
+              'Consultations are on Pro — tap to view plans and upgrade';
           }
         }
         return status;
@@ -223,9 +224,10 @@
         indicator.className =
           'mx-auto mt-3 max-w-full px-3 py-2 rounded-xl text-xs border bg-slate-800 text-slate-300 border-slate-700 text-left leading-snug break-words';
         if (consultLink) {
-          consultLink.href = '/consultations.html';
+          consultLink.href = '/pricing.html?reason=consultations';
           consultLink.className = 'block mini-tile px-4 py-3 hover:border-violet-400/60';
-          consultLink.querySelector('p.text-slate-400').textContent = 'Start consultation (Free plan has limits)';
+          consultLink.querySelector('p.text-slate-400').textContent =
+            'Consultations are on Pro — tap to view plans and upgrade';
         }
         return null;
       }

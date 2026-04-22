@@ -229,7 +229,8 @@ class BillingService {
 
   getEntitlementsFromIsPro(isPro) {
     return {
-      maxActiveConsultations: isPro ? 3 : 1,
+      /** Free plan: consultations are Pro-only (0 active slots). */
+      maxActiveConsultations: isPro ? 3 : 0,
       routineHistoryDays: isPro ? null : 30,
       routineMediaUpload: isPro ? 'image_video' : 'image_only',
       canUploadRoutineVideo: !!isPro,

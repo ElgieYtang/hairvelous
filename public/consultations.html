@@ -771,6 +771,23 @@
     const isReviewer = role === 'admin';
     const isModerator = isReviewer;
     const isSpecialist = role === 'specialist';
+    const isSeller = role === 'seller';
+    (function enforceProConsultationPageAccess() {
+      const staffBypass = isReviewer || isModerator || isSpecialist || isSeller;
+      if (staffBypass) return;
+      const main = document.getElementById('consultPageMain');
+      if (main) main.classList.add('opacity-0', 'pointer-events-none');
+      (async () => {
+        try {
+          const data = await api('/billing/status');
+          if (data.status && data.status.isPro) {
+            if (main) main.classList.remove('opacity-0', 'pointer-events-none');
+            return;
+          }
+        } catch (_e) {}
+        window.location.replace('/pricing.html?reason=consultations');
+      })();
+    })();
     let specialistsForBooking = [];
     let activeChatId = null;
     let chatRefreshTimer = null;
