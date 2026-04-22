@@ -15,6 +15,20 @@ const PLATFORM_FEE_PERCENT = (() => {
   );
   return Number.isFinite(n) && n >= 0 && n <= 100 ? n : DEFAULT_PLATFORM_FEE_PERCENT;
 })();
+const OFFLINE_CHATBOT_ENABLED =
+  String(process.env.ENABLE_OFFLINE_CHATBOT || 'true').trim().toLowerCase() === 'true';
+const OFFLINE_SPECIALIST_MINUTES = (() => {
+  const n = Number(process.env.OFFLINE_SPECIALIST_MINUTES || 15);
+  return Number.isFinite(n) && n > 0 ? n : 15;
+})();
+const OFFLINE_CHATBOT_COOLDOWN_MINUTES = (() => {
+  const n = Number(process.env.OFFLINE_CHATBOT_COOLDOWN_MINUTES || 10);
+  return Number.isFinite(n) && n > 0 ? n : 10;
+})();
+const SPECIALIST_ONLINE_WINDOW_SECONDS = (() => {
+  const n = Number(process.env.SPECIALIST_ONLINE_WINDOW_SECONDS || 90);
+  return Number.isFinite(n) && n > 10 ? n : 90;
+})();
 
 function isModerator(actor) {
   return actor.roleName === 'admin' || actor.roleName === 'seller';
@@ -138,6 +152,31 @@ class ConsultationService {
         CONSTRAINT fk_feedback_specialist FOREIGN KEY (specialist_user_id) REFERENCES users(user_id) ON DELETE CASCADE
       )
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS consultation_ai_handoffs (
+        handoff_id INT PRIMARY KEY AUTO_INCREMENT,
+        consultation_id INT NOT NULL,
+        user_id INT NOT NULL,
+        specialist_user_id INT NOT NULL,
+        trigger_message_id INT NULL,
+        summary_text TEXT NOT NULL,
+        status VARCHAR(24) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_handoff_consult_created (consultation_id, created_at),
+        INDEX idx_handoff_specialist_status (specialist_user_id, status),
+        CONSTRAINT fk_handoff_consult FOREIGN KEY (consultation_id) REFERENCES consultations(consultation_id) ON DELETE CASCADE,
+        CONSTRAINT fk_handoff_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        CONSTRAINT fk_handoff_specialist FOREIGN KEY (specialist_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS specialist_presence (
+        specialist_user_id INT PRIMARY KEY,
+        last_seen_at DATETIME NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_specialist_presence_user FOREIGN KEY (specialist_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+      )
+    `);
     await this.ensureExtendedColumns();
     await this.ensureRevenueSchema();
     this.tableReady = true;
@@ -173,6 +212,7 @@ class ConsultationService {
     await tryAlter('ALTER TABLE consultations ADD COLUMN prescription_products_text TEXT NULL');
     await tryAlter('ALTER TABLE consultations ADD COLUMN prescription_plan_text TEXT NULL');
     await tryAlter('ALTER TABLE consultations ADD COLUMN prescription_issued_at DATETIME NULL');
+    await tryAlter('ALTER TABLE consultation_messages MODIFY COLUMN sender_role VARCHAR(20) NOT NULL');
     try {
       await pool.query(`UPDATE consultations SET status = 'awaiting_payment' WHERE status = 'accepted'`);
     } catch (_e) {
@@ -264,6 +304,214 @@ class ConsultationService {
     return `/${s}`;
   }
 
+  async shouldTriggerOfflineAssistant(consultation) {
+    if (!OFFLINE_CHATBOT_ENABLED) return false;
+    if (!consultation || !consultation.specialist_user_id) return false;
+    const specialistOnline = await this.isSpecialistOnline(consultation.specialist_user_id);
+    if (specialistOnline) return false;
+    const [rows] = await pool.query(
+      `SELECT MAX(created_at) AS last_specialist_at
+       FROM consultation_messages
+       WHERE consultation_id = ? AND sender_role = 'specialist'`,
+      [consultation.consultation_id]
+    );
+    const lastAt = rows && rows[0] ? rows[0].last_specialist_at : null;
+    if (!lastAt) return true;
+    const diffMs = Date.now() - new Date(lastAt).getTime();
+    return diffMs >= OFFLINE_SPECIALIST_MINUTES * 60 * 1000;
+  }
+
+  async markSpecialistPresence(actor) {
+    if (!actor || actor.roleName !== 'specialist') {
+      const e = new Error('Specialist access only');
+      e.status = 403;
+      throw e;
+    }
+    await this.ensureTable();
+    await pool.query(
+      `INSERT INTO specialist_presence (specialist_user_id, last_seen_at)
+       VALUES (?, NOW())
+       ON DUPLICATE KEY UPDATE last_seen_at = NOW()`,
+      [actor.userId]
+    );
+    return { specialistUserId: actor.userId, online: true };
+  }
+
+  async isSpecialistOnline(specialistUserId) {
+    const sid = Number(specialistUserId);
+    if (!Number.isFinite(sid) || sid <= 0) return false;
+    const [rows] = await pool.query(
+      `SELECT last_seen_at
+       FROM specialist_presence
+       WHERE specialist_user_id = ?
+       LIMIT 1`,
+      [sid]
+    );
+    if (!rows.length || !rows[0].last_seen_at) return false;
+    const diffMs = Date.now() - new Date(rows[0].last_seen_at).getTime();
+    return diffMs <= SPECIALIST_ONLINE_WINDOW_SECONDS * 1000;
+  }
+
+  async canSendOfflineAssistantNow(consultationId) {
+    const [rows] = await pool.query(
+      `SELECT created_at
+       FROM consultation_ai_handoffs
+       WHERE consultation_id = ?
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [consultationId]
+    );
+    if (!rows.length) return true;
+    const diffMs = Date.now() - new Date(rows[0].created_at).getTime();
+    return diffMs >= OFFLINE_CHATBOT_COOLDOWN_MINUTES * 60 * 1000;
+  }
+
+  async getConsultationContextForAssistant(consultation) {
+    const [profileRows] = await pool.query(
+      `SELECT hair_type, scalp_condition, issues_detected
+       FROM hair_profiles
+       WHERE user_id = ?
+       ORDER BY profile_id DESC
+       LIMIT 1`,
+      [consultation.user_id]
+    );
+    const [msgRows] = await pool.query(
+      `SELECT sender_role, message_text, created_at
+       FROM consultation_messages
+       WHERE consultation_id = ?
+       ORDER BY created_at DESC, message_id DESC
+       LIMIT 8`,
+      [consultation.consultation_id]
+    );
+    return {
+      profile: profileRows[0] || null,
+      recentMessages: (msgRows || []).reverse(),
+    };
+  }
+
+  async generateOfflineAssistantReply(consultation, context) {
+    const profile = context.profile || {};
+    const latestUserMessage = (() => {
+      const rows = Array.isArray(context.recentMessages) ? context.recentMessages : [];
+      for (let i = rows.length - 1; i >= 0; i -= 1) {
+        if (String(rows[i].sender_role || '').toLowerCase() === 'user') {
+          return String(rows[i].message_text || '').trim();
+        }
+      }
+      return '';
+    })();
+    const recent = (context.recentMessages || [])
+      .map((m) => `[${m.sender_role}] ${String(m.message_text || '').trim()}`)
+      .filter(Boolean)
+      .slice(-6)
+      .join('\n');
+    // Keep offline assistant deterministic and safe for MVP/demo:
+    // profile-aware guidance + escalation language, without external model dependency.
+    return this.buildRuleBasedOfflineReply(profile, latestUserMessage, recent);
+  }
+
+  buildRuleBasedOfflineReply(profile, userMessage, recentSummary = '') {
+    const msg = String(userMessage || '').toLowerCase();
+    const profileLine =
+      profile && (profile.hair_type || profile.scalp_condition)
+        ? `Based on your profile (${profile.hair_type || 'hair type not set'}, ${profile.scalp_condition || 'scalp condition not set'})`
+        : 'Based on your current chat context';
+
+    let tip = 'keep your routine gentle and consistent tonight';
+    if (msg.includes('itch') || msg.includes('irritat') || msg.includes('flak') || msg.includes('dandruff')) {
+      tip =
+        'use a gentle anti-dandruff or soothing scalp wash, avoid scratching, and rinse thoroughly with lukewarm water';
+    } else if (msg.includes('dry') || msg.includes('frizz') || msg.includes('rough')) {
+      tip = 'focus on hydration: use a gentle conditioner or mask on lengths and avoid high heat styling tonight';
+    } else if (msg.includes('oily') || msg.includes('greasy') || msg.includes('buildup')) {
+      tip = 'use a lightweight cleanse and avoid heavy oils on scalp to reduce buildup';
+    } else if (msg.includes('hair fall') || msg.includes('shedding') || msg.includes('thinning')) {
+      tip = 'avoid tight hairstyles and harsh handling; use a mild routine until your specialist reviews this';
+    }
+
+    const acknowledged = userMessage
+      ? `I received your message: "${String(userMessage).slice(0, 120)}${String(userMessage).length > 120 ? '…' : ''}".`
+      : 'I received your latest concern.';
+    const continuityLine = recentSummary ? 'I reviewed your recent chat context as well.' : '';
+    const seedText = `${String(userMessage || '')}|${String(recentSummary || '')}`;
+    const seed = Array.from(seedText).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    const pick = (arr) => arr[seed % arr.length];
+    const openers = [
+      'Your specialist appears offline right now, so I can help with general guidance while you wait.',
+      'Your specialist is currently offline, so I will provide safe initial guidance while waiting.',
+      'It looks like your specialist is away at the moment, so I can assist with immediate general care tips.',
+    ];
+    const closers = [
+      'I will forward a summary to your specialist for follow-up.',
+      'I will pass this summary to your specialist so they can continue from here.',
+      'I will send this context to your specialist for a proper follow-up review.',
+    ];
+
+    return [
+      pick(openers),
+      acknowledged,
+      continuityLine,
+      `${profileLine}, ${tip}.`,
+      'If symptoms worsen, become painful, or include bleeding/infection signs, seek professional care promptly.',
+      pick(closers),
+    ].join(' ');
+  }
+
+  isUrgentUserConcern(messageText) {
+    const msg = String(messageText || '').toLowerCase();
+    if (!msg) return false;
+    const urgentTerms = [
+      'bleeding',
+      'blood',
+      'severe pain',
+      'burning',
+      'swelling',
+      'pus',
+      'infect',
+      'infection',
+      'worsening fast',
+      'rapid hair loss',
+      'patches',
+      'allergic',
+      'difficulty breathing',
+    ];
+    return urgentTerms.some((t) => msg.includes(t));
+  }
+
+  async createOfflineAssistantHandoff(consultation, triggerMessageId, assistantReply, context) {
+    const recent = (context.recentMessages || [])
+      .map((m) => `${m.sender_role}: ${String(m.message_text || '').trim()}`)
+      .filter(Boolean)
+      .slice(-6);
+    const summary = [
+      'Offline assistant handoff',
+      `Concern: ${consultation.concern_title || '-'}`,
+      `Profile: hair_type=${(context.profile && context.profile.hair_type) || 'unknown'}, scalp=${(context.profile && context.profile.scalp_condition) || 'unknown'}, issues=${(context.profile && context.profile.issues_detected) || 'unknown'}`,
+      `Recent chat: ${recent.join(' | ') || 'no recent text'}`,
+      `Assistant reply: ${assistantReply}`,
+    ].join('\n');
+
+    await pool.query(
+      `INSERT INTO consultation_ai_handoffs
+        (consultation_id, user_id, specialist_user_id, trigger_message_id, summary_text, status)
+       VALUES (?, ?, ?, ?, ?, 'pending')`,
+      [
+        consultation.consultation_id,
+        consultation.user_id,
+        consultation.specialist_user_id,
+        triggerMessageId || null,
+        summary,
+      ]
+    );
+
+    await notificationService.createForUser(consultation.specialist_user_id, {
+      type: 'assistant_handoff',
+      title: 'AI handoff while offline',
+      message: `New user concern summary is ready for "${consultation.concern_title}".`,
+      linkUrl: `/consultations.html?chat=${consultation.consultation_id}`,
+    });
+  }
+
   mapRow(r) {
     const amount = r.amount_php != null ? Number(r.amount_php) : null;
     const platformPct =
@@ -318,7 +566,9 @@ class ConsultationService {
 
   applyChatUnlocked(row, actor) {
     const pay = row.paymentStatus || 'unpaid';
-    const unlocked = pay === 'verified' || isModerator(actor);
+    const st = String(row.status || '');
+    const sessionLive = st === 'in_progress' || st === 'completed';
+    const unlocked = (pay === 'verified' && sessionLive) || isModerator(actor);
     return { ...row, chatUnlocked: unlocked };
   }
 
@@ -1045,7 +1295,9 @@ class ConsultationService {
       throw new Error('Not allowed to view this chat');
     }
     const pay = consultation.payment_status || 'unpaid';
-    const chatUnlocked = pay === 'verified' || mod;
+    const st = String(consultation.status || '');
+    const sessionLive = st === 'in_progress' || st === 'completed';
+    const chatUnlocked = (pay === 'verified' && sessionLive) || mod;
     if (!chatUnlocked) {
       return { messages: [], chatLocked: true };
     }
@@ -1100,8 +1352,10 @@ class ConsultationService {
       throw new Error('Not allowed to message in this consultation');
     }
     const pay = consultation.payment_status || 'unpaid';
-    if (!mod && pay !== 'verified') {
-      throw new Error('Chat opens after admin verifies your GCash payment');
+    const st = String(consultation.status || '');
+    const sessionLive = st === 'in_progress' || st === 'completed';
+    if (!mod && (pay !== 'verified' || !sessionLive)) {
+      throw new Error('Chat opens when payment is verified and the specialist starts the session');
     }
     const senderRole = mod || isSpec ? 'specialist' : 'user';
     const textForDb = messageText || (imageRelativePath ? '' : '');
@@ -1131,6 +1385,38 @@ class ConsultationService {
           message: `${actor.name || 'User'} sent a message on "${consultation.concern_title}".`,
           linkUrl: `/consultations.html?chat=${id}`,
         });
+      }
+      // Offline assistant fallback: provide immediate safe guidance and queue a handoff summary.
+      if (consultation.specialist_user_id) {
+        const shouldTrigger = await this.shouldTriggerOfflineAssistant(consultation);
+        if (shouldTrigger) {
+          const context = await this.getConsultationContextForAssistant(consultation);
+          let assistantReply = await this.generateOfflineAssistantReply(consultation, context);
+          const urgent = this.isUrgentUserConcern(messageText);
+          if (urgent) {
+            assistantReply = [
+              'Your message may include urgent symptoms. I cannot diagnose conditions in chat.',
+              'Please seek immediate professional care if symptoms are severe, painful, spreading, or include bleeding/infection signs.',
+              'I am escalating this to your specialist now and they should follow up as soon as possible.',
+            ].join(' ');
+          }
+          if (assistantReply && assistantReply.trim()) {
+            await pool.query(
+              `INSERT INTO consultation_messages (consultation_id, sender_user_id, sender_role, message_text, image_path)
+               VALUES (?, ?, 'assistant', ?, NULL)`,
+              [id, consultation.specialist_user_id, assistantReply.trim()]
+            );
+            const canCreateHandoffNow = urgent || (await this.canSendOfflineAssistantNow(id));
+            if (canCreateHandoffNow) {
+              await this.createOfflineAssistantHandoff(
+                consultation,
+                result.insertId,
+                assistantReply.trim(),
+                context
+              );
+            }
+          }
+        }
       }
     }
     return { messageId: result.insertId, sent: true };

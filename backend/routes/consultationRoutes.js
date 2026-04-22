@@ -20,6 +20,9 @@ router.get('/specialist-feedback/:specialistUserId', requireAuth, (req, res, nex
 router.get('/specialist/revenue', requireAuth, (req, res, next) =>
   consultationController.specialistRevenue(req, res, next)
 );
+router.post('/specialist/presence', requireAuth, (req, res, next) =>
+  consultationController.specialistPresence(req, res, next)
+);
 router.post('/specialist/payout-request', requireAuth, (req, res, next) =>
   consultationController.requestSpecialistPayout(req, res, next)
 );

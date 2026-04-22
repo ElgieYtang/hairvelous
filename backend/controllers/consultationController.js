@@ -187,6 +187,15 @@ class ConsultationController {
     }
   }
 
+  async specialistPresence(req, res, next) {
+    try {
+      const result = await consultationService.markSpecialistPresence(req.user);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async specialistFeedbackList(req, res, next) {
     try {
       const specialistUserId = Number(req.params.specialistUserId);

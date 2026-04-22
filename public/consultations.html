@@ -649,28 +649,28 @@
     <div class="relative z-[1] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-600/80 bg-slate-900 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-700/80 px-4 py-3">
         <div>
-          <h3 class="text-sm font-semibold text-white">Close consultation</h3>
-          <p class="mt-1 text-[11px] text-slate-400">Add a short structured summary before closure.</p>
+          <h3 class="text-sm font-semibold text-white">Complete session</h3>
+          <p class="mt-1 text-[11px] text-slate-400">Add a short summary for the client record before ending this session.</p>
         </div>
         <button type="button" id="closeCaseModalClose" class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">✕</button>
       </div>
       <form id="closeCaseForm" class="space-y-3 p-4">
         <input type="hidden" id="closeCaseConsultationId" value="" />
         <div>
-          <label for="closeCaseFindings" class="mb-1 block text-xs font-medium text-slate-300">Findings</label>
+          <label for="closeCaseFindings" class="mb-1 block text-xs font-medium text-slate-300">Session findings</label>
           <textarea id="closeCaseFindings" rows="3" maxlength="600" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="Briefly describe current hair/scalp findings."></textarea>
         </div>
         <div>
-          <label for="closeCasePlan" class="mb-1 block text-xs font-medium text-slate-300">Plan</label>
+          <label for="closeCasePlan" class="mb-1 block text-xs font-medium text-slate-300">Care plan</label>
           <textarea id="closeCasePlan" rows="3" maxlength="600" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="What routine/product adjustments should the client continue?"></textarea>
         </div>
         <div>
-          <label for="closeCaseFollowUp" class="mb-1 block text-xs font-medium text-slate-300">Follow-up</label>
-          <textarea id="closeCaseFollowUp" rows="2" maxlength="400" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="When should they check in again?"></textarea>
+          <label for="closeCaseFollowUp" class="mb-1 block text-xs font-medium text-slate-300">Next check-in (optional)</label>
+          <textarea id="closeCaseFollowUp" rows="2" maxlength="400" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="If needed, when should the client return or message again?"></textarea>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2 pt-1">
           <button type="button" id="closeCaseCancelBtn" class="rounded-md border border-slate-600 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">Cancel</button>
-          <button type="submit" id="closeCaseSubmitBtn" class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500">Save summary & close case</button>
+          <button type="submit" id="closeCaseSubmitBtn" class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500">Save summary & complete session</button>
         </div>
       </form>
     </div>
@@ -1027,7 +1027,7 @@
         listHint.textContent =
           specialistInboxMode === 'requests'
             ? 'New client requests waiting for your decision.'
-            : 'Accepted consultations. Chat unlocks after payment is verified.';
+            : 'Accepted consultations. Chat unlocks after payment is verified and session is started.';
       }
     }
 
@@ -1473,10 +1473,10 @@
       const s = String(status || '');
       const labelMap = {
         pending: 'Request Sent',
-        awaiting_payment: 'Awaiting Payment',
-        scheduled: 'Payment Verified',
-        in_progress: 'Ongoing',
-        completed: 'Closed by Specialist',
+        awaiting_payment: 'Waiting for Payment',
+        scheduled: 'Ready for Session',
+        in_progress: 'Session Ongoing',
+        completed: 'Session Completed',
         cancelled: 'Cancelled',
         declined: 'Declined',
       };
@@ -1532,7 +1532,7 @@
       if (sendBtn) sendBtn.disabled = !allow;
     }
 
-    /** Composer only when a consultation is open and (mod/specialist) or payment verified for messaging. */
+    /** Composer only when a consultation is open and chat is unlocked. */
     function updateComposerVisibility() {
       if (!chatForm) return;
       if (!activeChatId) {
@@ -2200,10 +2200,14 @@
       const findings = (document.getElementById('closeCaseFindings')?.value || '').trim();
       const plan = (document.getElementById('closeCasePlan')?.value || '').trim();
       const followUp = (document.getElementById('closeCaseFollowUp')?.value || '').trim();
-      if (!findings || !plan || !followUp) {
+      if (!findings || !plan) {
         return '';
       }
-      return `Findings: ${findings}\nPlan: ${plan}\nFollow-up: ${followUp}`;
+      return [
+        `Findings: ${findings}`,
+        `Plan: ${plan}`,
+        followUp ? `Next check-in: ${followUp}` : 'Next check-in: Not required',
+      ].join('\n');
     }
 
     function closeClientRoutineModal() {
@@ -2770,7 +2774,7 @@
             }
             ${
               c.status === 'in_progress'
-                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="rounded-md bg-emerald-600/30 px-2 py-0.5 text-[10px] text-emerald-200 hover:bg-emerald-600/50">Close case</button>`
+                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="rounded-md bg-emerald-600/30 px-2 py-0.5 text-[10px] text-emerald-200 hover:bg-emerald-600/50">Complete Session</button>`
                 : ''
             }
             <button type="button" data-notes="${c.consultationId}" class="rounded-md bg-violet-600/30 px-2 py-0.5 text-[10px] text-violet-200 hover:bg-violet-600/50">Notes</button>
@@ -3258,10 +3262,10 @@
       const short = t.length > 52 ? t.slice(0, 52) + '…' : t;
       const statusMap = {
         pending: 'Request Sent',
-        awaiting_payment: 'Awaiting Payment',
-        scheduled: 'Payment Verified',
-        in_progress: 'Ongoing',
-        completed: 'Closed by Specialist',
+        awaiting_payment: 'Waiting for Payment',
+        scheduled: 'Ready for Session',
+        in_progress: 'Session Ongoing',
+        completed: 'Session Completed',
         cancelled: 'Cancelled',
         declined: 'Declined',
       };
@@ -3318,7 +3322,12 @@
 
     function messageBubble(m) {
       const mine = Number(m.senderUserId) === Number((user && user.userId) || 0);
-      const senderTag = mine ? 'You' : `${m.senderName || 'Unknown'} · ${m.senderRole || 'user'}`;
+      const senderRole = String(m.senderRole || 'user').toLowerCase();
+      const senderTag = mine
+        ? 'You'
+        : senderRole === 'assistant'
+          ? 'Hairvelous AI Assistant'
+          : `${m.senderName || 'Unknown'} · ${m.senderRole || 'user'}`;
       const mid = m.messageId != null ? m.messageId : m.message_id;
       const canDelete = mid && (isModerator || mine);
       const resolvedImg = resolveChatImageUrl(m);
@@ -3336,9 +3345,14 @@
       const delBtn = canDelete
         ? `<button type="button" class="rounded-md px-2 py-0.5 text-[10px] text-slate-500 opacity-80 hover:bg-black/15 hover:text-rose-200 hover:opacity-100" data-delete-message="${mid}" aria-label="Delete message">Delete</button>`
         : '';
+      const assistantBadge = senderRole === 'assistant'
+        ? '<span class="ml-2 inline-flex items-center rounded-full border border-cyan-300/35 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-cyan-200">Offline assistant</span>'
+        : '';
       const bubble =
         mine
           ? 'max-w-[min(92%,28rem)] rounded-2xl rounded-br-md border border-violet-400/25 bg-gradient-to-br from-violet-600 to-violet-700 px-4 py-3 text-white shadow-lg shadow-violet-950/25'
+          : senderRole === 'assistant'
+            ? 'max-w-[min(92%,28rem)] rounded-2xl rounded-bl-md border border-cyan-400/30 bg-cyan-900/20 px-4 py-3 text-cyan-50 shadow-md shadow-black/20'
           : 'max-w-[min(92%,28rem)] rounded-2xl rounded-bl-md border border-slate-600/45 bg-slate-700/85 px-4 py-3 text-slate-100 shadow-md shadow-black/20';
       const metaMine = 'text-violet-100/85';
       const metaOther = 'text-slate-400';
@@ -3346,7 +3360,7 @@
         <div class="flex gap-2 ${mine ? 'justify-end' : 'justify-start'}">
           ${mine ? '' : '<span class="mt-1 h-8 w-8 shrink-0 rounded-full bg-slate-700/90 text-center text-[10px] font-bold leading-8 text-slate-300 ring-1 ring-slate-600/60" aria-hidden="true">' + esc(listAvatarInitials(m.senderName || '?')) + '</span>'}
           <div class="${bubble}">
-            <div class="mb-1.5 text-[11px] font-medium ${mine ? metaMine : metaOther}">${esc(senderTag)}</div>
+            <div class="mb-1.5 text-[11px] font-medium ${mine ? metaMine : metaOther}">${esc(senderTag)}${assistantBadge}</div>
             ${textBlock}
             ${imgBlock}
             <div class="mt-2 flex items-center ${mine ? 'justify-end' : 'justify-between'} gap-2 text-[11px] ${mine ? 'text-violet-100/70' : 'text-slate-500'}">
@@ -4040,6 +4054,13 @@
       if (isSpecialist) {
         loadSpecialistFeeSettings();
         loadSpecialistRevenue();
+        const sendPresencePing = async () => {
+          try {
+            await api('/consultations/specialist/presence', { method: 'POST', body: '{}' });
+          } catch (_err) {}
+        };
+        sendPresencePing();
+        setInterval(sendPresencePing, 30000);
       }
     } else {
       loadSpecialists();
