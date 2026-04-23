@@ -27,7 +27,7 @@
           This is for awareness only and is <span class="font-semibold">not a medical diagnosis</span>. You can skip this and still finish the assessment.
         </p>
         <div class="mb-4">
-          <label for="photo" class="block text-sm text-slate-300 mb-2">Choose image</label>
+          <label for="photo" class="block text-sm text-slate-300 mb-2">Choose image (single photo)</label>
           <input type="file" id="photo" accept="image/jpeg,image/png,image/gif,image/webp" class="text-slate-300 text-sm" />
         </div>
         <div id="photo-preview-wrap" class="mb-4 hidden rounded-lg border border-slate-600 bg-slate-900/50 p-3">
@@ -38,7 +38,8 @@
           <p class="font-medium text-slate-300 mb-2">Tips for best photo quality:</p>
           <ul class="list-disc list-inside space-y-1">
             <li>Use natural lighting</li>
-            <li>Take photo from multiple angles (front, side, back)</li>
+            <li>For now, upload one clear angle only (front, side, or back)</li>
+            <li>If needed, choose a different angle and upload again before completing</li>
             <li>Ensure hair is clean and dry</li>
             <li>Avoid filters or heavy editing</li>
             <li>Focus on hair texture and scalp visibility</li>
@@ -444,8 +445,9 @@
         });
 
         localStorage.setItem('hairAiResult', JSON.stringify(aiResult));
-        showToast('AI analysis complete! Click "Complete assessment" to see results.', 'success');
-        btn.textContent = '✓ Analysis done';
+        showToast('AI analysis complete! You can upload another angle or click "Complete assessment".', 'success');
+        btn.disabled = false;
+        btn.textContent = 'Upload another photo';
       } catch (err) {
         console.error('Photo/AI error:', err);
         showToast((err && err.error) || 'Upload/Analysis failed', 'error');
