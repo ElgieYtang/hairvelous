@@ -1933,6 +1933,18 @@ class ConsultationService {
          AND earning_id IN (${placeholders})`,
       [payoutRequestId, specialistId, ...earningIds]
     );
+    await notificationService.createForRoles(
+      ['admin'],
+      {
+        type: 'payout_request',
+        title: 'New specialist payout request',
+        message: `${actor.name || 'A specialist'} requested payout #${payoutRequestId} for ₱${(
+          Math.round(sums.net * 100) / 100
+        ).toLocaleString(undefined, { maximumFractionDigits: 2 })}.`,
+        linkUrl: '/admin_dashboard.html',
+      },
+      specialistId
+    );
     return {
       payoutRequestId,
       requested: true,
@@ -2076,6 +2088,14 @@ class ConsultationService {
          WHERE payout_request_id = ?`,
         [actor.userId, note, id]
       );
+      await notificationService.createForUser(row.specialist_user_id, {
+        type: 'payout_update',
+        title: 'Payout request approved',
+        message: note
+          ? `Your payout request #${id} was approved. Admin note: ${note}`
+          : `Your payout request #${id} was approved and is now being processed.`,
+        linkUrl: '/consultations.html',
+      });
       return { payoutRequestId: id, status: 'approved' };
     }
 
@@ -2095,6 +2115,14 @@ class ConsultationService {
          WHERE payout_request_id = ? AND status = 'in_payout'`,
         [id]
       );
+      await notificationService.createForUser(row.specialist_user_id, {
+        type: 'payout_update',
+        title: 'Payout request rejected',
+        message: note
+          ? `Your payout request #${id} was rejected. Admin note: ${note}`
+          : `Your payout request #${id} was rejected. Please contact admin for details.`,
+        linkUrl: '/consultations.html',
+      });
       return { payoutRequestId: id, status: 'rejected' };
     }
 
@@ -2113,6 +2141,14 @@ class ConsultationService {
        WHERE payout_request_id = ? AND status = 'in_payout'`,
       [id]
     );
+    await notificationService.createForUser(row.specialist_user_id, {
+      type: 'payout_update',
+      title: 'Payout marked as paid',
+      message: note
+        ? `Your payout request #${id} was marked as paid. Admin note: ${note}`
+        : `Your payout request #${id} was marked as paid.`,
+      linkUrl: '/consultations.html',
+    });
     return { payoutRequestId: id, status: 'paid' };
   }
 

@@ -3582,6 +3582,15 @@
       return map[String(status || '').toLowerCase()] || String(status || 'unknown');
     }
 
+    function payoutBadgeClassForSpecialist(status) {
+      const s = String(status || '').toLowerCase();
+      if (s === 'paid') return 'border-emerald-500/45 bg-emerald-500/10 text-emerald-200';
+      if (s === 'approved') return 'border-cyan-500/45 bg-cyan-500/10 text-cyan-200';
+      if (s === 'requested') return 'border-amber-500/45 bg-amber-500/10 text-amber-200';
+      if (s === 'rejected') return 'border-rose-500/45 bg-rose-500/10 text-rose-200';
+      return 'border-slate-500/45 bg-slate-500/10 text-slate-300';
+    }
+
     async function openReviewerPrompt(consultationId) {
       const specialistNotes = prompt('Specialist notes:');
       if (specialistNotes === null) return;
@@ -4223,10 +4232,11 @@
       const php = (n) => `₱${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
       specialistPayoutHistory.innerHTML = history.slice(0, 8).map((item) => {
         const status = prettyPayoutStatus(item.status || '');
+        const badgeClass = payoutBadgeClassForSpecialist(item.status || '');
         return `<div class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <p class="text-sm font-semibold text-white">${esc(toDateOnly(item.periodStart))} to ${esc(toDateOnly(item.periodEnd))}</p>
-            <span class="rounded-full border border-emerald-500/45 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-200">${esc(status)}</span>
+            <span class="rounded-full border px-2 py-0.5 text-[11px] font-medium ${badgeClass}">${esc(status)}</span>
           </div>
           <p class="mt-1 text-xs text-slate-300">Net ${esc(php(item.netPhp))} from ${esc(String(item.itemCount || 0))} consultation(s).</p>
           <p class="mt-1 text-[11px] text-slate-500">Requested ${esc(toDateOnly(item.requestedAt || ''))}</p>
