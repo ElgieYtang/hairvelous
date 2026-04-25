@@ -36,6 +36,9 @@
         </a>
         <h2 class="text-2xl font-bold text-white mb-2">Welcome back</h2>
         <p class="text-slate-400 mb-6">Sign in to continue your hair care journey.</p>
+        <div id="suspended-notice" class="hidden mb-4 rounded-lg border border-rose-500/50 bg-rose-950/40 px-3 py-2.5 text-sm text-rose-100/90" role="alert">
+          This account has been suspended. You can no longer use the app until an administrator reactivates it. If you think this is a mistake, contact support.
+        </div>
 
     <!-- Google Sign In Button (Firebase) -->
     <div id="google-auth-container" class="mb-6">
@@ -168,6 +171,20 @@
         }
       });
     }
+
+    (function showSuspendedIfNeeded() {
+      try {
+        const p = new URLSearchParams(location.search);
+        if (p.get('suspended') === '1') {
+          if (typeof setToken === 'function' && typeof setUser === 'function') {
+            setToken(null);
+            setUser(null);
+          }
+          const n = document.getElementById('suspended-notice');
+          if (n) n.classList.remove('hidden');
+        }
+      } catch (_) {}
+    })();
 
     // Already logged in: send to role-specific page
     if (isLoggedIn()) {

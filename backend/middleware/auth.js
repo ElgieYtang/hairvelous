@@ -40,7 +40,7 @@ async function optionalAuth(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const [rows] = await pool.query(
-      `SELECT u.user_id, u.name, u.email, u.role_id, r.role_name 
+      `SELECT u.user_id, u.name, u.email, u.role_id, u.is_suspended, r.role_name 
        FROM users u 
        JOIN roles r ON u.role_id = r.role_id 
        WHERE u.user_id = ?`,
@@ -49,9 +49,19 @@ async function optionalAuth(req, res, next) {
 
     if (rows.length === 0) {
       req.user = null;
+      req.accountSuspended = false;
       return next();
     }
 
+    const suspended =
+      rows[0].is_suspended === 1 || rows[0].is_suspended === true;
+    if (suspended) {
+      req.user = null;
+      req.accountSuspended = true;
+      return next();
+    }
+
+    req.accountSuspended = false;
     req.user = {
       userId: rows[0].user_id,
       name: rows[0].name,
@@ -62,6 +72,7 @@ async function optionalAuth(req, res, next) {
     next();
   } catch (err) {
     req.user = null;
+    req.accountSuspended = false;
     next();
   }
 }
@@ -78,6 +89,13 @@ function requireAuth(req, res, next) {
     return next();
   }
 
+  if (req.accountSuspended) {
+    return res.status(403).json({
+      error: 'Account has been suspended',
+      code: 'ACCOUNT_SUSPENDED',
+    });
+  }
+
   if (!req.user) {
     return res.status(401).json({
       error: 'Authentication required',
@@ -90,6 +108,12 @@ function requireAuth(req, res, next) {
  * Require admin role: returns 403 if not admin
  */
 function requireAdmin(req, res, next) {
+  if (req.accountSuspended) {
+    return res.status(403).json({
+      error: 'Account has been suspended',
+      code: 'ACCOUNT_SUSPENDED',
+    });
+  }
   if (!req.user) {
     return res.status(401).json({
       error: 'Authentication required',
@@ -119,6 +143,12 @@ module.exports = {
 };
 
 function requireSellerOrAdmin(req, res, next) {
+  if (req.accountSuspended) {
+    return res.status(403).json({
+      error: 'Account has been suspended',
+      code: 'ACCOUNT_SUSPENDED',
+    });
+  }
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
   }

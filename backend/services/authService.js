@@ -119,12 +119,12 @@ async register(name, email, password, profile = {}) {
     
     let query;
     if (hasGoogleColumns) {
-      query = `SELECT u.user_id, u.name, u.email, u.password_hash, u.role_id, u.auth_provider, r.role_name 
+      query = `SELECT u.user_id, u.name, u.email, u.password_hash, u.role_id, u.auth_provider, u.is_suspended, r.role_name 
                FROM users u 
                JOIN roles r ON u.role_id = r.role_id 
                WHERE u.email = ?`;
     } else {
-      query = `SELECT u.user_id, u.name, u.email, u.password_hash, u.role_id, r.role_name 
+      query = `SELECT u.user_id, u.name, u.email, u.password_hash, u.role_id, u.is_suspended, r.role_name 
                FROM users u 
                JOIN roles r ON u.role_id = r.role_id 
                WHERE u.email = ?`;
@@ -150,6 +150,13 @@ async register(name, email, password, profile = {}) {
         throw new Error('Incorrect password. If this is a Google account, use "Forgot password" to set an email password.');
       }
       throw new Error('Invalid email or password');
+    }
+
+    if (user.is_suspended === 1 || user.is_suspended === true) {
+      const e = new Error('Account has been suspended');
+      e.status = 403;
+      e.code = 'ACCOUNT_SUSPENDED';
+      throw e;
     }
 
     const token = signToken(user.user_id);

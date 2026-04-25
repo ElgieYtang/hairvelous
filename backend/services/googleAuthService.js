@@ -111,13 +111,19 @@ class GoogleAuthService {
 
     // Check if user exists by google_sub
     const [existingBySub] = await pool.query(
-      'SELECT user_id, name, email, role_id, auth_provider FROM users WHERE google_sub = ?',
+      'SELECT user_id, name, email, role_id, auth_provider, is_suspended FROM users WHERE google_sub = ?',
       [sub]
     );
 
     if (existingBySub.length > 0) {
       // User exists with this Google account - log them in
       const user = existingBySub[0];
+      if (user.is_suspended === 1 || user.is_suspended === true) {
+        const e = new Error('Account has been suspended');
+        e.status = 403;
+        e.code = 'ACCOUNT_SUSPENDED';
+        throw e;
+      }
       const [roleRows] = await pool.query('SELECT role_name FROM roles WHERE role_id = ?', [user.role_id]);
       
       const token = signToken(user.user_id);
@@ -135,13 +141,19 @@ class GoogleAuthService {
 
     // Check if user exists by email (local account)
     const [existingByEmail] = await pool.query(
-      'SELECT user_id, name, email, role_id, auth_provider FROM users WHERE email = ?',
+      'SELECT user_id, name, email, role_id, auth_provider, is_suspended FROM users WHERE email = ?',
       [email]
     );
 
     if (existingByEmail.length > 0) {
       // User exists with local account - link Google account
       const user = existingByEmail[0];
+      if (user.is_suspended === 1 || user.is_suspended === true) {
+        const e = new Error('Account has been suspended');
+        e.status = 403;
+        e.code = 'ACCOUNT_SUSPENDED';
+        throw e;
+      }
       
       // Update user to link Google account
       await pool.query(

@@ -2288,6 +2288,54 @@
       ].join('\n');
     }
 
+    /** When structured (from Complete session), split for display; otherwise show full text. */
+    function parseCloseCaseSummaryText(text) {
+      const t = String(text || '').trim();
+      if (!t) return { kind: 'raw', text: '' };
+      const m = t.match(
+        /^Findings:\s*([\s\S]+?)\nPlan:\s*([\s\S]+?)(?:\nNext check-in:\s*([\s\S]*))?$/i
+      );
+      if (m) {
+        return {
+          kind: 'structured',
+          findings: m[1].trim(),
+          plan: m[2].trim(),
+          followUp: m[3] != null ? m[3].trim() : '',
+        };
+      }
+      return { kind: 'raw', text: t };
+    }
+
+    /** When a session summary exists, split the side panel into Case details vs Session summary. */
+    function bindDetailViewTabs(rootEl, defaultTab) {
+      const wrap = rootEl.querySelector('[data-detail-tabs-wrap]');
+      if (!wrap) return;
+      const tabs = rootEl.querySelectorAll('[data-detail-tab]');
+      const panes = rootEl.querySelectorAll('[data-detail-pane]');
+      if (!tabs.length || !panes.length) return;
+      const apply = (which) => {
+        const w = which === 'session' ? 'session' : 'case';
+        tabs.forEach((btn) => {
+          const on = btn.getAttribute('data-detail-tab') === w;
+          btn.setAttribute('aria-selected', on ? 'true' : 'false');
+          btn.classList.toggle('bg-slate-700/90', on);
+          btn.classList.toggle('text-white', on);
+          btn.classList.toggle('shadow-sm', on);
+          btn.classList.toggle('text-slate-400', !on);
+          btn.classList.toggle('ring-1', on);
+          btn.classList.toggle('ring-slate-500/30', on);
+        });
+        panes.forEach((pane) => {
+          const on = pane.getAttribute('data-detail-pane') === w;
+          pane.classList.toggle('hidden', !on);
+        });
+      };
+      tabs.forEach((btn) => {
+        btn.addEventListener('click', () => apply(btn.getAttribute('data-detail-tab') || 'case'));
+      });
+      apply(defaultTab);
+    }
+
     function closeClientRoutineModal() {
       const modal = document.getElementById('clientRoutineModal');
       if (!modal) return;
@@ -2690,6 +2738,37 @@
                </button>
              </div>`
           : '';
+      const frText = String(c.finalRecommendation || '').trim();
+      const frParsed = frText ? parseCloseCaseSummaryText(c.finalRecommendation) : null;
+      const sessionSummarySection =
+        String(c.status || '') === 'completed' && frText && frParsed
+          ? frParsed.kind === 'structured'
+            ? `<div class="mt-3 rounded-xl border border-emerald-500/35 bg-emerald-500/[0.07] p-3">
+                 <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-200/95">Session summary</p>
+                 <div class="mt-2 space-y-2.5 text-xs text-slate-200">
+                   <div>
+                     <p class="font-semibold text-emerald-100/90">Session findings</p>
+                     <p class="mt-0.5 whitespace-pre-wrap leading-relaxed text-slate-300">${esc(frParsed.findings || '—')}</p>
+                   </div>
+                   <div>
+                     <p class="font-semibold text-emerald-100/90">Care plan</p>
+                     <p class="mt-0.5 whitespace-pre-wrap leading-relaxed text-slate-300">${esc(frParsed.plan || '—')}</p>
+                   </div>
+                   <div>
+                     <p class="font-semibold text-slate-400">Next check-in</p>
+                     <p class="mt-0.5 whitespace-pre-wrap leading-relaxed text-slate-400">${esc(
+                       frParsed.followUp && frParsed.followUp.length ? frParsed.followUp : '—'
+                     )}</p>
+                   </div>
+                 </div>
+               </div>`
+            : frParsed.kind === 'raw' && frParsed.text
+              ? `<div class="mt-3 rounded-xl border border-emerald-500/35 bg-emerald-500/[0.07] p-3">
+                   <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-200/95">Session summary</p>
+                   <p class="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-200">${esc(frParsed.text)}</p>
+                 </div>`
+              : ''
+          : '';
       const postAcceptForRoutine = ['awaiting_payment', 'scheduled', 'in_progress', 'completed'].includes(
         String(c.status || '')
       );
@@ -2883,8 +2962,11 @@
         <p class="mt-3 text-[11px] leading-relaxed text-slate-500">Complete payment on the main page to unlock specialist profile, video requests, and messaging.</p>
       `;
       } else {
-        el.innerHTML = `
-        <div class="flex items-start justify-between gap-2">
+        const useDetailTabs = Boolean(sessionSummarySection);
+        const sessionPanelHtml = useDetailTabs
+          ? sessionSummarySection.replace('class="mt-3', 'class="mt-0')
+          : '';
+        const detailHead = `<div class="flex items-start justify-between gap-2">
           <h3 class="text-sm font-semibold leading-tight text-white">${esc(c.concernTitle)}</h3>
           ${statusBadge(c.status)}
         </div>
@@ -2898,11 +2980,34 @@
         <p class="mt-2 text-[11px] text-slate-400">Preferred: ${c.preferredDate ? esc(String(c.preferredDate).slice(0, 10)) : '—'}</p>
         ${isModerator || isSpecialist ? concernBodyStaff : concernBodyClient}
         ${isModerator || isSpecialist ? `<p class="mt-2 text-[11px] text-slate-500">${esc(c.userName)} · ${esc(c.userEmail)}</p>` : ''}
-        ${c.declineReason ? `<p class="mt-2 text-[11px] text-rose-300/90">Declined: ${esc(c.declineReason)}</p>` : ''}
-        ${prescriptionSection}
+        ${c.declineReason ? `<p class="mt-2 text-[11px] text-rose-300/90">Declined: ${esc(c.declineReason)}</p>` : ''}`;
+        const detailAfter = `${prescriptionSection}
         ${feedbackBlock}
-        ${staffActions}
+        ${staffActions}`;
+
+        if (useDetailTabs) {
+          const defaultTab = clientUser ? 'session' : 'case';
+          const detailTabBar = `<div class="mb-3" data-detail-tabs-wrap>
+            <div class="flex gap-1 rounded-lg border border-slate-600/50 bg-slate-800/70 p-1" role="tablist" aria-label="Case details and session summary">
+              <button type="button" role="tab" data-detail-tab="case" class="min-h-[2.5rem] flex-1 rounded-md px-2 py-1.5 text-center text-xs font-medium text-slate-400 transition">Case details</button>
+              <button type="button" role="tab" data-detail-tab="session" class="min-h-[2.5rem] flex-1 rounded-md px-2 py-1.5 text-center text-xs font-medium text-slate-400 transition">Session summary</button>
+            </div>
+          </div>`;
+          el.innerHTML = `${detailTabBar}
+        <div data-detail-pane="case" class="detail-side-pane" role="tabpanel" aria-label="Case details">
+        ${detailHead}
+        ${detailAfter}
+        </div>
+        <div data-detail-pane="session" class="detail-side-pane hidden" role="tabpanel" aria-label="Session summary">
+        ${sessionPanelHtml}
+        </div>`;
+          bindDetailViewTabs(el, defaultTab);
+        } else {
+          el.innerHTML = `${detailHead}
+        ${sessionSummarySection}
+        ${detailAfter}
       `;
+        }
       }
 
       el.querySelectorAll('[data-act]').forEach((btn) => {

@@ -102,7 +102,21 @@ async function api(path, options = {}) {
       data = { error: res.status === 404 ? 'Not found — is the API server running the latest code?' : `HTTP ${res.status}` };
     }
   }
-  if (!res.ok) throw { status: res.status, ...data };
+  if (!res.ok) {
+    const suspended =
+      res.status === 403 &&
+      token &&
+      (data.code === 'ACCOUNT_SUSPENDED' || /suspended/i.test(String(data.error || data.message || '')));
+    if (suspended) {
+      setToken(null);
+      setUser(null);
+      if (!window.__hvAccountSuspendedRedirect) {
+        window.__hvAccountSuspendedRedirect = true;
+        window.location.replace('/login.html?suspended=1');
+      }
+    }
+    throw { status: res.status, ...data };
+  }
   return data;
 }
 
@@ -113,7 +127,21 @@ async function apiForm(path, formData, method = 'POST') {
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(url, { method, headers, body: formData });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw { status: res.status, ...data };
+  if (!res.ok) {
+    const suspended =
+      res.status === 403 &&
+      token &&
+      (data.code === 'ACCOUNT_SUSPENDED' || /suspended/i.test(String(data.error || data.message || '')));
+    if (suspended) {
+      setToken(null);
+      setUser(null);
+      if (!window.__hvAccountSuspendedRedirect) {
+        window.__hvAccountSuspendedRedirect = true;
+        window.location.replace('/login.html?suspended=1');
+      }
+    }
+    throw { status: res.status, ...data };
+  }
   return data;
 }
 
