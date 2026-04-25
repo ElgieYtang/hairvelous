@@ -10,6 +10,8 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
 
 // Middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -32,6 +34,49 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const projectRoot = path.join(__dirname, '..');
+const execFileAsync = promisify(execFile);
+
+async function runStartupDbTasksIfEnabled() {
+  const autoBootstrap =
+    String(process.env.AUTO_BOOTSTRAP_DB_ON_START || 'false')
+      .trim()
+      .toLowerCase() === 'true';
+  const autoSeed =
+    String(process.env.AUTO_SEED_DB_ON_START || 'false')
+      .trim()
+      .toLowerCase() === 'true';
+
+  if (!autoBootstrap && !autoSeed) {
+    console.log('[startup-db] skipped (both bootstrap and seed disabled)');
+    return;
+  }
+
+  if (autoBootstrap) {
+    console.log('[startup-db] running bootstrap-db.js ...');
+    await execFileAsync(process.execPath, [path.join(__dirname, 'scripts', 'bootstrap-db.js')], {
+      cwd: __dirname,
+      env: process.env,
+      windowsHide: true,
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    console.log('[startup-db] bootstrap complete');
+  } else {
+    console.log('[startup-db] bootstrap skipped');
+  }
+
+  if (autoSeed) {
+    console.log('[startup-db] running seed-db.js ...');
+    await execFileAsync(process.execPath, [path.join(__dirname, 'scripts', 'seed-db.js')], {
+      cwd: __dirname,
+      env: process.env,
+      windowsHide: true,
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    console.log('[startup-db] seed complete');
+  } else {
+    console.log('[startup-db] seed skipped');
+  }
+}
 
 // Middleware
 app.use(cors({ origin: true, credentials: true }));
@@ -101,10 +146,14 @@ module.exports = app;
 if (process.env.NODE_ENV !== 'test' && require.main === module) {
   const billingService = require('./services/billingService');
   const recommendationService = require('./services/recommendationService');
-  Promise.all([
-    billingService.ensureDiyGuidesAddonColumns(),
-    recommendationService.ensureRecommendationsTable(),
-  ])
+  Promise.resolve()
+    .then(() => runStartupDbTasksIfEnabled())
+    .then(() =>
+      Promise.all([
+        billingService.ensureDiyGuidesAddonColumns(),
+        recommendationService.ensureRecommendationsTable(),
+      ])
+    )
     .then(() => {
       app.listen(PORT, () => {
         console.log(`Hairvelous server running at http://localhost:${PORT}`);

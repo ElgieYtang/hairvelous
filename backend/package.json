@@ -9,11 +9,15 @@
     "setup": "node scripts/setup-local.js",
     "db:bootstrap": "node scripts/bootstrap-db.js",
     "db:seed": "node scripts/seed-db.js",
+    "db:sync-core-products": "node scripts/sync-core-products.js",
+    "db:sync-ph-products": "node scripts/sync-ph-products.js",
+    "db:prepare-defense-demo": "node scripts/prepare-defense-demo.js",
     "db:fix-products-columns": "node scripts/fix-products-columns.js",
     "db:fix-hair-photos": "node scripts/fix-hair-photos-table.js",
     "db:fix-hair-assessment": "node scripts/fix-hair-assessment-tables.js",
     "db:fix-hair-profiles": "node scripts/fix-hair-profiles-table.js",
     "db:fix-product-categories": "node scripts/fix-product-categories-table.js",
+    "seed:demo-specialist": "node scripts/seed-demo-specialist.js",
     "paymongo:webhook": "node scripts/register-paymongo-webhook.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
@@ -33,6 +37,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.6.5",
+    "nodemailer": "^8.0.5",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

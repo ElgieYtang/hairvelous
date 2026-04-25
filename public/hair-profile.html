@@ -95,6 +95,8 @@
         if (result.isBald === true) {
           document.getElementById('profile-note').innerHTML =
             'You indicated very little or no scalp hair. Recommendations will focus more on scalp-friendly care and protective options.';
+        } else if (result.summaryText) {
+          document.getElementById('profile-note').textContent = result.summaryText;
         }
 
         document.getElementById('loading').classList.add('hidden');

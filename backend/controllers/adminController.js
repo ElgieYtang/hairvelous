@@ -17,6 +17,15 @@ class AdminController {
     }
   }
 
+  async listSpecialists(req, res, next) {
+    try {
+      const specialists = await adminService.listSpecialists();
+      res.json({ specialists });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async listUsers(req, res, next) {
     try {
       const users = await adminService.listUsers();

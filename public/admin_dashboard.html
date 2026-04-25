@@ -6,9 +6,28 @@
   <title>Admin Dashboard – Hairvelous</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>body { font-family: 'Outfit', sans-serif; }</style>
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+    html,
+    body {
+      overflow-x: hidden;
+    }
+    body.admin-dashboard main {
+      overflow-x: clip;
+    }
+    /* Keep admin page stable: disable global hover/focus transforms that cause jitter. */
+    body.admin-dashboard a:hover,
+    body.admin-dashboard .card-hover:hover,
+    body.admin-dashboard .btn-primary:hover,
+    body.admin-dashboard .btn-primary:active,
+    body.admin-dashboard input:focus,
+    body.admin-dashboard textarea:focus,
+    body.admin-dashboard select:focus {
+      transform: none !important;
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
+<body class="admin-dashboard bg-slate-900 text-slate-100 min-h-screen">
   <div id="disclaimer-placeholder"></div>
   <div id="nav-placeholder"></div>
 
@@ -18,24 +37,47 @@
       <p class="text-slate-400 mt-2 text-sm md:text-base max-w-2xl">Manage users, products, guides, and system reports.</p>
     </header>
 
-    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5 mb-10">
+    <div class="grid sm:grid-cols-2 xl:grid-cols-5 gap-4 md:gap-5 mb-10">
       <a href="/user_management.html" class="bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80 hover:border-violet-500/40 hover:bg-slate-800/70 transition-colors block shadow-sm">
-        <div class="w-11 h-11 rounded-lg bg-violet-600/25 flex items-center justify-center text-xl mb-3">👥</div>
+        <div class="w-11 h-11 rounded-lg bg-violet-600/25 flex items-center justify-center mb-3 text-violet-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18 18.72a8.96 8.96 0 0 0-6-2.22 8.96 8.96 0 0 0-6 2.22M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Zm7.5 11.25a7.5 7.5 0 0 0-5.799-7.297M16.5 3.75a3.75 3.75 0 0 1 0 7.5"/></svg>
+        </div>
         <h3 class="text-lg font-semibold text-white mb-1">Users</h3>
         <p class="text-slate-400 text-sm leading-relaxed">Manage user accounts</p>
       </a>
       <a href="/product_management.html" class="bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80 hover:border-violet-500/40 hover:bg-slate-800/70 transition-colors block shadow-sm">
-        <div class="w-11 h-11 rounded-lg bg-blue-600/25 flex items-center justify-center text-xl mb-3">🛍️</div>
+        <div class="w-11 h-11 rounded-lg bg-blue-600/25 flex items-center justify-center mb-3 text-blue-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m2.25 7.5 9.75 4.5 9.75-4.5M4.5 6.462V17.25A2.25 2.25 0 0 0 6.75 19.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.462M3 6l8.487-3.918a1.25 1.25 0 0 1 1.026 0L21 6"/></svg>
+        </div>
         <h3 class="text-lg font-semibold text-white mb-1">Products</h3>
         <p class="text-slate-400 text-sm leading-relaxed">Manage product catalog</p>
       </a>
       <a href="/guide_management.html" class="bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80 hover:border-violet-500/40 hover:bg-slate-800/70 transition-colors block shadow-sm">
-        <div class="w-11 h-11 rounded-lg bg-violet-600/25 flex items-center justify-center text-xl mb-3">📖</div>
+        <div class="w-11 h-11 rounded-lg bg-violet-600/25 flex items-center justify-center mb-3 text-violet-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6.75v10.5m0-10.5C9.5 5.2 6.4 4.5 3.75 4.5v12c2.65 0 5.75.7 8.25 2.25m0-12C14.5 5.2 17.6 4.5 20.25 4.5v12c-2.65 0-5.75.7-8.25 2.25"/></svg>
+        </div>
         <h3 class="text-lg font-semibold text-white mb-1">Guides</h3>
         <p class="text-slate-400 text-sm leading-relaxed">Manage DIY guides</p>
       </a>
+      <a href="/consultations.html" class="relative bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80 hover:border-amber-500/40 hover:bg-slate-800/70 transition-colors block shadow-sm">
+        <div class="w-11 h-11 rounded-lg bg-amber-600/20 flex items-center justify-center mb-3 text-amber-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.25 8.25h19.5m-18 0V6.75A2.25 2.25 0 0 1 6 4.5h12a2.25 2.25 0 0 1 2.25 2.25v10.5A2.25 2.25 0 0 1 18 19.5H6a2.25 2.25 0 0 1-2.25-2.25V8.25Zm12 7.5h3"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-1">Consultation Finance</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Verify consult payments, split commission, and monitor payouts</p>
+        <span id="pending-payment-count" class="hidden absolute right-4 top-4 rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white">0</span>
+      </a>
+      <a href="/admin/billing.html" class="bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80 hover:border-cyan-500/40 hover:bg-slate-800/70 transition-colors block shadow-sm">
+        <div class="w-11 h-11 rounded-lg bg-cyan-600/20 flex items-center justify-center mb-3 text-cyan-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7.5 3.75h9A2.25 2.25 0 0 1 18.75 6v12A2.25 2.25 0 0 1 16.5 20.25h-9A2.25 2.25 0 0 1 5.25 18V6A2.25 2.25 0 0 1 7.5 3.75Zm3 3h3m-3 3h3m-3 3h3m-3 3h3"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-1">Plan Billing Review</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Approve or reject Free/Pro subscription payment submissions</p>
+      </a>
       <div class="bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80 shadow-sm">
-        <div class="w-11 h-11 rounded-lg bg-emerald-600/20 flex items-center justify-center text-xl mb-3">📊</div>
+        <div class="w-11 h-11 rounded-lg bg-emerald-600/20 flex items-center justify-center mb-3 text-emerald-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3v18h18M8.25 15.75v-4.5m3.75 4.5V8.25m3.75 7.5v-3"/></svg>
+        </div>
         <h3 class="text-lg font-semibold text-white mb-1">Reports</h3>
         <p class="text-slate-400 text-sm leading-relaxed">View system stats below</p>
       </div>
@@ -44,6 +86,45 @@
     <section id="reports" class="mb-10">
       <h2 class="text-xl font-semibold text-white mb-4">System Reports</h2>
       <div id="reports-content" class="bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80">
+        <p class="text-slate-400">Loading...</p>
+      </div>
+    </section>
+
+    <section id="commission-analytics" class="mb-10">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-xl font-semibold text-white">Consultation Payment Analytics</h2>
+        <div class="flex flex-wrap items-center gap-2">
+          <div id="commission-range-filters" class="inline-flex rounded-lg border border-slate-700/80 bg-slate-900/70 p-1">
+            <button type="button" data-range="today" class="commission-range-btn rounded-md px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">Today</button>
+            <button type="button" data-range="7d" class="commission-range-btn rounded-md px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">7 days</button>
+            <button type="button" data-range="30d" class="commission-range-btn rounded-md px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">30 days</button>
+            <button type="button" data-range="all" class="commission-range-btn rounded-md px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">All</button>
+          </div>
+          <button type="button" id="commission-export-csv" class="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-200 hover:bg-emerald-500/20">
+            Export CSV
+          </button>
+          <button type="button" id="commission-print-report" class="rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-200 hover:bg-cyan-500/20">
+            Print Report
+          </button>
+        </div>
+      </div>
+      <div id="commission-content" class="bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80">
+        <p class="text-slate-400">Loading...</p>
+      </div>
+    </section>
+
+    <section id="payout-requests" class="mb-10">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-xl font-semibold text-white">Specialist Payout Requests</h2>
+        <button
+          type="button"
+          id="payout-refresh-btn"
+          class="rounded-md border border-slate-600/80 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700"
+        >
+          Refresh
+        </button>
+      </div>
+      <div id="payout-requests-content" class="bg-slate-800/50 rounded-xl p-5 md:p-6 border border-slate-700/80">
         <p class="text-slate-400">Loading...</p>
       </div>
     </section>
@@ -84,7 +165,566 @@
       }
     }
 
+    async function loadConsultationQueueSummary() {
+      const badge = document.getElementById('pending-payment-count');
+      if (!badge) return;
+      try {
+        const data = await api('/consultations');
+        const rows = Array.isArray(data.consultations) ? data.consultations : [];
+        const pending = rows.filter((c) => String((c && c.paymentStatus) || '') === 'pending_review').length;
+        badge.textContent = String(pending);
+        badge.classList.toggle('hidden', pending <= 0);
+      } catch (_err) {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function money(v) {
+      const n = Number(v || 0);
+      return `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function inRangeByDays(dateValue, days) {
+      if (!dateValue) return false;
+      const dt = new Date(dateValue);
+      if (Number.isNaN(dt.getTime())) return false;
+      const now = new Date();
+      if (days === 0) {
+        return (
+          dt.getFullYear() === now.getFullYear() &&
+          dt.getMonth() === now.getMonth() &&
+          dt.getDate() === now.getDate()
+        );
+      }
+      const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+      return dt >= cutoff && dt <= now;
+    }
+
+    function applyCommissionRange(rows, rangeKey) {
+      if (rangeKey === 'all') return rows;
+      if (rangeKey === 'today') {
+        return rows.filter((r) => inRangeByDays(r.paidVerifiedAt || r.completedAt, 0));
+      }
+      if (rangeKey === '7d') {
+        return rows.filter((r) => inRangeByDays(r.paidVerifiedAt || r.completedAt, 7));
+      }
+      if (rangeKey === '30d') {
+        return rows.filter((r) => inRangeByDays(r.paidVerifiedAt || r.completedAt, 30));
+      }
+      return rows;
+    }
+
+    function escapeCsv(value) {
+      const s = value == null ? '' : String(value);
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    }
+
+    function consultationStatusLabel(v) {
+      const s = String(v || '');
+      const map = {
+        pending: 'Request Sent',
+        awaiting_payment: 'Awaiting Payment',
+        scheduled: 'Payment Verified',
+        in_progress: 'Ongoing',
+        completed: 'Closed by Specialist',
+        cancelled: 'Cancelled',
+        declined: 'Declined',
+      };
+      return map[s] || s || '—';
+    }
+
+    function paymentStatusLabel(v) {
+      const s = String(v || '');
+      const map = {
+        unpaid: 'Payment Not Submitted',
+        pending_review: 'Payment Pending Review',
+        verified: 'Payment Verified',
+        rejected: 'Payment Rejected',
+      };
+      return map[s] || s || '—';
+    }
+
+    function payoutStatusLabel(v) {
+      const s = String(v || '');
+      const map = {
+        requested: 'Requested',
+        approved: 'Approved',
+        paid: 'Paid Out',
+        rejected: 'Rejected',
+      };
+      return map[s] || (s ? s : '—');
+    }
+
+    function payoutStatusBadgeClass(v) {
+      const s = String(v || '').toLowerCase();
+      if (s === 'requested') return 'bg-amber-500/20 text-amber-200 border border-amber-500/40';
+      if (s === 'approved') return 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40';
+      if (s === 'paid') return 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40';
+      if (s === 'rejected') return 'bg-rose-500/20 text-rose-200 border border-rose-500/40';
+      return 'bg-slate-700/60 text-slate-200 border border-slate-600/60';
+    }
+
+    function consultationDateValue(r) {
+      return r.paidVerifiedAt || r.completedAt || null;
+    }
+
+    function consultationDateTime(r) {
+      const value = consultationDateValue(r);
+      if (!value) return 0;
+      const dt = new Date(value);
+      return Number.isNaN(dt.getTime()) ? 0 : dt.getTime();
+    }
+
+    function sortTransactionsByNewest(rows) {
+      return [...(rows || [])].sort((a, b) => {
+        const dateDiff = consultationDateTime(b) - consultationDateTime(a);
+        if (dateDiff !== 0) return dateDiff;
+        return Number(b.consultationId || 0) - Number(a.consultationId || 0);
+      });
+    }
+
+    function formatConsultationDate(value) {
+      if (!value) return '—';
+      const dt = new Date(value);
+      if (Number.isNaN(dt.getTime())) return String(value);
+      return dt.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    function formatSimpleDate(value) {
+      if (!value) return '—';
+      const dt = new Date(value);
+      if (Number.isNaN(dt.getTime())) return String(value);
+      return dt.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    function downloadCommissionCsv(rows, rangeKey) {
+      const filtered = sortTransactionsByNewest(applyCommissionRange(rows, rangeKey));
+      if (!filtered.length) {
+        showToast('No transactions to export for selected range.', 'info');
+        return;
+      }
+      const headers = [
+        'Consultation ID',
+        'Date',
+        'Concern Title',
+        'Client Name',
+        'Specialist Name',
+        'Consultation Status',
+        'Payment Status',
+        'Client Paid Total PHP',
+        'Platform Fee PHP',
+        'Specialist Fee PHP',
+        'Payout Status',
+        'Paid Verified At',
+        'Completed At',
+      ];
+      const body = filtered.map((r) => [
+        r.consultationId,
+        formatConsultationDate(consultationDateValue(r)),
+        r.concernTitle || '',
+        r.clientName || '',
+        r.specialistName || '',
+        consultationStatusLabel(r.consultationStatus),
+        paymentStatusLabel(r.paymentStatus),
+        Number(r.grossPhp != null ? r.grossPhp : r.amountPhp || 0).toFixed(2),
+        Number(r.commissionPhp || 0).toFixed(2),
+        Number(r.specialistNetPhp || 0).toFixed(2),
+        payoutStatusLabel(r.payoutStatus),
+        r.paidVerifiedAt || '',
+        r.completedAt || '',
+      ]);
+      const csv = [headers, ...body]
+        .map((row) => row.map((v) => escapeCsv(v)).join(','))
+        .join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `consultation-payment-report-${rangeKey}-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('CSV exported successfully.', 'success');
+    }
+
+    function printCommissionReport(rows, rangeKey) {
+      const filtered = sortTransactionsByNewest(applyCommissionRange(rows, rangeKey));
+      if (!filtered.length) {
+        showToast('No transactions to print for selected range.', 'info');
+        return;
+      }
+      const totals = filtered.reduce(
+        (acc, r) => {
+          acc.gross += Number(r.grossPhp != null ? r.grossPhp : r.amountPhp || 0);
+          acc.commission += Number(r.commissionPhp || 0);
+          acc.net += Number(r.specialistNetPhp || 0);
+          return acc;
+        },
+        { gross: 0, commission: 0, net: 0 }
+      );
+      const now = new Date();
+      const reportHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Hairvelous Consultation Payment Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #111; margin: 24px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    p.meta { color: #555; margin: 0 0 14px; font-size: 12px; }
+    .totals { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 10px; }
+    .card .k { font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
+    .card .v { font-size: 18px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+    th { background: #f5f5f5; }
+    .right { text-align: right; }
+  </style>
+</head>
+<body>
+  <h1>Hairvelous Consultation Payment Report</h1>
+  <p class="meta">Range: ${escapeCsv(rangeKey)} | Generated: ${now.toLocaleString()} | Records: ${filtered.length}</p>
+  <div class="totals">
+    <div class="card"><div class="k">Client Paid Total</div><div class="v">${money(totals.gross)}</div></div>
+    <div class="card"><div class="k">Platform Fee</div><div class="v">${money(totals.commission)}</div></div>
+    <div class="card"><div class="k">Specialist Fee</div><div class="v">${money(totals.net)}</div></div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Date</th><th>Concern</th><th>Client</th><th>Specialist</th><th>Status</th><th class="right">Client Paid</th><th class="right">Platform Fee</th><th class="right">Specialist Fee</th><th>Payout</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${filtered.map((r) => `
+        <tr>
+          <td>#${escapeCsv(r.consultationId)}</td>
+          <td>${escapeCsv(formatConsultationDate(consultationDateValue(r)))}</td>
+          <td>${escapeCsv(r.concernTitle || '')}</td>
+          <td>${escapeCsv(r.clientName || '')}</td>
+          <td>${escapeCsv(r.specialistName || '')}</td>
+          <td>${escapeCsv(paymentStatusLabel(r.paymentStatus))}</td>
+          <td class="right">${escapeCsv(Number(r.grossPhp != null ? r.grossPhp : r.amountPhp || 0).toFixed(2))}</td>
+          <td class="right">${escapeCsv(Number(r.commissionPhp || 0).toFixed(2))}</td>
+          <td class="right">${escapeCsv(Number(r.specialistNetPhp || 0).toFixed(2))}</td>
+          <td>${escapeCsv(payoutStatusLabel(r.payoutStatus))}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+</body>
+</html>`;
+      const w = window.open('', '_blank', 'noopener,noreferrer,width=1100,height=800');
+      if (!w) {
+        showToast('Popup blocked. Allow popups to print report.', 'error');
+        return;
+      }
+      w.document.open();
+      w.document.write(reportHtml);
+      w.document.close();
+      w.focus();
+      w.print();
+    }
+
+    function renderCommissionAnalytics(rows, rangeKey) {
+      const root = document.getElementById('commission-content');
+      if (!root) return;
+      const filtered = sortTransactionsByNewest(applyCommissionRange(rows, rangeKey));
+      const totals = filtered.reduce(
+        (acc, r) => {
+          acc.gross += Number(r.grossPhp != null ? r.grossPhp : r.amountPhp || 0);
+          acc.commission += Number(r.commissionPhp || 0);
+          acc.net += Number(r.specialistNetPhp || 0);
+          const payoutStatus = String(r.payoutStatus || '').toLowerCase();
+          if (payoutStatus === 'paid') {
+            acc.paidOut += Number(r.specialistNetPhp || 0);
+          }
+          if (payoutStatus === 'requested' || payoutStatus === 'approved') {
+            acc.pendingRequested += Number(r.specialistNetPhp || 0);
+          }
+          return acc;
+        },
+        { gross: 0, commission: 0, net: 0, paidOut: 0, pendingRequested: 0 }
+      );
+      const pendingPayout = Math.max(0, totals.pendingRequested);
+      const recent = filtered;
+
+      root.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
+            <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Client Paid Total</p>
+              <p class="text-xl sm:text-2xl font-bold text-cyan-300 tabular-nums break-words">${money(totals.gross)}</p>
+            </div>
+            <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Platform Fee</p>
+              <p class="text-xl sm:text-2xl font-bold text-amber-300 tabular-nums break-words">${money(totals.commission)}</p>
+            </div>
+            <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Specialist Fee</p>
+              <p class="text-xl sm:text-2xl font-bold text-emerald-300 tabular-nums break-words">${money(totals.net)}</p>
+            </div>
+            <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+              <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Pending Specialist Payout</p>
+              <p class="text-xl sm:text-2xl font-bold text-violet-300 tabular-nums break-words">${money(pendingPayout)}</p>
+            </div>
+          </div>
+          <div class="mt-5 pt-4 border-t border-slate-700/60">
+            <p class="text-sm text-slate-300 font-medium mb-3">Paid consultations (${filtered.length} in selected range)</p>
+            ${
+              recent.length
+                  ? `<div class="overflow-x-auto rounded-lg border border-slate-800/70">
+                    <table class="min-w-[760px] w-full text-xs md:text-sm">
+                      <thead>
+                        <tr class="text-left text-slate-500 border-b border-slate-700/70">
+                          <th class="py-2 pr-3 whitespace-nowrap">Consultation</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Date</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Specialist</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Client Paid</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Platform Fee</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Specialist Fee</th>
+                          <th class="py-2 pr-3 whitespace-nowrap">Payout</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${recent
+                          .map(
+                            (r) => `<tr class="border-b border-slate-800/70">
+                              <td class="py-2 pr-3 text-slate-200 whitespace-nowrap">#${r.consultationId}</td>
+                              <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatConsultationDate(consultationDateValue(r))}</td>
+                              <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${r.specialistName || '—'}</td>
+                              <td class="py-2 pr-3 text-slate-200 whitespace-nowrap">${money(r.grossPhp != null ? r.grossPhp : r.amountPhp)}</td>
+                              <td class="py-2 pr-3 text-amber-300 whitespace-nowrap">${money(r.commissionPhp)}</td>
+                              <td class="py-2 pr-3 text-emerald-300 whitespace-nowrap">${money(r.specialistNetPhp)}</td>
+                              <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${payoutStatusLabel(r.payoutStatus)}</td>
+                            </tr>`
+                          )
+                          .join('')}
+                      </tbody>
+                    </table>
+                  </div>`
+                : '<p class="text-slate-500 text-sm">No verified consultation payments yet.</p>'
+            }
+          </div>
+        `;
+      document.querySelectorAll('.commission-range-btn').forEach((btn) => {
+        const active = btn.getAttribute('data-range') === rangeKey;
+        btn.className = active
+          ? 'commission-range-btn rounded-md px-3 py-1.5 text-xs bg-violet-600 text-white'
+          : 'commission-range-btn rounded-md px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800';
+      });
+    }
+
+    async function loadCommissionAnalytics() {
+      const root = document.getElementById('commission-content');
+      if (!root) return;
+      try {
+        const data = await api('/consultations/admin/transactions');
+        const rows = Array.isArray(data.transactions) ? data.transactions : [];
+        let activeRange = '30d';
+        renderCommissionAnalytics(rows, activeRange);
+        document.querySelectorAll('.commission-range-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            activeRange = btn.getAttribute('data-range') || 'all';
+            renderCommissionAnalytics(rows, activeRange);
+          });
+        });
+        const exportBtn = document.getElementById('commission-export-csv');
+        if (exportBtn) {
+          exportBtn.addEventListener('click', () => downloadCommissionCsv(rows, activeRange));
+        }
+        const printBtn = document.getElementById('commission-print-report');
+        if (printBtn) {
+          printBtn.addEventListener('click', () => printCommissionReport(rows, activeRange));
+        }
+      } catch (err) {
+        root.innerHTML = '<p class="text-rose-300">Failed to load payment analytics.</p>';
+        showToast(err.error || 'Failed to load payment analytics', 'error');
+      }
+    }
+
+    function actionButtonsForPayout(row) {
+      const status = String((row && row.status) || '').toLowerCase();
+      const id = Number(row && row.payoutRequestId);
+      if (!Number.isFinite(id)) return '';
+
+      if (status === 'requested') {
+        return `
+          <div class="flex flex-wrap gap-2">
+            <button type="button" data-action="approve" data-id="${id}" class="payout-action-btn rounded-md border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-xs font-medium text-cyan-200 hover:bg-cyan-500/20">Approve</button>
+            <button type="button" data-action="paid" data-id="${id}" class="payout-action-btn rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-200 hover:bg-emerald-500/20">Mark Paid</button>
+            <button type="button" data-action="reject" data-id="${id}" class="payout-action-btn rounded-md border border-rose-500/40 bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-200 hover:bg-rose-500/20">Reject</button>
+          </div>
+        `;
+      }
+
+      if (status === 'approved') {
+        return `
+          <div class="flex flex-wrap gap-2">
+            <button type="button" data-action="paid" data-id="${id}" class="payout-action-btn rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-200 hover:bg-emerald-500/20">Mark Paid</button>
+            <button type="button" data-action="reject" data-id="${id}" class="payout-action-btn rounded-md border border-rose-500/40 bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-200 hover:bg-rose-500/20">Reject</button>
+          </div>
+        `;
+      }
+
+      return '<span class="text-slate-500 text-xs">No actions</span>';
+    }
+
+    async function processPayoutAction(payoutRequestId, action) {
+      const id = Number(payoutRequestId);
+      if (!Number.isFinite(id)) return;
+
+      const actionText = action === 'paid' ? 'mark as paid' : action;
+      const confirmed = window.confirm(`Are you sure you want to ${actionText} payout request #${id}?`);
+      if (!confirmed) return;
+
+      const note = window.prompt('Optional admin note (leave blank to skip):', '') || '';
+      try {
+        await api(`/consultations/admin/payout-requests/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, note: note.trim() || null }),
+        });
+        showToast(`Payout request #${id} updated.`, 'success');
+        await Promise.all([loadPayoutRequests(), loadCommissionAnalytics()]);
+      } catch (err) {
+        showToast(err.error || 'Failed to process payout request', 'error');
+      }
+    }
+
+    function bindPayoutActionButtons() {
+      document.querySelectorAll('.payout-action-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const payoutRequestId = btn.getAttribute('data-id');
+          const action = btn.getAttribute('data-action');
+          processPayoutAction(payoutRequestId, action);
+        });
+      });
+    }
+
+    function renderPayoutRequests(rows) {
+      const root = document.getElementById('payout-requests-content');
+      if (!root) return;
+
+      const list = [...(rows || [])].sort((a, b) => {
+        const aTime = new Date(a.requestedAt || 0).getTime() || 0;
+        const bTime = new Date(b.requestedAt || 0).getTime() || 0;
+        if (bTime !== aTime) return bTime - aTime;
+        return Number(b.payoutRequestId || 0) - Number(a.payoutRequestId || 0);
+      });
+
+      const totals = list.reduce(
+        (acc, r) => {
+          const amount = Number(r.netPhp || 0);
+          const status = String(r.status || '').toLowerCase();
+          if (status === 'requested') acc.pending += amount;
+          if (status === 'approved') acc.approved += amount;
+          if (status === 'paid') acc.paid += amount;
+          return acc;
+        },
+        { pending: 0, approved: 0, paid: 0 }
+      );
+
+      root.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-5">
+          <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+            <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Pending Requests</p>
+            <p class="text-xl font-bold text-amber-300 tabular-nums break-words">${money(totals.pending)}</p>
+          </div>
+          <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+            <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Approved Awaiting Release</p>
+            <p class="text-xl font-bold text-cyan-300 tabular-nums break-words">${money(totals.approved)}</p>
+          </div>
+          <div class="rounded-lg bg-slate-900/60 border border-slate-600/50 px-4 py-3">
+            <p class="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Paid Out</p>
+            <p class="text-xl font-bold text-emerald-300 tabular-nums break-words">${money(totals.paid)}</p>
+          </div>
+        </div>
+        ${
+          list.length
+            ? `<div class="overflow-x-auto rounded-lg border border-slate-800/70">
+                <table class="min-w-[980px] w-full text-xs md:text-sm">
+                  <thead>
+                    <tr class="text-left text-slate-500 border-b border-slate-700/70">
+                      <th class="py-2 pr-3 whitespace-nowrap">Request</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Specialist</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Period</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Requested At</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Amount</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Items</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Status</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Processed At</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Note</th>
+                      <th class="py-2 pr-3 whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${list
+                      .map(
+                        (r) => `<tr class="border-b border-slate-800/70 align-top">
+                          <td class="py-2 pr-3 text-slate-200 whitespace-nowrap">#${r.payoutRequestId || '—'}</td>
+                          <td class="py-2 pr-3 text-slate-300">
+                            <div class="font-medium text-slate-200">${r.specialistName || '—'}</div>
+                            <div class="text-[11px] text-slate-500">${r.specialistEmail || ''}</div>
+                          </td>
+                          <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatSimpleDate(r.periodStart)} - ${formatSimpleDate(r.periodEnd)}</td>
+                          <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatSimpleDate(r.requestedAt)}</td>
+                          <td class="py-2 pr-3 text-slate-200 whitespace-nowrap">${money(r.netPhp)}</td>
+                          <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${Number(r.itemCount || 0)}</td>
+                          <td class="py-2 pr-3 whitespace-nowrap">
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${payoutStatusBadgeClass(r.status)}">${payoutStatusLabel(r.status)}</span>
+                          </td>
+                          <td class="py-2 pr-3 text-slate-300 whitespace-nowrap">${formatSimpleDate(r.processedAt)}</td>
+                          <td class="py-2 pr-3 text-slate-400">${r.adminNote || '—'}</td>
+                          <td class="py-2 pr-3 whitespace-nowrap">${actionButtonsForPayout(r)}</td>
+                        </tr>`
+                      )
+                      .join('')}
+                  </tbody>
+                </table>
+              </div>`
+            : '<p class="text-slate-500 text-sm">No payout requests found yet.</p>'
+        }
+      `;
+
+      bindPayoutActionButtons();
+    }
+
+    async function loadPayoutRequests() {
+      const root = document.getElementById('payout-requests-content');
+      if (!root) return;
+      try {
+        const data = await api('/consultations/admin/payout-requests');
+        const rows = Array.isArray(data.payoutRequests) ? data.payoutRequests : [];
+        renderPayoutRequests(rows);
+      } catch (err) {
+        root.innerHTML = '<p class="text-rose-300">Failed to load payout requests.</p>';
+        showToast(err.error || 'Failed to load payout requests', 'error');
+      }
+    }
+
     loadReports();
+    loadConsultationQueueSummary();
+    loadCommissionAnalytics();
+    loadPayoutRequests();
+    const payoutRefreshBtn = document.getElementById('payout-refresh-btn');
+    if (payoutRefreshBtn) payoutRefreshBtn.addEventListener('click', loadPayoutRequests);
   </script>
 </body>
 </html>

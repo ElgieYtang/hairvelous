@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Specialist List – Hairvelous Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="nav-placeholder"></div>
+
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Specialist List</h1>
+        <p class="text-slate-400 text-sm mt-1">All registered specialist accounts with rate and verification status.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </span>
+          <input type="text" id="search-specialists" placeholder="Search by name or email..." class="w-full sm:w-72 pl-10 pr-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[880px]">
+          <thead class="bg-slate-800">
+            <tr>
+              <th class="text-left p-4 text-slate-300">Specialist</th>
+              <th class="text-left p-4 text-slate-300">Email</th>
+              <th class="text-left p-4 text-slate-300">Consultation Rate</th>
+              <th class="text-left p-4 text-slate-300">Verification</th>
+              <th class="text-left p-4 text-slate-300">Status</th>
+              <th class="text-left p-4 text-slate-300">Registered</th>
+            </tr>
+          </thead>
+          <tbody id="specialists-tbody" class="divide-y divide-slate-700">
+            <tr><td colspan="6" class="p-8 text-center text-slate-500">Loading specialists...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p id="specialists-summary" class="text-slate-500 text-sm mt-3"></p>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    if (!requireAuth() || !requireAdmin()) { /* redirects */ }
+
+    let allSpecialists = [];
+
+    function formatDate(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      } catch {
+        return iso;
+      }
+    }
+
+    function money(v) {
+      if (v == null || Number.isNaN(Number(v))) return '—';
+      return `₱${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    }
+
+    function verificationLabel(status) {
+      const s = String(status || 'not_submitted');
+      const map = {
+        verified: 'Verified',
+        rejected: 'Rejected',
+        pending_review: 'Pending review',
+        not_submitted: 'Not submitted',
+      };
+      return map[s] || s;
+    }
+
+    function verificationClass(status) {
+      const s = String(status || 'not_submitted');
+      if (s === 'verified') return 'border-emerald-500/40 bg-emerald-600/20 text-emerald-300';
+      if (s === 'pending_review') return 'border-amber-500/40 bg-amber-600/20 text-amber-300';
+      if (s === 'rejected') return 'border-rose-500/40 bg-rose-600/20 text-rose-300';
+      return 'border-slate-600 bg-slate-800/80 text-slate-300';
+    }
+
+    function accountStatusClass(isSuspended) {
+      return isSuspended
+        ? 'border-rose-500/40 bg-rose-600/20 text-rose-300'
+        : 'border-emerald-500/40 bg-emerald-600/20 text-emerald-300';
+    }
+
+    function accountStatusLabel(isSuspended) {
+      return isSuspended ? 'Suspended' : 'Active';
+    }
+
+    function initials(name) {
+      const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return 'S';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function renderSpecialists(specialists) {
+      const tbody = document.getElementById('specialists-tbody');
+      const summary = document.getElementById('specialists-summary');
+      if (!specialists.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-500">No specialists found.</td></tr>';
+        summary.textContent = '0 specialists';
+        return;
+      }
+      tbody.innerHTML = specialists.map((s) => `
+        <tr class="hover:bg-slate-800/30">
+          <td class="p-4">
+            <div class="flex items-center gap-3">
+              ${
+                s.profilePhotoUrl
+                  ? `<img src="${escapeHtml(s.profilePhotoUrl)}" alt="${escapeHtml(s.name || 'Specialist')}" class="w-10 h-10 rounded-full object-cover shrink-0 ring-1 ring-slate-600/70" />`
+                  : `<div class="w-10 h-10 rounded-full bg-cyan-600/30 flex items-center justify-center text-sm font-semibold shrink-0">${escapeHtml(initials(s.name || 'S'))}</div>`
+              }
+              <span class="font-medium text-white">${escapeHtml(s.name || '—')}</span>
+            </div>
+          </td>
+          <td class="p-4 text-slate-300">${escapeHtml(s.email || '—')}</td>
+          <td class="p-4 text-slate-200 font-medium">${escapeHtml(money(s.consultationRate))}</td>
+          <td class="p-4">
+            <span class="inline-flex rounded-full border px-2 py-0.5 text-xs ${verificationClass(s.idVerificationStatus)}">${escapeHtml(verificationLabel(s.idVerificationStatus))}</span>
+          </td>
+          <td class="p-4">
+            <span class="inline-flex rounded-full border px-2 py-0.5 text-xs ${accountStatusClass(s.isSuspended)}">${escapeHtml(accountStatusLabel(s.isSuspended))}</span>
+          </td>
+          <td class="p-4 text-slate-400 text-sm">${formatDate(s.dateCreated)}</td>
+        </tr>
+      `).join('');
+      summary.textContent = specialists.length + ' specialist' + (specialists.length !== 1 ? 's' : '');
+    }
+
+    function filterSpecialists() {
+      const q = (document.getElementById('search-specialists').value || '').trim().toLowerCase();
+      const list = q
+        ? allSpecialists.filter((s) =>
+            (s.name && s.name.toLowerCase().includes(q)) ||
+            (s.email && s.email.toLowerCase().includes(q))
+          )
+        : allSpecialists;
+      renderSpecialists(list);
+    }
+
+    async function loadSpecialists() {
+      const tbody = document.getElementById('specialists-tbody');
+      try {
+        const data = await api('/admin/specialists');
+        allSpecialists = data.specialists || [];
+        filterSpecialists();
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-400">Failed to load specialists. ' + (err.message || err.error || '') + '</td></tr>';
+        document.getElementById('specialists-summary').textContent = '';
+      }
+    }
+
+    document.getElementById('search-specialists').addEventListener('input', filterSpecialists);
+    loadSpecialists();
+  </script>
+</body>
+</html>

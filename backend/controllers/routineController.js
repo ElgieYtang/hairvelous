@@ -5,6 +5,7 @@
  */
 const routineService = require('../services/routineService');
 const billingService = require('../services/billingService');
+const consultationService = require('../services/consultationService');
 const { validationResult } = require('express-validator');
 const fs = require('fs').promises;
 
@@ -77,6 +78,40 @@ class RoutineController {
         : null;
       const logs = await routineService.getUserLogs(req.user.userId, limit, daysWindow);
       res.json({ logs, appliedHistoryDays: daysWindow });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * Specialist: read a client's routine logs when there is an accepted consultation link
+   * and the client opted in (shareRoutineWithSpecialist).
+   */
+  async getClientLogsForSpecialist(req, res, next) {
+    try {
+      const clientUserId = Number(req.params.clientUserId);
+      if (!Number.isFinite(clientUserId) || clientUserId <= 0) {
+        return res.status(400).json({ error: 'Invalid client id' });
+      }
+      const access = await consultationService.canSpecialistViewClientRoutine(req.user, clientUserId);
+      if (!access.ok) {
+        const messages = {
+          not_specialist: 'Only specialists can view client routines here.',
+          no_accepted_consultation:
+            'You can only view routines for clients who accepted your consultation request (same specialist–client link).',
+          consent_required:
+            'This client has not enabled sharing their routine with their specialist. They can turn it on in Profile settings.',
+          invalid_client: 'Invalid client.',
+          self: 'Invalid request.',
+        };
+        return res.status(403).json({ error: messages[access.reason] || 'Not allowed', code: access.reason });
+      }
+      const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 100));
+      const ent = await billingService.getEntitlements(clientUserId);
+      const daysWindow =
+        ent && Number.isFinite(Number(ent.routineHistoryDays)) ? Number(ent.routineHistoryDays) : null;
+      const logs = await routineService.getUserLogs(clientUserId, limit, daysWindow);
+      res.json({ logs, appliedHistoryDays: daysWindow, clientUserId });
     } catch (err) {
       next(err);
     }

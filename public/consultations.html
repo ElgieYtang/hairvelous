@@ -105,8 +105,8 @@
       /* Staff: inline workspace — same 3-col grid (was lg-only via Tailwind; grid-cols-1 won until 1024px) */
       #mainWorkspaceSlot #consultationsWorkspace:not(.moderator-queue-layout) {
         display: grid !important;
-        grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(260px, 340px) !important;
-        grid-template-rows: minmax(0, 1fr);
+        grid-template-columns: minmax(220px, 270px) minmax(0, 1.35fr) minmax(280px, 360px) !important;
+        grid-template-rows: auto;
         gap: 0 !important;
         align-items: stretch;
       }
@@ -132,14 +132,69 @@
         flex-direction: column;
       }
     }
+    @media (min-width: 1280px) {
+      #mainWorkspaceSlot #consultationsWorkspace:not(.moderator-queue-layout) {
+        grid-template-columns: minmax(230px, 290px) minmax(560px, 1.7fr) minmax(300px, 390px) !important;
+      }
+    }
+    #mainWorkspaceSlot {
+      overflow: visible !important;
+      width: 100%;
+    }
+    #mainWorkspaceSlot #consultationsWorkspace:not(.moderator-queue-layout) {
+      height: min(78vh, 760px) !important;
+      min-height: 0;
+      width: 100%;
+      max-width: 1500px;
+      margin-inline: auto;
+    }
+    #mainWorkspaceSlot #consultColList,
+    #mainWorkspaceSlot #consultColChat,
+    #mainWorkspaceSlot #consultColDetail {
+      min-height: 0 !important;
+      height: 100%;
+    }
     #drawerWorkspaceSlot #detailPanel {
       max-height: none !important;
       flex: 1 1 0%;
       min-height: 0;
     }
+    @media (max-width: 767px) {
+      #consultationsWorkspace.mobile-chat-active {
+        display: block !important;
+      }
+      #consultationsWorkspace.mobile-chat-active #consultColList {
+        display: none !important;
+      }
+      #consultationsWorkspace.mobile-chat-active #consultColChat {
+        min-height: calc(100dvh - 11rem) !important;
+        max-height: none !important;
+      }
+      #consultationsWorkspace.mobile-chat-active #consultColDetail {
+        display: none !important;
+      }
+      #consultationsWorkspace.mobile-chat-active.show-mobile-detail #consultColChat {
+        display: none !important;
+      }
+      #consultationsWorkspace.mobile-chat-active.show-mobile-detail #consultColDetail {
+        display: flex !important;
+        min-height: calc(100dvh - 11rem) !important;
+        max-height: none !important;
+      }
+    }
     #drawerWorkspaceSlot #chatBlurWrap {
       min-height: 0;
       flex: 1 1 0%;
+    }
+    #consultColChat #chatMessages {
+      width: 100%;
+      max-width: 860px;
+      margin-inline: auto;
+    }
+    #consultColChat #chatForm {
+      width: 100%;
+      max-width: 860px;
+      margin-inline: auto;
     }
     #chatKebabMenu:not(.hidden) {
       animation: chatMenuIn 0.14s ease-out;
@@ -158,7 +213,7 @@
 
   <main
     id="consultPageMain"
-    class="mx-auto flex w-full max-w-[min(100%,1680px)] flex-col overflow-x-hidden px-3 pb-6 pt-3 md:px-6 md:pb-8 md:pt-2"
+    class="mx-auto flex w-full max-w-[min(100%,1920px)] flex-col overflow-x-hidden px-3 pb-6 pt-3 md:px-6 md:pb-8 md:pt-2"
   >
     <!-- Landing: specialist cards only for clients (workspace opens from FAB) -->
     <section id="specialistBrowseSection" class="mb-5 w-full shrink-0 lg:mb-4">
@@ -167,6 +222,12 @@
           <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-400/95">Specialists</p>
           <h2 class="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Book a consultation</h2>
         </header>
+        <div id="returnToProgressBanner" class="mt-4 hidden rounded-xl border border-emerald-500/35 bg-emerald-500/[0.08] p-3">
+          <p class="text-xs text-emerald-100">You already have an active consultation in progress.</p>
+          <button type="button" id="returnToProgressBtn" class="mt-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
+            Return to consultation progress
+          </button>
+        </div>
         <div
           id="specialistCards"
           class="mt-6 grid w-full grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
@@ -211,12 +272,46 @@
       </div>
     </section>
 
+    <section id="specialistRevenueSection" class="mb-5 hidden w-full shrink-0 lg:mb-4">
+      <div class="w-full rounded-2xl border border-slate-700/80 bg-slate-950/50 p-4 shadow-xl shadow-black/20 sm:p-6">
+        <header class="relative border-l-2 border-emerald-500/70 pl-4 sm:pl-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-400/95">Specialist revenue</p>
+          <h2 class="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Earnings & payout</h2>
+          <p class="mt-1 text-sm text-slate-400">You receive 100% of your listed fee. Platform fee is added on top during client checkout.</p>
+        </header>
+        <div id="specialistRevenueStats" class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2"></div>
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" id="specialistPayoutRequestBtn" class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500">
+            Request payout (bi-weekly)
+          </button>
+          <p id="specialistPayoutHint" class="text-xs text-slate-500"></p>
+        </div>
+        <div id="specialistPayoutHistory" class="mt-4 space-y-2">
+          <p class="text-sm text-slate-400">No payout requests yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="specialistWorkflowSection" class="mb-5 hidden w-full shrink-0 lg:mb-4">
+      <div class="w-full rounded-2xl border border-slate-700/80 bg-slate-950/50 p-4 shadow-xl shadow-black/20 sm:p-6">
+        <header class="relative border-l-2 border-violet-500/70 pl-4 sm:pl-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-300/95">Specialist workflow</p>
+          <h2 class="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Needs action queue</h2>
+          <p class="mt-1 text-sm text-slate-400">Prioritized items that usually need your next step first.</p>
+        </header>
+        <div id="specialistActionStats" class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+        <div id="specialistActionQueue" class="mt-4 space-y-2">
+          <p class="text-sm text-slate-400">No actionable consultations right now.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Inline workspace slot (admin / specialist — list + detail stays on page) -->
-    <div id="mainWorkspaceSlot" class="hidden min-h-0 flex-1 flex-col overflow-hidden lg:min-h-0 lg:h-full"></div>
+    <div id="mainWorkspaceSlot" class="hidden w-full flex-col"></div>
   </main>
 
   <!-- Clients: moved into #notification-root (top-right with Pro + Bell) via mountConsultMessengerFabInHeader -->
-  <button type="button" id="consultMessengerFab" hidden title="My consultations" aria-label="Open my consultations and messages">
+  <button type="button" id="consultMessengerFab" hidden title="Messages" aria-label="Open messages">
     💬
   </button>
 
@@ -234,7 +329,7 @@
       class="absolute bottom-3 right-3 top-14 z-[2] flex w-[min(calc(100vw-1rem),1280px)] max-w-[min(98vw,1280px)] flex-col overflow-hidden rounded-2xl border border-slate-700/90 bg-slate-900 shadow-2xl sm:bottom-4 sm:right-4 sm:top-16 md:top-[4.5rem]"
     >
       <div class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-700/80 bg-slate-900/95 px-3 py-2.5">
-        <span class="text-sm font-semibold text-white">My consultations</span>
+        <span class="text-sm font-semibold text-white">Messages</span>
         <button
           type="button"
           id="closeConsultMessengerBtn"
@@ -251,7 +346,7 @@
   <!-- Three-column shell: conversations | chat | details (Hairvelous dark theme) -->
   <div
     id="consultationsWorkspace"
-    class="consult-shell grid h-full min-h-0 flex-1 gap-3 md:min-h-0 md:items-stretch md:gap-0 md:overflow-hidden md:rounded-2xl md:border md:border-slate-700/50 md:bg-slate-950/40 md:shadow-[inset_0_1px_0_0_rgba(148,163,184,0.06)]"
+    class="consult-shell grid w-full min-h-0 gap-3 md:min-h-0 md:items-stretch md:gap-0 md:rounded-2xl md:border md:border-slate-700/50 md:bg-slate-950/40 md:shadow-[inset_0_1px_0_0_rgba(148,163,184,0.06)]"
   >
       <aside
         id="consultColList"
@@ -260,6 +355,17 @@
         <div class="shrink-0 border-b border-slate-700/60 px-3 py-2.5">
           <p id="consultListSectionTitle" class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Conversations</p>
           <p id="consultListSectionHint" class="mt-0.5 hidden text-[11px] leading-snug text-slate-500"></p>
+          <div id="adminPaymentQueueTabs" class="mt-2 hidden rounded-lg border border-slate-700/70 bg-slate-900/70 p-1">
+            <button type="button" data-admin-queue="pending_review" class="rounded-md px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800">Pending review</button>
+            <button type="button" data-admin-queue="awaiting_payment" class="rounded-md px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800">Awaiting payment</button>
+            <button type="button" data-admin-queue="verified" class="rounded-md px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800">Verified</button>
+            <button type="button" data-admin-queue="rejected_cancelled" class="rounded-md px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800">Rejected/Cancelled</button>
+            <button type="button" data-admin-queue="all" class="rounded-md px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800">All</button>
+          </div>
+          <div id="specialistInboxTabs" class="mt-2 hidden rounded-lg border border-slate-700/70 bg-slate-900/70 p-1">
+            <button type="button" data-inbox-mode="requests" class="rounded-md px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800">Requests</button>
+            <button type="button" data-inbox-mode="conversations" class="rounded-md px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800">Conversations</button>
+          </div>
           <label class="sr-only" for="consultSearch">Search consultations</label>
           <div class="relative mt-2">
             <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500" aria-hidden="true">🔍</span>
@@ -322,6 +428,9 @@
             <button type="button" id="closeChatBtn" class="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white md:hidden">
               Clear
             </button>
+            <button type="button" id="mobileDetailBtn" class="hidden shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white md:hidden">
+              Details
+            </button>
           </div>
         </header>
 
@@ -372,8 +481,11 @@
         id="consultColDetail"
         class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/45 md:rounded-none md:border-0"
       >
-        <div class="shrink-0 border-b border-slate-700/60 px-3 py-2.5 md:px-4">
+        <div class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-700/60 px-3 py-2.5 md:px-4">
           <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Details</p>
+          <button type="button" id="mobileBackToChatBtn" class="hidden rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white md:hidden">
+            Back to chat
+          </button>
         </div>
         <div id="detailPanel" class="chat-scroll min-h-0 flex-1 overflow-y-auto p-3 md:p-4">
           <p class="text-xs text-slate-400">Select a consultation to see details.</p>
@@ -382,6 +494,21 @@
           Browse specialists
         </button>
       </aside>
+  </div>
+
+  <div id="specialist-feedback-backdrop" class="pv-backdrop fixed inset-0 z-[102] p-4 sm:p-6 md:p-10">
+    <div class="pv-modal mx-auto w-full max-w-2xl md:max-h-[88vh] overflow-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+      <div class="flex items-start justify-between gap-3 border-b border-slate-700 p-4 sm:p-5">
+        <div class="min-w-0 flex-1">
+          <h3 id="specialistFeedbackTitle" class="text-base font-semibold text-white">Specialist feedback</h3>
+          <p id="specialistFeedbackSubtitle" class="mt-1 text-xs text-slate-400">Recent client comments</p>
+        </div>
+        <button type="button" id="specialistFeedbackClose" class="shrink-0 text-sm text-slate-400 hover:text-white" aria-label="Close">Close ✕</button>
+      </div>
+      <div id="specialistFeedbackList" class="space-y-3 p-4 sm:p-5">
+        <p class="text-sm text-slate-400">Loading feedback...</p>
+      </div>
+    </div>
   </div>
 
   <!-- Request popup (aligned with product modal on recommendations.html) -->
@@ -489,18 +616,27 @@
                 <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h2v2h-2v-2zm-4 4h2v2h-2v-2zm2-2h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z" />
               </svg>
             </button>
+            <button
+              type="button"
+              id="paymentIconDemo"
+              class="group flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-500/40 bg-violet-500/10 text-violet-100 transition hover:border-violet-400/60 hover:bg-violet-500/20"
+              title="Demo payment (no real money)"
+              aria-label="Use demo payment"
+            >
+              <span class="text-[10px] font-bold tracking-wide">DEMO</span>
+            </button>
           </div>
           <p id="paymentModalStubNote" class="mt-2 text-[11px] leading-relaxed text-slate-500">
-            Connect PayMongo keys on the server to enable live checkout. Icons stay available for integration.
+            Demo button submits a fake payment for admin verification (no real money). Connect PayMongo keys for live checkout.
           </p>
         </div>
         <details class="rounded-lg border border-slate-600/50 bg-slate-950/40 px-3 py-2">
-          <summary class="cursor-pointer text-xs font-medium text-slate-400">Manual GCash proof (optional)</summary>
+          <summary class="cursor-pointer text-xs font-medium text-slate-400">Payment proof details (for manual/demo review)</summary>
           <form id="paymentModalProofForm" class="mt-3 space-y-2">
             <input type="hidden" id="paymentModalConsultationId" value="" />
             <input name="paymentReference" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2 py-1.5 text-xs" placeholder="GCash reference no." />
             <input name="receipt" type="file" accept="image/jpeg,image/png,image/webp" class="block w-full text-[11px] text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-violet-600 file:px-2 file:py-1 file:text-xs file:text-white" />
-            <button type="submit" class="w-full rounded-md bg-violet-600 py-2 text-xs font-medium text-white hover:bg-violet-500">Submit proof</button>
+            <button type="submit" class="w-full rounded-md bg-violet-600 py-2 text-xs font-medium text-white hover:bg-violet-500">Submit payment + proof</button>
           </form>
         </details>
       </div>
@@ -533,6 +669,56 @@
         <button type="button" id="clientConsultModalClose" class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">✕</button>
       </div>
       <div id="clientConsultModalBody" class="max-h-[min(70vh,520px)] overflow-y-auto p-4 text-sm text-slate-300"></div>
+    </div>
+  </div>
+
+  <!-- Specialist: structured close-case summary -->
+  <div id="closeCaseModal" class="fixed inset-0 z-[126] hidden items-end justify-center bg-slate-950/75 p-3 sm:items-center sm:p-6">
+    <button type="button" id="closeCaseModalBackdrop" class="absolute inset-0 cursor-default" aria-label="Close"></button>
+    <div class="relative z-[1] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-600/80 bg-slate-900 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700/80 px-4 py-3">
+        <div>
+          <h3 class="text-sm font-semibold text-white">Complete session</h3>
+          <p class="mt-1 text-[11px] text-slate-400">Add a short summary for the client record before ending this session.</p>
+        </div>
+        <button type="button" id="closeCaseModalClose" class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">✕</button>
+      </div>
+      <form id="closeCaseForm" class="space-y-3 p-4">
+        <input type="hidden" id="closeCaseConsultationId" value="" />
+        <div>
+          <label for="closeCaseFindings" class="mb-1 block text-xs font-medium text-slate-300">Session findings</label>
+          <textarea id="closeCaseFindings" rows="3" maxlength="600" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="Briefly describe current hair/scalp findings."></textarea>
+        </div>
+        <div>
+          <label for="closeCasePlan" class="mb-1 block text-xs font-medium text-slate-300">Care plan</label>
+          <textarea id="closeCasePlan" rows="3" maxlength="600" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="What routine/product adjustments should the client continue?"></textarea>
+        </div>
+        <div>
+          <label for="closeCaseFollowUp" class="mb-1 block text-xs font-medium text-slate-300">Next check-in (optional)</label>
+          <textarea id="closeCaseFollowUp" rows="2" maxlength="400" class="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30" placeholder="If needed, when should the client return or message again?"></textarea>
+        </div>
+        <div class="flex flex-wrap items-center justify-end gap-2 pt-1">
+          <button type="button" id="closeCaseCancelBtn" class="rounded-md border border-slate-600 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">Cancel</button>
+          <button type="submit" id="closeCaseSubmitBtn" class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500">Save summary & complete session</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Specialist: client routine (scoped + consent-enforced server-side) -->
+  <div id="clientRoutineModal" class="fixed inset-0 z-[126] hidden items-end justify-center bg-slate-950/75 p-3 sm:items-center sm:p-6">
+    <button type="button" id="clientRoutineModalBackdrop" class="absolute inset-0 cursor-default" aria-label="Close"></button>
+    <div class="relative z-[1] flex max-h-[min(88vh,640px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-600/80 bg-slate-900 shadow-2xl">
+      <div class="flex shrink-0 items-center justify-between border-b border-slate-700/80 px-4 py-3">
+        <div>
+          <h3 id="clientRoutineModalTitle" class="text-sm font-semibold text-white">Client routine</h3>
+          <p id="clientRoutineModalSubtitle" class="mt-1 text-[11px] text-slate-400">Read-only · same privacy rules as the API</p>
+        </div>
+        <button type="button" id="clientRoutineModalClose" class="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">✕</button>
+      </div>
+      <div id="clientRoutineModalBody" class="chat-scroll min-h-0 flex-1 overflow-y-auto p-4 text-sm text-slate-300">
+        <p class="text-slate-500">Loading…</p>
+      </div>
     </div>
   </div>
 
@@ -577,28 +763,52 @@
 
   <script src="/js/app.js"></script>
   <script src="/js/layout.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script>
     if (!requireAuth()) { /* redirects */ }
     const user = getUser();
     const role = user && (user.roleName || user.role);
-    const isReviewer = role === 'admin' || role === 'seller';
+    const isReviewer = role === 'admin';
     const isModerator = isReviewer;
     const isSpecialist = role === 'specialist';
+    const isSeller = role === 'seller';
+    (function enforceProConsultationPageAccess() {
+      const staffBypass = isReviewer || isModerator || isSpecialist || isSeller;
+      if (staffBypass) return;
+      const main = document.getElementById('consultPageMain');
+      if (main) main.classList.add('opacity-0', 'pointer-events-none');
+      (async () => {
+        try {
+          const data = await api('/billing/status');
+          if (data.status && data.status.isPro) {
+            if (main) main.classList.remove('opacity-0', 'pointer-events-none');
+            return;
+          }
+        } catch (_e) {}
+        window.location.replace('/pricing.html?reason=consultations');
+      })();
+    })();
     let specialistsForBooking = [];
     let activeChatId = null;
     let chatRefreshTimer = null;
     let chatErrorNotified = false;
     const consultationTitleById = new Map();
     const consultationRowsCache = [];
-    const chatFromQuery = Number(new URLSearchParams(window.location.search).get('chat') || 0);
-    const chatLatestFromQuery = new URLSearchParams(window.location.search).get('chat_latest') === '1';
+    let prescriptionCatalogProducts = [];
+    const initialQueryParams = new URLSearchParams(window.location.search);
+    const chatFromQuery = Number(initialQueryParams.get('chat') || 0);
+    const chatLatestFromQuery = initialQueryParams.get('chat_latest') === '1';
+    const chatFocusFromQuery = initialQueryParams.get('focus') === 'chat';
     let queryChatOpened = false;
     let didInitialChatSelect = false;
+    let pendingCloseCaseConsultationId = null;
     /** File picked for the next Send — send photo only, or photo + optional caption in the text field. */
     let pendingChatPhoto = null;
     let pendingChatPhotoPreviewUrl = '';
     /** Revoked whenever chat HTML is replaced (polling) so blob previews don’t leak. */
     const chatMessageBlobUrls = [];
+    const prescriptionSaveLocks = new Set();
+    const prescriptionSaveUiTimers = new Map();
 
     function revokeChatMessageBlobUrls() {
       while (chatMessageBlobUrls.length) {
@@ -618,6 +828,38 @@
     const consultMessengerBackdrop = document.getElementById('consultMessengerBackdrop');
     const consultMessengerPanel = document.getElementById('consultMessengerPanel');
     const closeConsultMessengerBtn = document.getElementById('closeConsultMessengerBtn');
+    const closeChatBtn = document.getElementById('closeChatBtn');
+    const mobileDetailBtn = document.getElementById('mobileDetailBtn');
+    const mobileBackToChatBtn = document.getElementById('mobileBackToChatBtn');
+
+    function isMobileViewport() {
+      return window.matchMedia('(max-width: 767px)').matches;
+    }
+
+    function setMobileWorkspacePane(pane) {
+      if (!consultationsWorkspaceEl) return;
+      consultationsWorkspaceEl.classList.toggle('show-mobile-detail', pane === 'detail');
+      if (mobileDetailBtn) {
+        mobileDetailBtn.classList.toggle('hidden', pane === 'detail' || !activeChatId || !isMobileViewport());
+      }
+      if (mobileBackToChatBtn) {
+        mobileBackToChatBtn.classList.toggle('hidden', pane !== 'detail' || !activeChatId || !isMobileViewport());
+      }
+    }
+
+    function syncMobileWorkspaceLayout() {
+      if (!consultationsWorkspaceEl) return;
+      const mobile = isMobileViewport();
+      const chatOpen = !!activeChatId && !isModerator;
+      consultationsWorkspaceEl.classList.toggle('mobile-chat-active', mobile && chatOpen);
+      if (closeChatBtn) {
+        closeChatBtn.textContent = mobile && chatOpen ? 'Back' : 'Clear';
+      }
+      if (!mobile || !chatOpen) {
+        consultationsWorkspaceEl.classList.remove('show-mobile-detail');
+      }
+      setMobileWorkspacePane('chat');
+    }
 
     function openConsultMessenger() {
       if (isModerator || isSpecialist) return;
@@ -656,13 +898,18 @@
           listHint.classList.remove('hidden');
         }
       }
-      consultPageMain?.classList.add(
+      consultPageMain?.classList.remove(
         'lg:h-[calc(100dvh-5rem)]',
         'lg:max-h-[calc(100dvh-5rem)]',
         'lg:min-h-0',
         'lg:flex-1',
         'lg:overflow-hidden'
       );
+      consultMessengerFab?.setAttribute('hidden', '');
+    } else if (chatFocusFromQuery && mainWorkspaceSlot && consultationsWorkspaceEl) {
+      mainWorkspaceSlot.appendChild(consultationsWorkspaceEl);
+      mainWorkspaceSlot.classList.remove('hidden');
+      mainWorkspaceSlot.classList.add('flex');
       consultMessengerFab?.setAttribute('hidden', '');
     } else if (drawerWorkspaceSlot && consultationsWorkspaceEl) {
       drawerWorkspaceSlot.appendChild(consultationsWorkspaceEl);
@@ -696,6 +943,16 @@
         closeClientConsultModal();
         return;
       }
+      const closeCaseModal = document.getElementById('closeCaseModal');
+      if (closeCaseModal && !closeCaseModal.classList.contains('hidden')) {
+        closeCloseCaseModal();
+        return;
+      }
+      const clientRoutineModal = document.getElementById('clientRoutineModal');
+      if (clientRoutineModal && !clientRoutineModal.classList.contains('hidden')) {
+        closeClientRoutineModal();
+        return;
+      }
       closeChatKebabMenu();
       const payBd = document.getElementById('consultation-payment-backdrop');
       if (payBd && payBd.classList.contains('open')) {
@@ -712,7 +969,10 @@
     function mountConsultMessengerFabInHeader() {
       const fab = document.getElementById('consultMessengerFab');
       const root = document.getElementById('notification-root');
-      if (!fab || !root || isModerator || isSpecialist) return;
+      if (!fab || !root || isModerator || isSpecialist || chatFocusFromQuery) {
+        if (fab) fab.setAttribute('hidden', '');
+        return;
+      }
       root.appendChild(fab);
       fab.removeAttribute('hidden');
       fab.className =
@@ -727,17 +987,37 @@
     const specialistBrowseSection = document.getElementById('specialistBrowseSection');
     const consultationTrackerSection = document.getElementById('consultationTrackerSection');
     const consultationTrackerRoot = document.getElementById('consultationTrackerRoot');
+    const adminPaymentQueueTabs = document.getElementById('adminPaymentQueueTabs');
+    const returnToProgressBanner = document.getElementById('returnToProgressBanner');
+    const returnToProgressBtn = document.getElementById('returnToProgressBtn');
     const specialistFeeSection = document.getElementById('specialistFeeSection');
+    const specialistRevenueSection = document.getElementById('specialistRevenueSection');
     const specialistFeeForm = document.getElementById('specialistFeeForm');
     const specialistFeeInput = document.getElementById('specialistFeeInput');
     const specialistFeeHint = document.getElementById('specialistFeeHint');
+    const specialistRevenueStats = document.getElementById('specialistRevenueStats');
+    const specialistPayoutRequestBtn = document.getElementById('specialistPayoutRequestBtn');
+    const specialistPayoutHint = document.getElementById('specialistPayoutHint');
+    const specialistPayoutHistory = document.getElementById('specialistPayoutHistory');
+    const specialistWorkflowSection = document.getElementById('specialistWorkflowSection');
+    const specialistInboxTabs = document.getElementById('specialistInboxTabs');
+    const specialistActionStats = document.getElementById('specialistActionStats');
+    const specialistActionQueue = document.getElementById('specialistActionQueue');
+    let lastSpecialistRevenueRefreshAt = 0;
     let trackerPollTimer = null;
     /** User explicitly opened specialist browse while a booking exists — keep cards visible until the booking ends or they submit again. */
-    let browseSpecialistsOverride = false;
+    let browseSpecialistsOverride = !isModerator && !isSpecialist && !chatFocusFromQuery;
+    let specialistInboxMode = isSpecialist && !isModerator ? 'requests' : 'conversations';
+    let adminQueueMode = isModerator ? 'pending_review' : 'all';
     const anotherConsultBtn = document.getElementById('anotherConsultBtn');
     const chatLockedOverlay = document.getElementById('chatLockedOverlay');
     const chatMessages = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
+
+    if (!isModerator && !isSpecialist && chatFocusFromQuery) {
+      consultationTrackerSection?.classList.add('hidden');
+      specialistBrowseSection?.classList.add('hidden');
+    }
     const chatForm = document.getElementById('chatForm');
     const needConsultationBtn = document.getElementById('needConsultationBtn');
     const chatPhotoPreview = document.getElementById('chatPhotoPreview');
@@ -751,13 +1031,81 @@
     if (isSpecialist && !isModerator) {
       if (specialistBrowseSection) specialistBrowseSection.classList.add('hidden');
       if (specialistFeeSection) specialistFeeSection.classList.remove('hidden');
+      if (specialistRevenueSection) specialistRevenueSection.classList.remove('hidden');
+      if (specialistWorkflowSection) specialistWorkflowSection.classList.remove('hidden');
       const listTitle = document.getElementById('consultListSectionTitle');
       const listHint = document.getElementById('consultListSectionHint');
       if (listTitle) listTitle.textContent = 'Your clients';
       if (listHint) {
-        listHint.textContent =
-          'Accept or decline new requests. After an admin verifies payment, chat unlocks — use the icons to view the client or set a video link.';
+        listHint.textContent = 'Review new requests first, then move accepted clients to conversations.';
         listHint.classList.remove('hidden');
+      }
+      specialistInboxTabs?.classList.remove('hidden');
+      specialistInboxTabs?.querySelectorAll('[data-inbox-mode]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = String(btn.getAttribute('data-inbox-mode') || '');
+          if (mode !== 'requests' && mode !== 'conversations') return;
+          specialistInboxMode = mode;
+          renderSpecialistInboxTabs();
+          renderConsultationList(consultationRowsCache);
+          if (activeChatId) {
+            const visible = getVisibleConsultationsForList(consultationRowsCache).some(
+              (r) => Number(r.consultationId) === Number(activeChatId)
+            );
+            if (!visible) closeChat();
+          }
+        });
+      });
+    }
+
+    if (isModerator) {
+      adminPaymentQueueTabs?.classList.remove('hidden');
+      adminPaymentQueueTabs?.querySelectorAll('[data-admin-queue]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = String(btn.getAttribute('data-admin-queue') || 'all');
+          adminQueueMode = mode;
+          renderAdminQueueTabs();
+          renderConsultationList(consultationRowsCache);
+          if (activeChatId) {
+            const visible = getVisibleConsultationsForList(consultationRowsCache).some(
+              (r) => Number(r.consultationId) === Number(activeChatId)
+            );
+            if (!visible) closeChat();
+          }
+        });
+      });
+    }
+
+    function renderAdminQueueTabs() {
+      if (!isModerator || !adminPaymentQueueTabs) return;
+      adminPaymentQueueTabs.querySelectorAll('[data-admin-queue]').forEach((btn) => {
+        const mode = String(btn.getAttribute('data-admin-queue') || '');
+        const active = mode === adminQueueMode;
+        btn.className = active
+          ? 'rounded-md px-2.5 py-1.5 text-[11px] bg-violet-600 text-white'
+          : 'rounded-md px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800';
+      });
+    }
+
+    function renderSpecialistInboxTabs() {
+      if (!isSpecialist || isModerator || !specialistInboxTabs) return;
+      specialistInboxTabs.querySelectorAll('[data-inbox-mode]').forEach((btn) => {
+        const mode = String(btn.getAttribute('data-inbox-mode') || '');
+        const active = mode === specialistInboxMode;
+        btn.className = active
+          ? 'rounded-md px-2.5 py-1.5 text-[11px] bg-violet-600 text-white'
+          : 'rounded-md px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800';
+      });
+      const listTitle = document.getElementById('consultListSectionTitle');
+      const listHint = document.getElementById('consultListSectionHint');
+      if (listTitle) {
+        listTitle.textContent = specialistInboxMode === 'requests' ? 'Consultation requests' : 'Your conversations';
+      }
+      if (listHint) {
+        listHint.textContent =
+          specialistInboxMode === 'requests'
+            ? 'New client requests waiting for your decision.'
+            : 'Accepted consultations. Chat unlocks after payment is verified and session is started.';
       }
     }
 
@@ -782,6 +1130,259 @@
       return d.innerHTML;
     }
 
+    function hasPrescriptionData(c) {
+      if (!c) return false;
+      return (
+        String(c.prescriptionSummary || '').trim() ||
+        String(c.prescriptionProductsText || '').trim() ||
+        String(c.prescriptionPlanText || '').trim()
+      );
+    }
+
+    async function ensurePrescriptionCatalogLoaded() {
+      if (!isSpecialist || prescriptionCatalogProducts.length) return;
+      try {
+        const data = await api('/products');
+        const rows = Array.isArray(data && data.products) ? data.products : [];
+        prescriptionCatalogProducts = rows
+          .map((p) => ({
+            productId: Number(p.productId || 0),
+            name: String(p.name || '').trim(),
+          }))
+          .filter((p) => p.productId > 0 && p.name);
+      } catch (_e) {
+        prescriptionCatalogProducts = [];
+      }
+    }
+
+    function addSelectedCatalogProduct(containerEl) {
+      if (!containerEl) return;
+      const picker = containerEl.querySelector('#prescriptionProductPicker');
+      const productsEl = containerEl.querySelector('#prescriptionProductsInput');
+      const hintEl = containerEl.querySelector('#prescriptionCatalogHint');
+      if (!picker || !productsEl) return;
+      const pickedId = Number(picker.value || 0);
+      const picked = prescriptionCatalogProducts.find((p) => Number(p.productId) === pickedId);
+      if (!picked) {
+        if (hintEl) hintEl.textContent = 'Choose a catalog product first.';
+        return;
+      }
+      const current = String(productsEl.value || '').trim();
+      const entries = current
+        ? current
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+      if (!entries.some((name) => name.toLowerCase() === picked.name.toLowerCase())) {
+        entries.push(picked.name);
+      }
+      productsEl.value = entries.join(', ');
+      productsEl.dispatchEvent(new Event('input', { bubbles: true }));
+      picker.value = '';
+      if (hintEl) hintEl.textContent = `Added: ${picked.name}`;
+    }
+
+    async function savePrescriptionFromDetail(c, containerEl) {
+      if (!c || !containerEl) return;
+      const lockKey = Number(c.consultationId);
+      if (prescriptionSaveLocks.has(lockKey)) return;
+      const notesEl = containerEl.querySelector('#prescriptionSummaryInput');
+      const productsEl = containerEl.querySelector('#prescriptionProductsInput');
+      const planEl = containerEl.querySelector('#prescriptionPlanInput');
+      const saveBtn = containerEl.querySelector('#savePrescriptionBtn');
+      const saveMeta = containerEl.querySelector('#prescriptionSaveMeta');
+      const cardEl = containerEl.querySelector('#carePrescriptionCard');
+      const specialistNotes = notesEl ? String(notesEl.value || '').trim() : '';
+      const validatedProductsText = productsEl ? String(productsEl.value || '').trim() : '';
+      const finalRecommendation = planEl ? String(planEl.value || '').trim() : '';
+      const prevSpecialistNotes = String(c.prescriptionSummary || '').trim();
+      const prevValidatedProductsText = String(c.prescriptionProductsText || '').trim();
+      const prevFinalRecommendation = String(c.prescriptionPlanText || '').trim();
+      if (!specialistNotes && !validatedProductsText && !finalRecommendation) {
+        if (saveMeta) saveMeta.textContent = 'Add at least one field before saving.';
+        return;
+      }
+      if (
+        specialistNotes === prevSpecialistNotes &&
+        validatedProductsText === prevValidatedProductsText &&
+        finalRecommendation === prevFinalRecommendation
+      ) {
+        if (saveMeta) saveMeta.textContent = 'No changes to save.';
+        return;
+      }
+      prescriptionSaveLocks.add(lockKey);
+      if (saveBtn) {
+        saveBtn.setAttribute('disabled', 'disabled');
+        saveBtn.textContent = 'Saving...';
+        saveBtn.classList.add('opacity-80');
+      }
+      if (saveMeta) {
+        saveMeta.textContent = 'Saving prescription...';
+        saveMeta.classList.remove('text-emerald-300');
+        saveMeta.classList.add('text-slate-400');
+      }
+      try {
+        const result = await api('/consultations/' + c.consultationId, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            prescriptionSummary: specialistNotes || null,
+            prescriptionProductsText: validatedProductsText || null,
+            prescriptionPlanText: finalRecommendation || null,
+          }),
+        });
+        if (result && result.noChanges) {
+          if (saveMeta) saveMeta.textContent = 'No changes to save.';
+          return;
+        }
+        c.prescriptionSummary = specialistNotes || null;
+        c.prescriptionProductsText = validatedProductsText || null;
+        c.prescriptionPlanText = finalRecommendation || null;
+        c.updatedAt = new Date().toISOString();
+        if (saveMeta) {
+          saveMeta.classList.remove('text-slate-400');
+          saveMeta.classList.add('text-emerald-300');
+          saveMeta.textContent = `Saved at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        if (cardEl) {
+          cardEl.classList.add('ring-2', 'ring-emerald-400/45');
+        }
+        if (saveBtn) {
+          saveBtn.textContent = 'Saved ✓';
+          saveBtn.classList.remove('bg-violet-600', 'hover:bg-violet-500');
+          saveBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+        }
+        const timerKey = Number(c.consultationId);
+        const oldTimer = prescriptionSaveUiTimers.get(timerKey);
+        if (oldTimer) clearTimeout(oldTimer);
+        const resetTimer = setTimeout(() => {
+          if (saveBtn) {
+            saveBtn.textContent = 'Save prescription';
+            saveBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+            saveBtn.classList.add('bg-violet-600', 'hover:bg-violet-500');
+          }
+          if (cardEl) {
+            cardEl.classList.remove('ring-2', 'ring-emerald-400/45');
+          }
+          prescriptionSaveUiTimers.delete(timerKey);
+        }, 1600);
+        prescriptionSaveUiTimers.set(timerKey, resetTimer);
+      } catch (err) {
+        if (saveMeta) {
+          saveMeta.textContent = 'Could not save. Try again.';
+          saveMeta.classList.remove('text-emerald-300');
+          saveMeta.classList.add('text-rose-300');
+        }
+      } finally {
+        prescriptionSaveLocks.delete(lockKey);
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.classList.remove('opacity-80');
+        }
+      }
+    }
+
+    function bindPrescriptionSaveButtonState(c, containerEl) {
+      if (!c || !containerEl) return;
+      const notesEl = containerEl.querySelector('#prescriptionSummaryInput');
+      const productsEl = containerEl.querySelector('#prescriptionProductsInput');
+      const planEl = containerEl.querySelector('#prescriptionPlanInput');
+      const saveBtn = containerEl.querySelector('#savePrescriptionBtn');
+      const saveMeta = containerEl.querySelector('#prescriptionSaveMeta');
+      if (!notesEl || !productsEl || !planEl || !saveBtn) return;
+
+      const computeChanged = () => {
+        const specialistNotes = String(notesEl.value || '').trim();
+        const validatedProductsText = String(productsEl.value || '').trim();
+        const finalRecommendation = String(planEl.value || '').trim();
+        const prevSpecialistNotes = String(c.prescriptionSummary || '').trim();
+        const prevValidatedProductsText = String(c.prescriptionProductsText || '').trim();
+        const prevFinalRecommendation = String(c.prescriptionPlanText || '').trim();
+        if (!specialistNotes && !validatedProductsText && !finalRecommendation) return false;
+        return !(
+          specialistNotes === prevSpecialistNotes &&
+          validatedProductsText === prevValidatedProductsText &&
+          finalRecommendation === prevFinalRecommendation
+        );
+      };
+
+      const refresh = () => {
+        const changed = computeChanged();
+        saveBtn.disabled = !changed;
+        if (!changed && saveMeta && !String(saveMeta.textContent || '').includes('Saved at')) {
+          saveMeta.textContent = hasPrescriptionData(c) ? 'No changes to save.' : 'Not saved yet.';
+        }
+      };
+
+      [notesEl, productsEl, planEl].forEach((input) => {
+        input.addEventListener('input', refresh);
+      });
+      refresh();
+    }
+
+    function bindPrescriptionCatalogPicker(containerEl) {
+      if (!containerEl) return;
+      const addBtn = containerEl.querySelector('#addCatalogPrescriptionProductBtn');
+      const picker = containerEl.querySelector('#prescriptionProductPicker');
+      if (!addBtn || !picker) return;
+      addBtn.addEventListener('click', () => addSelectedCatalogProduct(containerEl));
+    }
+
+    function downloadPrescriptionPdf(c) {
+      if (!c) return;
+      const summary = String(c.prescriptionSummary || '').trim();
+      const products = String(c.prescriptionProductsText || '').trim();
+      const plan = String(c.prescriptionPlanText || '').trim();
+      if (!summary && !products && !plan) {
+        showToast('No prescription saved yet.', 'info');
+        return;
+      }
+      const jsPdfApi = window.jspdf && window.jspdf.jsPDF ? window.jspdf.jsPDF : null;
+      if (!jsPdfApi) {
+        showToast('PDF engine unavailable. Please refresh then try again.', 'error');
+        return;
+      }
+      const doc = new jsPdfApi({ unit: 'pt', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const left = 42;
+      let y = 54;
+      const writeLine = (text, size = 11, gap = 18) => {
+        doc.setFontSize(size);
+        const lines = doc.splitTextToSize(String(text || ''), pageWidth - left * 2);
+        doc.text(lines, left, y);
+        y += lines.length * (size + 3) + gap;
+      };
+      doc.setFont('helvetica', 'bold');
+      writeLine('Hairvelous Care Prescription', 16, 10);
+      doc.setFont('helvetica', 'normal');
+      writeLine(`Consultation #${c.consultationId} · ${new Date().toLocaleString()}`, 10, 8);
+      if (c.prescriptionIssuedAt) {
+        writeLine(`Issued at: ${new Date(c.prescriptionIssuedAt).toLocaleString()}`, 10, 8);
+      }
+      writeLine(`Client: ${c.userName || '—'}`, 11, 6);
+      writeLine(`Specialist: ${c.specialistName || '—'}`, 11, 10);
+      writeLine(`Concern: ${c.concernTitle || '—'}`, 11, 12);
+      doc.setFont('helvetica', 'bold');
+      writeLine('1) Care Summary', 12, 4);
+      doc.setFont('helvetica', 'normal');
+      writeLine(summary || 'No summary provided.', 11, 8);
+      doc.setFont('helvetica', 'bold');
+      writeLine('2) Recommended Products', 12, 4);
+      doc.setFont('helvetica', 'normal');
+      writeLine(products || 'No products listed.', 11, 8);
+      doc.setFont('helvetica', 'bold');
+      writeLine('3) Usage Plan / Follow-up', 12, 4);
+      doc.setFont('helvetica', 'normal');
+      writeLine(plan || 'No follow-up plan added.', 11, 10);
+      y += 14;
+      doc.setDrawColor(180, 180, 180);
+      doc.line(left, y, pageWidth - left, y);
+      y += 14;
+      writeLine('Specialist signature: ________________________________', 10, 4);
+      writeLine('This document is generated from Hairvelous consultation records.', 9, 0);
+      doc.save(`hairvelous-prescription-${c.consultationId}.pdf`);
+    }
+
     function formatTime(v) {
       const d = new Date(v);
       if (Number.isNaN(d.getTime())) return '';
@@ -792,6 +1393,29 @@
       const d = new Date(v);
       if (Number.isNaN(d.getTime())) return '';
       return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    function formatRelativeTime(value) {
+      const dt = new Date(value);
+      if (Number.isNaN(dt.getTime())) return 'just now';
+      const diffMs = Date.now() - dt.getTime();
+      if (diffMs < 60000) return 'just now';
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 60) return `${mins}m ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
+    }
+
+    function toDateKey(v) {
+      if (!v) return '';
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     }
 
     function resolveChatImageUrl(message) {
@@ -925,27 +1549,37 @@
 
     function statusBadge(status) {
       const s = String(status || '');
+      const labelMap = {
+        pending: 'Request Sent',
+        awaiting_payment: 'Waiting for Payment',
+        scheduled: 'Ready for Session',
+        in_progress: 'Session Ongoing',
+        completed: 'Session Completed',
+        cancelled: 'Cancelled',
+        declined: 'Declined',
+      };
+      const shown = labelMap[s] || s;
       const color =
         s === 'completed'
           ? 'bg-emerald-500/20 text-emerald-300'
-          : s === 'in_progress' || s === 'paid'
+          : s === 'in_progress' || s === 'scheduled' || s === 'paid'
             ? 'bg-sky-500/20 text-sky-300'
             : s === 'awaiting_payment' || s === 'accepted'
               ? 'bg-cyan-500/20 text-cyan-300'
               : s === 'cancelled' || s === 'declined'
                 ? 'bg-red-500/20 text-red-300'
                 : 'bg-amber-500/20 text-amber-300';
-      return `<span class="rounded-full px-1.5 py-0.5 text-[9px] font-medium ${color}">${esc(s)}</span>`;
+      return `<span class="rounded-full px-1.5 py-0.5 text-[9px] font-medium ${color}">${esc(shown)}</span>`;
     }
 
     /** Staff list: second line so payment state is not confused with session status */
     function paymentStaffListBadge(c) {
       const pay = c.paymentStatus || 'unpaid';
       if (pay === 'pending_review') {
-        return '<span class="rounded-full bg-amber-500/25 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-amber-100">Proof</span>';
+        return '<span class="rounded-full bg-amber-500/25 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-amber-100">Pending Review</span>';
       }
       if (pay === 'verified') {
-        return '<span class="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-emerald-200">Paid</span>';
+        return '<span class="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-emerald-200">Payment Verified</span>';
       }
       return '<span class="rounded-full bg-slate-600/35 px-1.5 py-0.5 text-[8px] font-medium text-slate-400">Unpaid</span>';
     }
@@ -976,7 +1610,7 @@
       if (sendBtn) sendBtn.disabled = !allow;
     }
 
-    /** Composer only when a consultation is open and (mod/specialist) or payment verified for messaging. */
+    /** Composer only when a consultation is open and chat is unlocked. */
     function updateComposerVisibility() {
       if (!chatForm) return;
       if (!activeChatId) {
@@ -1031,6 +1665,64 @@
     }
 
     let selectedSpecialistUserId = '';
+    const specialistFeedbackBackdrop = document.getElementById('specialist-feedback-backdrop');
+    const specialistFeedbackClose = document.getElementById('specialistFeedbackClose');
+    const specialistFeedbackTitle = document.getElementById('specialistFeedbackTitle');
+    const specialistFeedbackSubtitle = document.getElementById('specialistFeedbackSubtitle');
+    const specialistFeedbackList = document.getElementById('specialistFeedbackList');
+
+    function closeSpecialistFeedbackModal() {
+      if (specialistFeedbackBackdrop) specialistFeedbackBackdrop.classList.remove('open');
+    }
+
+    function renderFeedbackStars(rating) {
+      const n = Math.max(0, Math.min(5, Number(rating) || 0));
+      return '★'.repeat(n) + '☆'.repeat(5 - n);
+    }
+
+    function formatFeedbackDate(v) {
+      const d = v ? new Date(v) : null;
+      if (!d || Number.isNaN(d.getTime())) return '';
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    async function openSpecialistFeedbackModal(userId) {
+      const uid = Number(userId);
+      if (!Number.isFinite(uid) || uid <= 0 || !specialistFeedbackBackdrop || !specialistFeedbackList) return;
+      const specialist = specialistsForBooking.find((s) => Number(s.userId) === uid);
+      if (specialistFeedbackTitle) {
+        specialistFeedbackTitle.textContent = `Feedback for ${specialist && specialist.name ? specialist.name : 'specialist'}`;
+      }
+      if (specialistFeedbackSubtitle) specialistFeedbackSubtitle.textContent = 'Recent client comments and ratings';
+      specialistFeedbackList.innerHTML = '<p class="text-sm text-slate-400">Loading feedback...</p>';
+      specialistFeedbackBackdrop.classList.add('open');
+      try {
+        const data = await api('/consultations/specialist-feedback/' + uid + '?limit=20');
+        const rows = Array.isArray(data && data.feedbacks) ? data.feedbacks : [];
+        if (!rows.length) {
+          specialistFeedbackList.innerHTML =
+            '<p class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3 text-sm text-slate-400">No feedback comments yet.</p>';
+          return;
+        }
+        specialistFeedbackList.innerHTML = rows
+          .map((r) => {
+            const txt = String(r.feedbackText || '').trim();
+            const rating = Number(r.rating || 0);
+            return `<article class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="text-sm font-semibold text-amber-300">${esc(renderFeedbackStars(rating))} <span class="text-slate-300">(${esc(String(rating))}/5)</span></p>
+                <p class="text-[11px] text-slate-500">${esc(formatFeedbackDate(r.createdAt))}</p>
+              </div>
+              <p class="mt-2 text-sm text-slate-200">${esc(txt || 'No comment text provided.')}</p>
+              <p class="mt-2 text-[11px] font-medium text-slate-500">- ${esc(r.clientName || 'Client')}</p>
+            </article>`;
+          })
+          .join('');
+      } catch (err) {
+        specialistFeedbackList.innerHTML =
+          `<p class="rounded-xl border border-rose-500/30 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">${esc(err.error || 'Could not load feedback')}</p>`;
+      }
+    }
 
     function syncSpecialistCardsVisual() {
       const root = document.getElementById('specialistCards');
@@ -1122,6 +1814,15 @@
       const loc =
         s.location && String(s.location).trim() ? String(s.location).trim() : 'Philippines';
       const bio = (s.bioSnippet && String(s.bioSnippet).trim()) || category;
+      const feedbacks = Array.isArray(s.recentFeedbacks) ? s.recentFeedbacks : [];
+      const topFeedback = feedbacks.length ? feedbacks[0] : null;
+      const feedbackPreview = topFeedback
+        ? String(topFeedback.feedbackText || '').trim().replace(/\s+/g, ' ').slice(0, 120)
+        : '';
+      const feedbackLabel = topFeedback
+        ? `“${feedbackPreview}${feedbackPreview.length >= 120 ? '…' : ''}”`
+        : 'No client comments yet.';
+      const feedbackBy = topFeedback && topFeedback.clientName ? `- ${topFeedback.clientName}` : '';
       const bannerImg = s.profilePhotoUrl
         ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-full min-h-[6.5rem] w-full object-cover opacity-95" />`
         : `<div class="flex h-full min-h-[6.5rem] w-full items-center justify-center bg-gradient-to-br from-violet-900/80 via-slate-900 to-slate-950"><span class="text-3xl font-bold text-violet-200/90">${esc(specialistInitials(s.name))}</span></div>`;
@@ -1156,6 +1857,13 @@
           </div>
         </div>
         <p class="mt-2 text-[11px] text-amber-300/90">${esc(ratingLabel)}</p>
+        <p class="mt-1 line-clamp-2 text-[11px] italic text-slate-400">${esc(feedbackLabel)}</p>
+        ${feedbackBy ? `<p class="mt-0.5 text-[10px] font-medium text-slate-500">${esc(feedbackBy)}</p>` : ''}
+        ${
+          Number(s.ratingCount || 0) > 0
+            ? `<span role="button" tabindex="0" data-view-feedback="${esc(String(s.userId))}" class="mt-1 inline-flex cursor-pointer select-none items-center text-[11px] font-semibold text-violet-300 hover:text-violet-200">Browse user feedback (${esc(String(s.ratingCount))})</span>`
+            : ''
+        }
         <h3 class="mt-3 line-clamp-2 text-[15px] font-bold leading-snug text-white sm:text-base">
           ${esc(s.name || 'Specialist')}<span class="font-normal text-slate-400"> · ${esc(hook.length > 48 ? hook.slice(0, 46) + '…' : hook)}</span>
         </h3>
@@ -1175,6 +1883,11 @@
     }
 
     function showRequestForm() {
+      // If page is in forced chat-focus mode (?chat=...&focus=chat), switch back to normal browse mode.
+      if (chatFocusFromQuery) {
+        window.location.href = '/consultations.html';
+        return;
+      }
       browseSpecialistsOverride = true;
       closeConsultMessenger();
       if (consultationTrackerSection) consultationTrackerSection.classList.add('hidden');
@@ -1361,9 +2074,8 @@
       consultationTrackerRoot.querySelectorAll('[data-tracker-open-chat]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const cid = Number(btn.getAttribute('data-tracker-open-chat'));
-          const row = findConsultation(cid);
-          openConsultMessenger();
-          if (row) openChat(cid, row.concernTitle || '');
+          if (!Number.isFinite(cid) || cid <= 0) return;
+          window.location.href = `/consultations.html?chat=${cid}&focus=chat`;
         });
       });
       consultationTrackerRoot.querySelectorAll('[data-tracker-sync]').forEach((btn) => {
@@ -1384,9 +2096,21 @@
 
     function updateRequestUi(count) {
       if (isModerator || isSpecialist) return;
+      if (chatFocusFromQuery) {
+        specialistBrowseSection?.classList.add('hidden');
+        consultationTrackerSection?.classList.add('hidden');
+        setTrackerPolling(false);
+        if (count > 0) anotherConsultBtn.classList.remove('hidden');
+        else anotherConsultBtn.classList.add('hidden');
+        return;
+      }
       const primary = pickPrimaryTrackedConsultation(consultationRowsCache);
       if (!primary) browseSpecialistsOverride = false;
       const showTracker = primary && !browseSpecialistsOverride;
+      if (returnToProgressBanner) {
+        const showBanner = !!primary && !showTracker;
+        returnToProgressBanner.classList.toggle('hidden', !showBanner);
+      }
       if (showTracker && consultationTrackerSection && specialistBrowseSection) {
         specialistBrowseSection.classList.add('hidden');
         consultationTrackerSection.classList.remove('hidden');
@@ -1400,6 +2124,14 @@
       if (count > 0) anotherConsultBtn.classList.remove('hidden');
       else anotherConsultBtn.classList.add('hidden');
     }
+
+    returnToProgressBtn?.addEventListener('click', () => {
+      const primary = pickPrimaryTrackedConsultation(consultationRowsCache);
+      if (!primary) return;
+      browseSpecialistsOverride = false;
+      updateRequestUi(consultationRowsCache.length);
+      consultationTrackerSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
 
     function isMySpecialistCase(c) {
       return isSpecialist && Number(c.specialistUserId) === Number(user.userId);
@@ -1520,6 +2252,143 @@
       modal.classList.remove('flex');
     }
 
+    function closeCloseCaseModal() {
+      const modal = document.getElementById('closeCaseModal');
+      const form = document.getElementById('closeCaseForm');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      pendingCloseCaseConsultationId = null;
+      if (form) form.reset();
+    }
+
+    function openCloseCaseModal(consultationId) {
+      const modal = document.getElementById('closeCaseModal');
+      const input = document.getElementById('closeCaseConsultationId');
+      const findings = document.getElementById('closeCaseFindings');
+      if (!modal || !input) return;
+      pendingCloseCaseConsultationId = Number(consultationId);
+      input.value = String(consultationId);
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (findings) findings.focus();
+    }
+
+    function composeCloseSummary() {
+      const findings = (document.getElementById('closeCaseFindings')?.value || '').trim();
+      const plan = (document.getElementById('closeCasePlan')?.value || '').trim();
+      const followUp = (document.getElementById('closeCaseFollowUp')?.value || '').trim();
+      if (!findings || !plan) {
+        return '';
+      }
+      return [
+        `Findings: ${findings}`,
+        `Plan: ${plan}`,
+        followUp ? `Next check-in: ${followUp}` : 'Next check-in: Not required',
+      ].join('\n');
+    }
+
+    /** When structured (from Complete session), split for display; otherwise show full text. */
+    function parseCloseCaseSummaryText(text) {
+      const t = String(text || '').trim();
+      if (!t) return { kind: 'raw', text: '' };
+      const m = t.match(
+        /^Findings:\s*([\s\S]+?)\nPlan:\s*([\s\S]+?)(?:\nNext check-in:\s*([\s\S]*))?$/i
+      );
+      if (m) {
+        return {
+          kind: 'structured',
+          findings: m[1].trim(),
+          plan: m[2].trim(),
+          followUp: m[3] != null ? m[3].trim() : '',
+        };
+      }
+      return { kind: 'raw', text: t };
+    }
+
+    /** When a session summary exists, split the side panel into Case details vs Session summary. */
+    function bindDetailViewTabs(rootEl, defaultTab) {
+      const wrap = rootEl.querySelector('[data-detail-tabs-wrap]');
+      if (!wrap) return;
+      const tabs = rootEl.querySelectorAll('[data-detail-tab]');
+      const panes = rootEl.querySelectorAll('[data-detail-pane]');
+      if (!tabs.length || !panes.length) return;
+      const apply = (which) => {
+        const w = which === 'session' ? 'session' : 'case';
+        tabs.forEach((btn) => {
+          const on = btn.getAttribute('data-detail-tab') === w;
+          btn.setAttribute('aria-selected', on ? 'true' : 'false');
+          btn.classList.toggle('bg-slate-700/90', on);
+          btn.classList.toggle('text-white', on);
+          btn.classList.toggle('shadow-sm', on);
+          btn.classList.toggle('text-slate-400', !on);
+          btn.classList.toggle('ring-1', on);
+          btn.classList.toggle('ring-slate-500/30', on);
+        });
+        panes.forEach((pane) => {
+          const on = pane.getAttribute('data-detail-pane') === w;
+          pane.classList.toggle('hidden', !on);
+        });
+      };
+      tabs.forEach((btn) => {
+        btn.addEventListener('click', () => apply(btn.getAttribute('data-detail-tab') || 'case'));
+      });
+      apply(defaultTab);
+    }
+
+    function closeClientRoutineModal() {
+      const modal = document.getElementById('clientRoutineModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function openClientRoutineModal(clientUserId, clientLabel) {
+      const modal = document.getElementById('clientRoutineModal');
+      const body = document.getElementById('clientRoutineModalBody');
+      const title = document.getElementById('clientRoutineModalTitle');
+      const sub = document.getElementById('clientRoutineModalSubtitle');
+      if (!modal || !body) return;
+      if (title) title.textContent = `Routine · ${clientLabel || 'Client'}`;
+      if (sub) sub.textContent = 'Loading…';
+      body.innerHTML = '<p class="text-slate-500">Loading…</p>';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      try {
+        const data = await api(`/routine/client/${clientUserId}/logs`);
+        const logs = (data && data.logs) || [];
+        const win =
+          data.appliedHistoryDays != null
+            ? `Last ${data.appliedHistoryDays} days (client plan limit)`
+            : 'Full history (Pro client)';
+        if (sub) sub.textContent = win;
+        if (!logs.length) {
+          body.innerHTML =
+            '<p class="text-slate-400">No routine logs in this window yet.</p>';
+          return;
+        }
+        body.innerHTML = `<div class="space-y-2">${logs
+          .map(
+            (row) => `
+          <div class="rounded-lg border border-slate-700/80 bg-slate-950/50 px-3 py-2">
+            <p class="text-xs font-medium text-white">${esc(String(row.dateLogged || ''))} · ${esc(String(row.activityType || ''))}</p>
+            ${row.notes ? `<p class="mt-1 text-[11px] text-slate-300">${esc(String(row.notes))}</p>` : ''}
+            ${
+              row.mediaUrl
+                ? `<p class="mt-1"><a href="${esc(String(row.mediaUrl))}" target="_blank" rel="noopener" class="text-[11px] text-cyan-300 underline">View attachment</a></p>`
+                : ''
+            }
+          </div>`
+          )
+          .join('')}</div>`;
+      } catch (err) {
+        const msg = err.error || err.message || 'Could not load routine';
+        body.innerHTML = `<p class="text-rose-300 text-sm">${esc(msg)}</p>`;
+        if (sub) sub.textContent = '';
+        showToast(msg, 'error');
+      }
+    }
+
     async function openClientConsultSummaryModal(consultationId) {
       const id = Number(consultationId);
       if (!Number.isFinite(id)) return;
@@ -1553,15 +2422,66 @@
       const current = (c.meetingUrl && String(c.meetingUrl).trim()) || '';
       const url = window.prompt('Paste Google Meet / Zoom link (leave empty to clear):', current);
       if (url === null) return;
+      const normalized = normalizeMeetingUrl(url);
+      if (normalized === null) {
+        showToast(
+          'Invalid meeting link. Use a full URL (https://...) or Meet code format (aaaa-bbbb-cccc).',
+          'error'
+        );
+        return;
+      }
       try {
         await api('/consultations/' + id, {
           method: 'PATCH',
-          body: JSON.stringify({ meetingUrl: url.trim() }),
+          body: JSON.stringify({ meetingUrl: normalized }),
         });
         await loadConsultations();
         showToast('Meeting link updated', 'success');
       } catch (err) {
         showToast(err.error || 'Could not update link', 'error');
+      }
+    }
+
+    /**
+     * Normalize meeting input to a safe absolute URL.
+     * Returns:
+     * - '' for clear
+     * - absolute URL string for valid values
+     * - null for invalid input
+     */
+    function normalizeMeetingUrl(value) {
+      let raw = String(value || '').trim();
+      if (!raw) return '';
+      raw = raw.replace(/\s+/g, '');
+      // Accept raw Google Meet code like "aaaa-bbbb-cccc"
+      if (/^[a-z]{4}-[a-z]{4}-[a-z]{3,4}$/i.test(raw)) {
+        raw = `https://meet.google.com/${raw.toLowerCase()}`;
+      } else if (!/^[a-z][a-z0-9+\-.]*:\/\//i.test(raw)) {
+        // If protocol is missing but looks like domain/path, prepend https.
+        raw = `https://${raw}`;
+      }
+      try {
+        const u = new URL(raw);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+        return u.toString();
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function openMeetingLink(c) {
+      const normalized = normalizeMeetingUrl(c && c.meetingUrl ? c.meetingUrl : '');
+      if (normalized === null) {
+        showToast('Saved meeting link is invalid. Please edit the link first.', 'error');
+        return;
+      }
+      if (!normalized) {
+        showToast('No meeting link set yet. Add one first.', 'info');
+        return;
+      }
+      const opened = window.open(normalized, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        showToast('Popup blocked. Please allow popups and try again.', 'error');
       }
     }
 
@@ -1658,7 +2578,7 @@
       }
       if (feeBlock) {
         if (c && c.amountPhp != null) {
-          feeBlock.innerHTML = `Fee: <span class="text-slate-200">₱${esc(String(c.amountPhp))}</span> · Platform ${esc(String(c.platformFeePercent ?? ''))}% (₱${esc(String(c.platformFeePhp ?? '—'))}) · Specialist net ₱${esc(String(c.specialistNetPhp ?? '—'))}`;
+          feeBlock.innerHTML = `Specialist fee: <span class="text-slate-200">₱${esc(String(c.amountPhp))}</span> · Platform fee ${esc(String(c.platformFeePercent ?? ''))}% (₱${esc(String(c.platformFeePhp ?? '—'))}) · Total due ₱${esc(String(c.clientTotalPhp ?? '—'))}`;
         } else {
           feeBlock.textContent = '';
         }
@@ -1720,6 +2640,96 @@
       }
     }
 
+    function getPaymentModalProofData() {
+      const formEl = document.getElementById('paymentModalProofForm');
+      if (!formEl) return { reference: '', receiptFile: null };
+      const refInp = formEl.querySelector('[name="paymentReference"]');
+      const fileInp = formEl.querySelector('[name="receipt"]');
+      const reference = String((refInp && refInp.value) || '').trim();
+      const receiptFile = fileInp && fileInp.files && fileInp.files[0] ? fileInp.files[0] : null;
+      return { reference, receiptFile };
+    }
+
+    async function paymentModalDemo() {
+      const id = paymentModalConsultationId || Number(document.getElementById('paymentModalConsultationId')?.value);
+      if (!Number.isFinite(id) || id <= 0) return;
+      const row = findConsultation(id);
+      const st = String((row && row.status) || '');
+      const pay = String((row && row.paymentStatus) || '');
+      if (st === 'pending') {
+        showToast('Specialist must accept first before payment.', 'info');
+        return;
+      }
+      if (st !== 'awaiting_payment' || pay === 'verified' || st === 'scheduled' || st === 'in_progress' || st === 'completed') {
+        showToast('This consultation is already past the payment stage.', 'info');
+        return;
+      }
+      const { reference, receiptFile } = getPaymentModalProofData();
+      // Bundle proof with payment when user already filled proof fields.
+      if (reference || receiptFile) {
+        const proofForm = document.getElementById('paymentModalProofForm');
+        if (proofForm) {
+          const ok = await submitPaymentProof(id, proofForm);
+          if (ok) {
+            closeConsultationPaymentModal();
+            showToast('Payment + proof submitted. Admin can now verify it.', 'success');
+          }
+          return;
+        }
+      }
+
+      const demoRef = `DEMO-${Date.now()}`;
+      try {
+        await api('/consultations/' + id + '/demo-payment', {
+          method: 'POST',
+          body: '{}',
+        });
+        await loadConsultations();
+        closeConsultationPaymentModal();
+        showToast('Demo payment submitted. Admin can now verify it.', 'success');
+      } catch (err) {
+        const msg = String((err && (err.error || err.message)) || '').toLowerCase();
+        const shouldFallback = msg.includes('not found');
+        if (!shouldFallback) {
+          showToast(err.error || err.message || 'Demo payment is unavailable', 'error');
+          return;
+        }
+        try {
+          const fallbackFd = new FormData();
+          fallbackFd.append('paymentReference', demoRef);
+          const pngBlob = await new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 360;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(new Blob(['demo'], { type: 'text/plain' }));
+              return;
+            }
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#8b5cf6';
+            ctx.font = 'bold 30px Outfit, Arial';
+            ctx.fillText('HAIRVELOUS DEMO PAYMENT', 28, 72);
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '20px Outfit, Arial';
+            ctx.fillText(`Reference: ${demoRef}`, 28, 130);
+            ctx.fillText(`Consultation #${id}`, 28, 170);
+            ctx.fillText(new Date().toLocaleString(), 28, 210);
+            canvas.toBlob((blob) => resolve(blob || new Blob(['demo'], { type: 'text/plain' })), 'image/png');
+          });
+          const demoFile = new File([pngBlob], `demo-payment-${id}.png`, { type: 'image/png' });
+          fallbackFd.append('receipt', demoFile);
+          await apiForm('/consultations/' + id + '/payment-proof', fallbackFd);
+          await loadConsultations();
+          closeConsultationPaymentModal();
+          showToast('Demo payment submitted via compatibility mode.', 'success');
+        } catch (fallbackErr) {
+          showToast(fallbackErr.error || 'Demo payment fallback failed', 'error');
+        }
+      }
+    }
+
     function renderDetail(c, detailTargetEl) {
       const el = detailTargetEl || document.getElementById('detailPanel');
       if (!el) return;
@@ -1739,19 +2749,38 @@
       const pro = c.isProUser ? '<span class="mt-1.5 inline-block rounded-full bg-violet-500/20 px-1.5 py-0.5 text-[9px] text-violet-300">Pro priority</span>' : '';
       const feeLine =
         c.amountPhp != null
-          ? `<p class="mt-2 text-[11px] text-slate-400">Fee: ₱${esc(String(c.amountPhp))} · Platform ${esc(String(c.platformFeePercent ?? ''))}% (₱${esc(String(c.platformFeePhp ?? '—'))}) · Specialist net ₱${esc(String(c.specialistNetPhp ?? '—'))}</p>`
+          ? `<p class="mt-2 text-[11px] text-slate-400">Specialist fee: ₱${esc(String(c.amountPhp))} · Platform fee ${esc(String(c.platformFeePercent ?? ''))}% (₱${esc(String(c.platformFeePhp ?? '—'))}) · Total due: ₱${esc(String(c.clientTotalPhp ?? '—'))}</p>`
           : '';
       const specialistUid =
         c.specialistUserId != null && Number(c.specialistUserId) > 0 ? Number(c.specialistUserId) : null;
+      const rawMeetingValue = c.meetingUrl != null ? String(c.meetingUrl).trim() : '';
+      const normalizedMeetingUrl = normalizeMeetingUrl(rawMeetingValue);
+      const hasMeetingLink = Boolean(normalizedMeetingUrl);
+      const hasInvalidMeetingLink = Boolean(rawMeetingValue) && normalizedMeetingUrl === null;
       const meeting =
-        c.meetingUrl && String(c.meetingUrl).trim()
+        hasMeetingLink
           ? `<div class="mt-3 rounded-xl border border-cyan-500/30 bg-cyan-500/[0.07] p-3">
                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-300/90">Meeting link</p>
-               <a href="${esc(String(c.meetingUrl).trim())}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex break-all rounded-lg bg-slate-900/80 px-3 py-2 text-xs font-medium text-cyan-200 underline decoration-cyan-500/50 hover:text-white">
+               <a href="${esc(String(normalizedMeetingUrl))}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex break-all rounded-lg bg-slate-900/80 px-3 py-2 text-xs font-medium text-cyan-200 underline decoration-cyan-500/50 hover:text-white">
                  Open video / meeting link
                </a>
+               ${
+                 isSpecialist && isMySpecialistCase(c)
+                   ? '<button type="button" id="detailEditMeetingBtn" class="mt-2 inline-flex rounded-lg border border-cyan-400/35 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-medium text-cyan-100 hover:bg-cyan-500/20">Edit meeting link</button>'
+                   : ''
+               }
                <p class="mt-2 text-[11px] leading-relaxed text-slate-500">Opens in a new tab — Hairvelous does not host video in the app.</p>
              </div>`
+          : hasInvalidMeetingLink
+            ? `<div class="mt-3 rounded-xl border border-amber-500/35 bg-amber-500/[0.07] p-3">
+                 <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200/95">Meeting link needs update</p>
+                 <p class="mt-2 text-[11px] leading-relaxed text-amber-100/85">Saved meeting link format is invalid. Update it to open properly (example: https://meet.google.com/aaaa-bbbb-cccc).</p>
+                 ${
+                   isSpecialist && isMySpecialistCase(c)
+                     ? '<button type="button" id="detailEditMeetingBtn" class="mt-2 inline-flex rounded-lg border border-amber-400/35 bg-amber-500/10 px-3 py-1.5 text-[11px] font-medium text-amber-100 hover:bg-amber-500/20">Fix meeting link</button>'
+                     : ''
+                 }
+               </div>`
           : specialistUid && clientUser && paid
             ? `<p class="mt-2 text-[11px] leading-relaxed text-slate-500">No meeting link yet. Tap the <strong class="font-medium text-slate-400">video</strong> icon above to notify your specialist; they’ll add a Meet or Zoom link when ready.</p>`
             : isSpecialist && isMySpecialistCase(c) && paid
@@ -1774,18 +2803,118 @@
                <button type="button" id="detailViewClientBtn" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/40 bg-violet-600/20 text-violet-100 transition hover:bg-violet-600/35" title="View client profile & hair summary" aria-label="View client profile">
                  <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
                </button>
-               <button type="button" id="detailSetMeetingBtn" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-500/35 bg-cyan-500/10 text-cyan-100 transition hover:bg-cyan-500/20" title="Set video meeting link" aria-label="Set video meeting link">
+              <button type="button" id="detailSetMeetingBtn" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-500/35 bg-cyan-500/10 text-cyan-100 transition hover:bg-cyan-500/20" title="${hasMeetingLink ? 'Open video meeting link' : 'Set video meeting link'}" aria-label="${hasMeetingLink ? 'Open video meeting link' : 'Set video meeting link'}">
                  <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
                </button>
              </div>`
           : '';
+      const frText = String(c.finalRecommendation || '').trim();
+      const frParsed = frText ? parseCloseCaseSummaryText(c.finalRecommendation) : null;
+      const sessionSummarySection =
+        String(c.status || '') === 'completed' && frText && frParsed
+          ? frParsed.kind === 'structured'
+            ? `<div class="mt-3 rounded-xl border border-emerald-500/35 bg-emerald-500/[0.07] p-3">
+                 <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-200/95">Session summary</p>
+                 <div class="mt-2 space-y-2.5 text-xs text-slate-200">
+                   <div>
+                     <p class="font-semibold text-emerald-100/90">Session findings</p>
+                     <p class="mt-0.5 whitespace-pre-wrap leading-relaxed text-slate-300">${esc(frParsed.findings || '—')}</p>
+                   </div>
+                   <div>
+                     <p class="font-semibold text-emerald-100/90">Care plan</p>
+                     <p class="mt-0.5 whitespace-pre-wrap leading-relaxed text-slate-300">${esc(frParsed.plan || '—')}</p>
+                   </div>
+                   <div>
+                     <p class="font-semibold text-slate-400">Next check-in</p>
+                     <p class="mt-0.5 whitespace-pre-wrap leading-relaxed text-slate-400">${esc(
+                       frParsed.followUp && frParsed.followUp.length ? frParsed.followUp : '—'
+                     )}</p>
+                   </div>
+                 </div>
+               </div>`
+            : frParsed.kind === 'raw' && frParsed.text
+              ? `<div class="mt-3 rounded-xl border border-emerald-500/35 bg-emerald-500/[0.07] p-3">
+                   <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-200/95">Session summary</p>
+                   <p class="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-200">${esc(frParsed.text)}</p>
+                 </div>`
+              : ''
+          : '';
+      const postAcceptForRoutine = ['awaiting_payment', 'scheduled', 'in_progress', 'completed'].includes(
+        String(c.status || '')
+      );
+      const specialistRoutineActions =
+        isSpecialist && isMySpecialistCase(c) && postAcceptForRoutine
+          ? `<div class="mt-2 flex flex-wrap items-center gap-2">
+               <button type="button" id="detailClientRoutineBtn" data-client-user-id="${Number(c.userId)}" class="rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3 py-2 text-xs font-medium text-emerald-100 transition hover:bg-emerald-600/35" title="View this client’s routine logs (requires their consent in Profile)" aria-label="View client routine">
+                 Client routine
+               </button>
+               <p class="w-full text-[10px] leading-snug text-slate-500">Only available if this client enabled routine sharing and you are their specialist for an accepted consultation.</p>
+             </div>`
+          : '';
+      const canEditPrescription =
+        isSpecialist &&
+        isMySpecialistCase(c) &&
+        !hasPrescriptionData(c) &&
+        ['in_progress', 'completed'].includes(String(c.status || ''));
+      const canShowPrescription =
+        hasPrescriptionData(c) || canEditPrescription || (clientUser && String(c.status || '') === 'completed');
+      const prescriptionSection = canShowPrescription
+        ? `<div id="carePrescriptionCard" class="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/[0.06] p-3 transition-shadow duration-300">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-200">Care Prescription</p>
+            ${
+              canEditPrescription
+                ? `<div class="mt-2 space-y-2">
+                    <p class="text-[11px] leading-snug text-slate-400">Save stores this prescription in the consultation record. Client can view and download it as PDF.</p>
+                    <textarea id="prescriptionSummaryInput" rows="2" class="w-full rounded-lg border border-slate-600 bg-slate-900/70 px-2.5 py-2 text-xs text-white placeholder:text-slate-500 focus:border-violet-400/60 focus:outline-none" placeholder="Care summary / diagnosis notes...">${esc(c.prescriptionSummary || '')}</textarea>
+                    <div class="rounded-lg border border-slate-700/80 bg-slate-900/70 p-2">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <select id="prescriptionProductPicker" class="min-w-[10rem] flex-1 rounded-md border border-slate-600 bg-slate-900 px-2 py-1.5 text-xs text-white focus:border-violet-400/60 focus:outline-none">
+                          <option value="">Pick product from catalog...</option>
+                          ${(prescriptionCatalogProducts || [])
+                            .map(
+                              (p) =>
+                                `<option value="${Number(p.productId)}">${esc(p.name)}</option>`
+                            )
+                            .join('')}
+                        </select>
+                        <button type="button" id="addCatalogPrescriptionProductBtn" class="rounded-md border border-violet-500/45 bg-violet-600/20 px-2.5 py-1.5 text-xs font-semibold text-violet-100 hover:bg-violet-600/35">Add</button>
+                      </div>
+                      <p id="prescriptionCatalogHint" class="mt-1 text-[10px] text-slate-500">Choose from approved catalog products for cleaner prescriptions.</p>
+                    </div>
+                    <textarea id="prescriptionProductsInput" rows="2" class="w-full rounded-lg border border-slate-600 bg-slate-900/70 px-2.5 py-2 text-xs text-white placeholder:text-slate-500 focus:border-violet-400/60 focus:outline-none" placeholder="Recommended products (catalog names, comma-separated)">${esc(c.prescriptionProductsText || '')}</textarea>
+                    <textarea id="prescriptionPlanInput" rows="3" class="w-full rounded-lg border border-slate-600 bg-slate-900/70 px-2.5 py-2 text-xs text-white placeholder:text-slate-500 focus:border-violet-400/60 focus:outline-none" placeholder="Usage plan and follow-up instructions...">${esc(c.prescriptionPlanText || '')}</textarea>
+                    <div class="flex flex-wrap gap-2">
+                      <button type="button" id="savePrescriptionBtn" class="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60">Save prescription</button>
+                      <button type="button" id="downloadPrescriptionPdfBtn" class="rounded-lg border border-violet-500/50 bg-violet-600/20 px-3 py-1.5 text-xs font-semibold text-violet-100 hover:bg-violet-600/35">Download PDF</button>
+                    </div>
+                    <p id="prescriptionSaveMeta" class="text-[11px] text-slate-400">${hasPrescriptionData(c) ? `Last saved from consultation record` : 'Not saved yet.'}</p>
+                  </div>`
+                : `<div class="mt-2 space-y-2 text-xs">
+                    <p class="text-slate-300"><span class="font-semibold text-slate-200">Summary:</span> ${esc(c.prescriptionSummary || '—')}</p>
+                    <p class="text-slate-300"><span class="font-semibold text-slate-200">Recommended products:</span> ${esc(c.prescriptionProductsText || '—')}</p>
+                    <p class="text-slate-300"><span class="font-semibold text-slate-200">Plan:</span> ${esc(c.prescriptionPlanText || '—')}</p>
+                    <p class="text-slate-400"><span class="font-semibold text-slate-300">Issued at:</span> ${c.prescriptionIssuedAt ? esc(new Date(c.prescriptionIssuedAt).toLocaleString()) : '—'}</p>
+                    ${
+                      isSpecialist && isMySpecialistCase(c) && hasPrescriptionData(c)
+                        ? '<p class="text-[11px] text-amber-200/90">Prescription is issued and locked. Further edits are disabled to keep patient records consistent.</p>'
+                        : ''
+                    }
+                    ${
+                      hasPrescriptionData(c)
+                        ? '<button type="button" id="downloadPrescriptionPdfBtn" class="mt-1 rounded-lg border border-violet-500/50 bg-violet-600/20 px-3 py-1.5 text-xs font-semibold text-violet-100 hover:bg-violet-600/35">Download PDF</button>'
+                        : '<p class="text-[11px] text-slate-500">Prescription is available once specialist adds it.</p>'
+                    }
+                  </div>`
+            }
+          </div>`
+        : '';
       const payBadge =
         pay === 'verified'
-          ? '<span class="mt-1 inline-block rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-300">Paid (verified)</span>'
+          ? '<span class="mt-1 inline-block rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-300">Payment Verified</span>'
           : pay === 'pending_review'
-            ? '<span class="mt-1 inline-block rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-200">Payment: pending review</span>'
+            ? '<span class="mt-1 inline-block rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-200">Payment Pending Review</span>'
             : pay === 'rejected'
-              ? '<span class="mt-1 inline-block rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[9px] text-rose-200">Payment: rejected — resubmit</span>'
+              ? '<span class="mt-1 inline-block rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[9px] text-rose-200">Payment Rejected - Resubmit</span>'
               : '';
       const canRate =
         !isModerator &&
@@ -1822,14 +2951,33 @@
       const modBtn = 'rounded-lg px-3 py-2 text-xs font-medium transition';
       let staffActions = '';
       if (isModerator) {
+        const canAdminCancel = pay !== 'verified';
+        const cancelControl = canAdminCancel
+          ? `<button type="button" data-act="cancelled" data-id="${c.consultationId}" class="${modBtn} bg-red-600/35 text-red-100 hover:bg-red-600/55">Cancel</button>`
+          : `<span class="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-[11px] font-medium text-amber-200">Paid consultation: cancel is disabled</span>`;
         const verifyBlock =
           pay === 'pending_review'
             ? `<div class="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/[0.08] p-3">
                  <p class="text-[11px] font-semibold text-amber-100">Manual GCash proof</p>
-                 <p class="mt-1 text-[11px] leading-relaxed text-amber-200/75">Check the receipt matches the fee below, then verify or ask the user to resubmit.</p>
+                 <p class="mt-1 text-[11px] leading-relaxed text-amber-200/75">${
+                  'Check the receipt matches the fee below, then verify or ask the user to resubmit.'
+                 }</p>
+                 ${
+                   c.paymentReceiptUrl
+                     ? `<a href="${esc(String(c.paymentReceiptUrl))}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex items-center gap-2 rounded-lg border border-amber-400/35 bg-slate-900/50 px-2.5 py-1.5 text-[11px] font-medium text-amber-100 hover:bg-slate-900/70">
+                          <span>View submitted proof</span>
+                          <span aria-hidden="true">↗</span>
+                        </a>
+                        <div class="mt-2 overflow-hidden rounded-lg border border-amber-500/25 bg-slate-950/55">
+                          <img src="${esc(String(c.paymentReceiptUrl))}" alt="Submitted payment proof" class="max-h-56 w-full object-contain" />
+                        </div>`
+                     : '<p class="mt-2 text-[11px] text-rose-200/85">No receipt image attached. Verify only if this is a DEMO payment reference.</p>'
+                 }
                  <div class="mt-3 flex flex-col gap-2 sm:flex-row">
                    <button type="button" data-verify="${c.consultationId}" class="${modBtn} flex-1 bg-emerald-600 text-white hover:bg-emerald-500">Verify payment</button>
-                   <button type="button" data-rejectpay="${c.consultationId}" class="${modBtn} flex-1 border border-rose-500/50 bg-rose-600/25 text-rose-100 hover:bg-rose-600/40">Reject proof</button>
+                   ${
+                    `<button type="button" data-rejectpay="${c.consultationId}" class="${modBtn} flex-1 border border-rose-500/50 bg-rose-600/25 text-rose-100 hover:bg-rose-600/40">Reject proof</button>`
+                   }
                  </div>
                </div>`
             : '';
@@ -1837,19 +2985,8 @@
             <div>
               <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Case</p>
               <div class="flex flex-wrap gap-2">
-            ${
-              c.status === 'pending'
-                ? `<button type="button" data-act="accept" data-id="${c.consultationId}" class="${modBtn} bg-cyan-600/35 text-cyan-100 hover:bg-cyan-600/55">Accept</button>
-                   <button type="button" data-act="decline" data-id="${c.consultationId}" class="${modBtn} bg-orange-600/35 text-orange-100 hover:bg-orange-600/55">Decline</button>`
-                : ''
-            }
-            ${
-              c.status === 'in_progress'
-                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="${modBtn} bg-emerald-600/35 text-emerald-100 hover:bg-emerald-600/55">Complete</button>`
-                : ''
-            }
                 <button type="button" data-notes="${c.consultationId}" class="${modBtn} bg-violet-600/35 text-violet-100 hover:bg-violet-600/55">Notes</button>
-                <button type="button" data-act="cancelled" data-id="${c.consultationId}" class="${modBtn} bg-red-600/35 text-red-100 hover:bg-red-600/55">Cancel</button>
+                ${cancelControl}
               </div>
             </div>
           </div>${verifyBlock}`;
@@ -1862,8 +2999,13 @@
                 : ''
             }
             ${
+              c.status === 'scheduled'
+                ? `<button type="button" data-act="in_progress" data-id="${c.consultationId}" class="rounded-md bg-indigo-600/30 px-2 py-0.5 text-[10px] text-indigo-200 hover:bg-indigo-600/50">Start session</button>`
+                : ''
+            }
+            ${
               c.status === 'in_progress'
-                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="rounded-md bg-emerald-600/30 px-2 py-0.5 text-[10px] text-emerald-200 hover:bg-emerald-600/50">Complete</button>`
+                ? `<button type="button" data-act="completed" data-id="${c.consultationId}" class="rounded-md bg-emerald-600/30 px-2 py-0.5 text-[10px] text-emerald-200 hover:bg-emerald-600/50">Complete Session</button>`
                 : ''
             }
             <button type="button" data-notes="${c.consultationId}" class="rounded-md bg-violet-600/30 px-2 py-0.5 text-[10px] text-violet-200 hover:bg-violet-600/50">Notes</button>
@@ -1890,8 +3032,11 @@
         <p class="mt-3 text-[11px] leading-relaxed text-slate-500">Complete payment on the main page to unlock specialist profile, video requests, and messaging.</p>
       `;
       } else {
-        el.innerHTML = `
-        <div class="flex items-start justify-between gap-2">
+        const useDetailTabs = Boolean(sessionSummarySection);
+        const sessionPanelHtml = useDetailTabs
+          ? sessionSummarySection.replace('class="mt-3', 'class="mt-0')
+          : '';
+        const detailHead = `<div class="flex items-start justify-between gap-2">
           <h3 class="text-sm font-semibold leading-tight text-white">${esc(c.concernTitle)}</h3>
           ${statusBadge(c.status)}
         </div>
@@ -1899,16 +3044,40 @@
         ${pro}
         ${clientDetailActions}
         ${specialistPaidActions}
+        ${specialistRoutineActions}
         ${feeLine}
         ${meeting}
         <p class="mt-2 text-[11px] text-slate-400">Preferred: ${c.preferredDate ? esc(String(c.preferredDate).slice(0, 10)) : '—'}</p>
         ${isModerator || isSpecialist ? concernBodyStaff : concernBodyClient}
         ${isModerator || isSpecialist ? `<p class="mt-2 text-[11px] text-slate-500">${esc(c.userName)} · ${esc(c.userEmail)}</p>` : ''}
-        ${c.declineReason ? `<p class="mt-2 text-[11px] text-rose-300/90">Declined: ${esc(c.declineReason)}</p>` : ''}
-        ${c.finalRecommendation ? `<p class="mt-2 rounded-md bg-emerald-500/10 p-2 text-[11px] text-emerald-200"><strong>Final:</strong> ${esc(c.finalRecommendation)}</p>` : ''}
+        ${c.declineReason ? `<p class="mt-2 text-[11px] text-rose-300/90">Declined: ${esc(c.declineReason)}</p>` : ''}`;
+        const detailAfter = `${prescriptionSection}
         ${feedbackBlock}
-        ${staffActions}
+        ${staffActions}`;
+
+        if (useDetailTabs) {
+          const defaultTab = clientUser ? 'session' : 'case';
+          const detailTabBar = `<div class="mb-3" data-detail-tabs-wrap>
+            <div class="flex gap-1 rounded-lg border border-slate-600/50 bg-slate-800/70 p-1" role="tablist" aria-label="Case details and session summary">
+              <button type="button" role="tab" data-detail-tab="case" class="min-h-[2.5rem] flex-1 rounded-md px-2 py-1.5 text-center text-xs font-medium text-slate-400 transition">Case details</button>
+              <button type="button" role="tab" data-detail-tab="session" class="min-h-[2.5rem] flex-1 rounded-md px-2 py-1.5 text-center text-xs font-medium text-slate-400 transition">Session summary</button>
+            </div>
+          </div>`;
+          el.innerHTML = `${detailTabBar}
+        <div data-detail-pane="case" class="detail-side-pane" role="tabpanel" aria-label="Case details">
+        ${detailHead}
+        ${detailAfter}
+        </div>
+        <div data-detail-pane="session" class="detail-side-pane hidden" role="tabpanel" aria-label="Session summary">
+        ${sessionPanelHtml}
+        </div>`;
+          bindDetailViewTabs(el, defaultTab);
+        } else {
+          el.innerHTML = `${detailHead}
+        ${sessionSummarySection}
+        ${detailAfter}
       `;
+        }
       }
 
       el.querySelectorAll('[data-act]').forEach((btn) => {
@@ -1931,7 +3100,26 @@
       const dvc = el.querySelector('#detailViewClientBtn');
       const dsm = el.querySelector('#detailSetMeetingBtn');
       if (dvc) dvc.addEventListener('click', () => openClientConsultSummaryModal(c.consultationId));
-      if (dsm) dsm.addEventListener('click', () => specialistSetMeetingUrl(c));
+      if (dsm) dsm.addEventListener('click', () => (hasMeetingLink ? openMeetingLink(c) : specialistSetMeetingUrl(c)));
+      const deditMeeting = el.querySelector('#detailEditMeetingBtn');
+      if (deditMeeting) deditMeeting.addEventListener('click', () => specialistSetMeetingUrl(c));
+      const droutine = el.querySelector('#detailClientRoutineBtn');
+      if (droutine) {
+        droutine.addEventListener('click', () => {
+          const uid = Number(droutine.getAttribute('data-client-user-id'));
+          if (Number.isFinite(uid)) openClientRoutineModal(uid, c.userName || 'Client');
+        });
+      }
+      const savePrescriptionBtn = el.querySelector('#savePrescriptionBtn');
+      if (savePrescriptionBtn) {
+        savePrescriptionBtn.addEventListener('click', () => savePrescriptionFromDetail(c, el));
+      }
+      bindPrescriptionSaveButtonState(c, el);
+      bindPrescriptionCatalogPicker(el);
+      const downloadPrescriptionPdfBtn = el.querySelector('#downloadPrescriptionPdfBtn');
+      if (downloadPrescriptionPdfBtn) {
+        downloadPrescriptionPdfBtn.addEventListener('click', () => downloadPrescriptionPdf(c));
+      }
       let chosenFeedbackStars = currentRating || 0;
       const starButtons = el.querySelectorAll('[data-feedback-star]');
       const starLabel = el.querySelector('#feedbackStarLabel');
@@ -2071,18 +3259,67 @@
         const declineReason = prompt('Reason (optional):') || '';
         body = { action: 'decline', declineReason };
       } else {
-        body = { status: act };
+        if (act === 'in_progress') {
+          const c = findConsultation(consultationId);
+          if (c && (!c.meetingUrl || !String(c.meetingUrl).trim())) {
+            showToast('Set meeting link first before starting the session.', 'error');
+            return;
+          }
+        }
+        if (act === 'completed') {
+          openCloseCaseModal(consultationId);
+          return;
+        } else {
+          body = { status: act };
+        }
       }
       try {
         await api('/consultations/' + consultationId, {
           method: 'PATCH',
           body: JSON.stringify(body),
         });
+        if (isSpecialist && !isModerator && act === 'accept') {
+          specialistInboxMode = 'conversations';
+          renderSpecialistInboxTabs();
+        }
         await loadConsultations();
+        await refreshSpecialistRevenueIfNeeded(true);
         if (activeChatId === consultationId) setChatLocked();
         showToast('Consultation updated', 'success');
       } catch (err) {
         showToast(err.error || 'Update failed', 'error');
+      }
+    }
+
+    async function submitCloseCaseSummary() {
+      const consultationId = Number(
+        pendingCloseCaseConsultationId || document.getElementById('closeCaseConsultationId')?.value
+      );
+      if (!Number.isFinite(consultationId) || consultationId <= 0) {
+        showToast('Invalid consultation selected.', 'error');
+        return;
+      }
+      const finalRecommendation = composeCloseSummary();
+      if (!finalRecommendation) {
+        showToast('Please complete findings, plan, and follow-up.', 'error');
+        return;
+      }
+      const submitBtn = document.getElementById('closeCaseSubmitBtn');
+      if (submitBtn) submitBtn.setAttribute('disabled', 'disabled');
+      try {
+        await api('/consultations/' + consultationId, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'completed', finalRecommendation }),
+        });
+        closeCloseCaseModal();
+        await loadConsultations();
+        await refreshSpecialistRevenueIfNeeded(true);
+        if (activeChatId === consultationId) setChatLocked();
+        showToast('Case closed with summary.', 'success');
+      } catch (err) {
+        showToast(err.error || 'Could not close case', 'error');
+      } finally {
+        if (submitBtn) submitBtn.removeAttribute('disabled');
       }
     }
 
@@ -2096,12 +3333,55 @@
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
 
+    function getVisibleConsultationsForList(rows) {
+      if (isModerator) {
+        const mode = adminQueueMode || 'all';
+        return (rows || []).filter((c) => {
+          const pay = String((c && c.paymentStatus) || '');
+          const st = String((c && c.status) || '');
+          if (mode === 'pending_review') return pay === 'pending_review';
+          if (mode === 'awaiting_payment') return st === 'awaiting_payment' && pay !== 'pending_review';
+          if (mode === 'verified') return pay === 'verified';
+          if (mode === 'rejected_cancelled') return pay === 'rejected' || st === 'cancelled' || st === 'declined';
+          return true;
+        });
+      }
+      if (!(isSpecialist && !isModerator)) {
+        // Client view: hide admin-cancelled threads from conversation list to reduce clutter.
+        return (rows || []).filter((c) => String((c && c.status) || '') !== 'cancelled');
+      }
+      const mode = specialistInboxMode === 'requests' ? 'requests' : 'conversations';
+      return (rows || []).filter((c) => {
+        const st = String((c && c.status) || '');
+        if (mode === 'requests') return st === 'pending';
+        return st !== 'pending' && st !== 'declined' && st !== 'cancelled';
+      });
+    }
+
     function renderConsultationList(rows) {
       const list = document.getElementById('consultList');
       const q = (document.getElementById('consultSearch').value || '').trim().toLowerCase();
+      const scopedRows = getVisibleConsultationsForList(rows);
+      const byRecentActivityDesc = (a, b) => {
+        const ta = new Date((a && (a.updatedAt || a.createdAt)) || 0).getTime();
+        const tb = new Date((b && (b.updatedAt || b.createdAt)) || 0).getTime();
+        return tb - ta;
+      };
       const baseRows = isModerator
-        ? rows.filter((c) => (c.paymentStatus || '') === 'pending_review')
-        : rows;
+        ? [...scopedRows].sort((a, b) => {
+            const pa = String((a && a.paymentStatus) || '');
+            const pb = String((b && b.paymentStatus) || '');
+            const score = (v) => {
+              if (v === 'pending_review') return 0;
+              if (v === 'unpaid' || v === 'rejected') return 1;
+              if (v === 'verified') return 2;
+              return 3;
+            };
+            const rankDiff = score(pa) - score(pb);
+            if (rankDiff !== 0) return rankDiff;
+            return byRecentActivityDesc(a, b);
+          })
+        : [...scopedRows].sort(byRecentActivityDesc);
       const filtered = q
         ? baseRows.filter((c) => {
             const t = `${c.concernTitle || ''} ${c.concernMessage || ''} ${c.userName || ''} ${c.specialistName || ''}`.toLowerCase();
@@ -2110,12 +3390,12 @@
         : baseRows;
 
       if (!filtered.length) {
-        const msg = !rows.length
+        const msg = !scopedRows.length
           ? 'No consultations yet.'
           : q
             ? 'No matches.'
             : isModerator
-              ? 'No manual payment proofs awaiting review right now.'
+              ? 'No consultations to review right now.'
               : 'No matches.';
         list.innerHTML = `<div class="px-2 py-8 text-center text-xs text-slate-500">${msg}</div>`;
         return;
@@ -2128,9 +3408,13 @@
           const snippet = (c.concernMessage || '').replace(/\s+/g, ' ').slice(0, 56);
           const partner = partnerNameForList(c);
           const initials = listAvatarInitials(partner);
+          const partnerPhoto = partnerPhotoForList(c);
+          const avatarHtml = partnerPhoto
+            ? `<img src="${esc(partnerPhoto)}" alt="${esc(partner)}" class="h-11 w-11 shrink-0 rounded-full object-cover ring-1 ring-slate-600/60" />`
+            : `<span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600/90 to-slate-800 text-[11px] font-bold tracking-tight text-white ring-1 ring-slate-600/50" aria-hidden="true">${esc(initials)}</span>`;
           return `
           <button type="button" data-cid="${id}" class="mb-1.5 flex w-full gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors ${active ? 'bg-violet-600/20 ring-1 ring-violet-500/35 shadow-[0_4px_20px_rgba(91,33,182,0.12)]' : 'hover:bg-slate-800/70'}">
-            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600/90 to-slate-800 text-[11px] font-bold tracking-tight text-white ring-1 ring-slate-600/50" aria-hidden="true">${esc(initials)}</span>
+            ${avatarHtml}
             <div class="min-w-0 flex-1">
               <div class="flex items-start justify-between gap-1.5">
                 <span class="truncate text-sm font-semibold text-white">${esc(partner)}</span>
@@ -2142,6 +3426,7 @@
               <p class="mt-0.5 line-clamp-1 text-xs text-slate-300">${esc(c.concernTitle || '')}</p>
               <p class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500">${esc(snippet)}${snippet.length >= 56 ? '…' : ''}</p>
               ${isModerator || isSpecialist ? `<p class="mt-1 truncate text-[9px] text-slate-600">${esc(c.userName || '')}</p>` : ''}
+              ${isSpecialist ? `<p class="mt-1 text-[10px] text-slate-500">Updated ${esc(formatRelativeTime(c.updatedAt || c.createdAt))}</p>` : ''}
             </div>
           </button>`;
         })
@@ -2163,21 +3448,36 @@
         rows.forEach((r) => consultationRowsCache.push(r));
         consultationTitleById.clear();
         rows.forEach((c) => consultationTitleById.set(Number(c.consultationId), c.concernTitle || 'Untitled'));
+        if (isSpecialist && !isModerator) {
+          await ensurePrescriptionCatalogLoaded();
+        }
 
+        renderAdminQueueTabs();
+        renderSpecialistInboxTabs();
         renderConsultationList(rows);
+        if (isSpecialist && !isModerator) {
+          renderSpecialistActionQueue(rows);
+          await refreshSpecialistRevenueIfNeeded(false);
+        }
         updateRequestUi(rows.length);
 
         setChatLocked();
+        syncMobileWorkspaceLayout();
         syncCancelRequestUi();
 
-        if (activeChatId && !findConsultation(activeChatId)) {
+        if (
+          activeChatId &&
+          (((!isModerator) &&
+            !getVisibleConsultationsForList(rows).some((c) => Number(c.consultationId) === Number(activeChatId))) ||
+            !findConsultation(activeChatId))
+        ) {
           closeChat();
         } else if (activeChatId) {
           const cur = findConsultation(activeChatId);
           if (isModerator) {
             const modalBody = document.getElementById('adminApprovalModalBody');
             const bd = document.getElementById('adminApprovalModalBackdrop');
-            if (!cur || (cur.paymentStatus || '') !== 'pending_review') {
+            if (!cur) {
               closeAdminApprovalModal();
               activeChatId = null;
               if (modalBody) renderDetail(null, modalBody);
@@ -2233,14 +3533,24 @@
       if (!c) return 'Select a conversation on the left';
       const t = c.concernTitle || 'Consultation';
       const short = t.length > 52 ? t.slice(0, 52) + '…' : t;
+      const statusMap = {
+        pending: 'Request Sent',
+        awaiting_payment: 'Waiting for Payment',
+        scheduled: 'Ready for Session',
+        in_progress: 'Session Ongoing',
+        completed: 'Session Completed',
+        cancelled: 'Cancelled',
+        declined: 'Declined',
+      };
+      const statusLabel = statusMap[String(c.status || '')] || String(c.status || '');
       const pay = c.paymentStatus || 'unpaid';
       let payHint = '';
       if (isModerator || isSpecialist) {
-        if (pay === 'pending_review') payHint = ' · Proof pending review';
-        else if (pay === 'verified') payHint = ' · Paid';
-        else payHint = ' · Not paid';
+        if (pay === 'pending_review') payHint = ' · Payment pending review';
+        else if (pay === 'verified') payHint = ' · Payment verified';
+        else payHint = ' · Payment not submitted';
       }
-      return `${c.status}${payHint} · ${short}`;
+      return `${statusLabel}${payHint} · ${short}`;
     }
 
     function partnerNameForList(c) {
@@ -2248,6 +3558,37 @@
       if (isModerator || isSpecialist) return c.userName || 'User';
       if (c.specialistName) return c.specialistName;
       return 'Hair specialist';
+    }
+
+    function partnerPhotoForList(c) {
+      if (!c) return null;
+      if (isModerator || isSpecialist) return c.userProfilePhotoUrl || null;
+      return c.specialistProfilePhotoUrl || null;
+    }
+
+    function toDateOnly(v) {
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return '—';
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function prettyPayoutStatus(status) {
+      const map = {
+        requested: 'Pending review',
+        approved: 'Approved',
+        paid: 'Paid out',
+        rejected: 'Rejected',
+      };
+      return map[String(status || '').toLowerCase()] || String(status || 'unknown');
+    }
+
+    function payoutBadgeClassForSpecialist(status) {
+      const s = String(status || '').toLowerCase();
+      if (s === 'paid') return 'border-emerald-500/45 bg-emerald-500/10 text-emerald-200';
+      if (s === 'approved') return 'border-cyan-500/45 bg-cyan-500/10 text-cyan-200';
+      if (s === 'requested') return 'border-amber-500/45 bg-amber-500/10 text-amber-200';
+      if (s === 'rejected') return 'border-rose-500/45 bg-rose-500/10 text-rose-200';
+      return 'border-slate-500/45 bg-slate-500/10 text-slate-300';
     }
 
     async function openReviewerPrompt(consultationId) {
@@ -2269,7 +3610,12 @@
 
     function messageBubble(m) {
       const mine = Number(m.senderUserId) === Number((user && user.userId) || 0);
-      const senderTag = mine ? 'You' : `${m.senderName || 'Unknown'} · ${m.senderRole || 'user'}`;
+      const senderRole = String(m.senderRole || 'user').toLowerCase();
+      const senderTag = mine
+        ? 'You'
+        : senderRole === 'assistant'
+          ? 'Hairvelous AI Assistant'
+          : `${m.senderName || 'Unknown'} · ${m.senderRole || 'user'}`;
       const mid = m.messageId != null ? m.messageId : m.message_id;
       const canDelete = mid && (isModerator || mine);
       const resolvedImg = resolveChatImageUrl(m);
@@ -2287,17 +3633,27 @@
       const delBtn = canDelete
         ? `<button type="button" class="rounded-md px-2 py-0.5 text-[10px] text-slate-500 opacity-80 hover:bg-black/15 hover:text-rose-200 hover:opacity-100" data-delete-message="${mid}" aria-label="Delete message">Delete</button>`
         : '';
+      const assistantBadge = senderRole === 'assistant'
+        ? '<span class="ml-2 inline-flex items-center rounded-full border border-cyan-300/35 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-cyan-200">Offline assistant</span>'
+        : '';
       const bubble =
         mine
           ? 'max-w-[min(92%,28rem)] rounded-2xl rounded-br-md border border-violet-400/25 bg-gradient-to-br from-violet-600 to-violet-700 px-4 py-3 text-white shadow-lg shadow-violet-950/25'
+          : senderRole === 'assistant'
+            ? 'max-w-[min(92%,28rem)] rounded-2xl rounded-bl-md border border-cyan-400/30 bg-cyan-900/20 px-4 py-3 text-cyan-50 shadow-md shadow-black/20'
           : 'max-w-[min(92%,28rem)] rounded-2xl rounded-bl-md border border-slate-600/45 bg-slate-700/85 px-4 py-3 text-slate-100 shadow-md shadow-black/20';
       const metaMine = 'text-violet-100/85';
       const metaOther = 'text-slate-400';
+      const senderAvatar = mine
+        ? ''
+        : m.senderPhotoUrl
+          ? '<img src="' + esc(m.senderPhotoUrl) + '" alt="' + esc(m.senderName || 'Sender') + '" class="mt-1 h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-600/60" />'
+          : '<span class="mt-1 h-8 w-8 shrink-0 rounded-full bg-slate-700/90 text-center text-[10px] font-bold leading-8 text-slate-300 ring-1 ring-slate-600/60" aria-hidden="true">' + esc(listAvatarInitials(m.senderName || '?')) + '</span>';
       return `
         <div class="flex gap-2 ${mine ? 'justify-end' : 'justify-start'}">
-          ${mine ? '' : '<span class="mt-1 h-8 w-8 shrink-0 rounded-full bg-slate-700/90 text-center text-[10px] font-bold leading-8 text-slate-300 ring-1 ring-slate-600/60" aria-hidden="true">' + esc(listAvatarInitials(m.senderName || '?')) + '</span>'}
+          ${senderAvatar}
           <div class="${bubble}">
-            <div class="mb-1.5 text-[11px] font-medium ${mine ? metaMine : metaOther}">${esc(senderTag)}</div>
+            <div class="mb-1.5 text-[11px] font-medium ${mine ? metaMine : metaOther}">${esc(senderTag)}${assistantBadge}</div>
             ${textBlock}
             ${imgBlock}
             <div class="mt-2 flex items-center ${mine ? 'justify-end' : 'justify-between'} gap-2 text-[11px] ${mine ? 'text-violet-100/70' : 'text-slate-500'}">
@@ -2340,6 +3696,14 @@
           }
           blocks.push(messageBubble(m));
         });
+        if (messages.length) {
+          const row = findConsultation(activeChatId);
+          const latestMessageAt = messages[messages.length - 1].createdAt;
+          if (row && latestMessageAt) {
+            row.updatedAt = latestMessageAt;
+            renderConsultationList(consultationRowsCache);
+          }
+        }
         chatMessages.innerHTML = blocks.length ? blocks.join('') : '';
         wireChatMessageImages();
         hydrateChatMessageImages().catch(() => {});
@@ -2413,6 +3777,8 @@
       activeChatId = Number(consultationId);
       const c = findConsultation(activeChatId);
       renderConsultationList(consultationRowsCache);
+      syncMobileWorkspaceLayout();
+      setMobileWorkspacePane('chat');
 
       if (isModerator) {
         if (!c) {
@@ -2438,7 +3804,7 @@
       setChatLocked();
       if (chatRefreshTimer) clearInterval(chatRefreshTimer);
       chatRefreshTimer = setInterval(loadChatMessages, 4000);
-      if (!isModerator && !isSpecialist) openConsultMessenger();
+      if (!isModerator && !isSpecialist && !chatFocusFromQuery) openConsultMessenger();
     }
 
     function closeChat() {
@@ -2449,6 +3815,7 @@
         renderDetail(null, document.getElementById('adminApprovalModalBody'));
         renderConsultationList(consultationRowsCache);
         syncCancelRequestUi();
+        syncMobileWorkspaceLayout();
         return;
       }
       activeChatId = null;
@@ -2468,12 +3835,16 @@
       setChatLocked();
       updateChatHeaderMenu();
       syncCancelRequestUi();
+      syncMobileWorkspaceLayout();
     }
 
     window.openChat = openChat;
 
     document.getElementById('consultSearch').addEventListener('input', () => renderConsultationList(consultationRowsCache));
-    document.getElementById('closeChatBtn').addEventListener('click', closeChat);
+    closeChatBtn?.addEventListener('click', closeChat);
+    mobileDetailBtn?.addEventListener('click', () => setMobileWorkspacePane('detail'));
+    mobileBackToChatBtn?.addEventListener('click', () => setMobileWorkspacePane('chat'));
+    window.addEventListener('resize', () => syncMobileWorkspaceLayout());
     document.getElementById('adminApprovalModalClose')?.addEventListener('click', () => closeChat());
     document.getElementById('adminApprovalModalBackdrop')?.addEventListener('click', (e) => {
       if (e.target && e.target.id === 'adminApprovalModalBackdrop') closeChat();
@@ -2533,6 +3904,15 @@
       document.getElementById('specialistProfileModalClose')?.addEventListener('click', closeSpecialistProfileModal);
       document.getElementById('clientConsultModalBackdrop')?.addEventListener('click', closeClientConsultModal);
       document.getElementById('clientConsultModalClose')?.addEventListener('click', closeClientConsultModal);
+      document.getElementById('closeCaseModalBackdrop')?.addEventListener('click', closeCloseCaseModal);
+      document.getElementById('closeCaseModalClose')?.addEventListener('click', closeCloseCaseModal);
+      document.getElementById('closeCaseCancelBtn')?.addEventListener('click', closeCloseCaseModal);
+      document.getElementById('closeCaseForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await submitCloseCaseSummary();
+      });
+      document.getElementById('clientRoutineModalBackdrop')?.addEventListener('click', closeClientRoutineModal);
+      document.getElementById('clientRoutineModalClose')?.addEventListener('click', closeClientRoutineModal);
 
       document.getElementById('paymongoQrClose')?.addEventListener('click', closePaymongoQrModal);
       document.getElementById('paymongoQrModal')?.addEventListener('click', (ev) => {
@@ -2550,6 +3930,7 @@
       });
       document.getElementById('paymentIconPaymongo')?.addEventListener('click', () => paymentModalPaymongoCheckout());
       document.getElementById('paymentIconQrPh')?.addEventListener('click', () => paymentModalQrPh());
+      document.getElementById('paymentIconDemo')?.addEventListener('click', () => paymentModalDemo());
       const proof = document.getElementById('paymentModalProofForm');
       if (proof) {
         proof.addEventListener('submit', async (ev) => {
@@ -2728,6 +4109,7 @@
                 ...s,
                 ratingAvg: stats.avgRating != null ? Number(stats.avgRating) : null,
                 ratingCount: Number(stats.totalReviews || 0),
+                recentFeedbacks: Array.isArray(stats.recentFeedbacks) ? stats.recentFeedbacks : [],
               };
             });
           } catch (_err) {
@@ -2735,6 +4117,7 @@
               ...s,
               ratingAvg: null,
               ratingCount: 0,
+              recentFeedbacks: [],
             }));
           }
         }
@@ -2768,6 +4151,137 @@
       }
     }
 
+    function renderRevenueStatCard(label, value, accent) {
+      return `<div class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3">
+        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-400">${esc(label)}</p>
+        <p class="mt-1 text-xl font-bold ${accent}">${esc(value)}</p>
+      </div>`;
+    }
+
+    function renderSpecialistActionQueue(rows) {
+      if (!isSpecialist || !specialistActionStats || !specialistActionQueue) return;
+      const allRows = Array.isArray(rows) ? rows : [];
+      const todayKey = toDateKey(new Date());
+      const actions = allRows.filter((c) => c && c.status !== 'declined' && c.status !== 'cancelled');
+      const queue = [];
+      actions.forEach((c) => {
+        const status = String(c.status || '');
+        const paymentStatus = String(c.paymentStatus || '').toLowerCase();
+        const updatedLabel = formatRelativeTime(c.updatedAt || c.createdAt);
+        if (status === 'pending') {
+          queue.push({ priority: 1, reason: 'Needs accept/decline', c, updatedLabel });
+          return;
+        }
+        if (status === 'awaiting_payment' && paymentStatus !== 'verified') {
+          queue.push({ priority: 2, reason: 'Waiting for client payment', c, updatedLabel });
+          return;
+        }
+        if (status === 'scheduled' && toDateKey(c.scheduledAt) === todayKey) {
+          queue.push({ priority: 3, reason: 'Session scheduled today', c, updatedLabel });
+          return;
+        }
+        if (status === 'in_progress') {
+          queue.push({ priority: 4, reason: 'Ready for case closure', c, updatedLabel });
+        }
+      });
+      queue.sort((a, b) => a.priority - b.priority);
+      const counts = {
+        pending: queue.filter((q) => q.priority === 1).length,
+        payment: queue.filter((q) => q.priority === 2).length,
+        today: queue.filter((q) => q.priority === 3).length,
+        active: queue.filter((q) => q.priority === 4).length,
+      };
+      specialistActionStats.innerHTML = [
+        renderRevenueStatCard('New requests', String(counts.pending), 'text-cyan-300'),
+        renderRevenueStatCard('Awaiting payment', String(counts.payment), 'text-amber-300'),
+        renderRevenueStatCard('Scheduled today', String(counts.today), 'text-violet-300'),
+        renderRevenueStatCard('Need closing', String(counts.active), 'text-emerald-300'),
+      ].join('');
+      if (!queue.length) {
+        specialistActionQueue.innerHTML = '<p class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3 text-sm text-slate-400">No actionable consultations right now.</p>';
+        return;
+      }
+      specialistActionQueue.innerHTML = queue.slice(0, 8).map((item) => {
+        const c = item.c || {};
+        const partner = partnerNameForList(c);
+        return `<button type="button" data-open-chat-id="${esc(String(c.consultationId || ''))}" class="w-full rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3 text-left transition hover:border-violet-400/60 hover:bg-slate-800/70">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm font-semibold text-white">${esc(c.concernTitle || 'Consultation')}</p>
+            <span class="rounded-full border border-violet-500/45 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-200">${esc(item.reason)}</span>
+          </div>
+          <p class="mt-1 text-xs text-slate-300">${esc(partner || 'Client')}</p>
+          <p class="mt-1 text-[11px] text-slate-500">Updated ${esc(item.updatedLabel)}</p>
+        </button>`;
+      }).join('');
+      specialistActionQueue.querySelectorAll('[data-open-chat-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.getAttribute('data-open-chat-id'));
+          if (!Number.isFinite(id)) return;
+          openChat(id);
+        });
+      });
+    }
+
+    function renderPayoutHistory(rows) {
+      if (!specialistPayoutHistory) return;
+      const history = Array.isArray(rows) ? rows : [];
+      if (!history.length) {
+        specialistPayoutHistory.innerHTML = '<p class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3 text-sm text-slate-400">No payout requests yet.</p>';
+        return;
+      }
+      const php = (n) => `₱${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+      specialistPayoutHistory.innerHTML = history.slice(0, 8).map((item) => {
+        const status = prettyPayoutStatus(item.status || '');
+        const badgeClass = payoutBadgeClassForSpecialist(item.status || '');
+        return `<div class="rounded-xl border border-slate-700/80 bg-slate-900/55 px-4 py-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm font-semibold text-white">${esc(toDateOnly(item.periodStart))} to ${esc(toDateOnly(item.periodEnd))}</p>
+            <span class="rounded-full border px-2 py-0.5 text-[11px] font-medium ${badgeClass}">${esc(status)}</span>
+          </div>
+          <p class="mt-1 text-xs text-slate-300">Net ${esc(php(item.netPhp))} from ${esc(String(item.itemCount || 0))} consultation(s).</p>
+          <p class="mt-1 text-[11px] text-slate-500">Requested ${esc(toDateOnly(item.requestedAt || ''))}</p>
+        </div>`;
+      }).join('');
+    }
+
+    async function refreshSpecialistRevenueIfNeeded(force = false) {
+      if (!isSpecialist || isModerator) return;
+      const now = Date.now();
+      // Prevent aggressive re-fetching when consultations list is polled frequently.
+      if (!force && now - lastSpecialistRevenueRefreshAt < 20000) return;
+      lastSpecialistRevenueRefreshAt = now;
+      await loadSpecialistRevenue();
+    }
+
+    async function loadSpecialistRevenue() {
+      if (!isSpecialist || !specialistRevenueStats) return;
+      try {
+        const data = await api('/consultations/specialist/revenue');
+        const totals = (data && data.totals) || {};
+        const php = (n) => `₱${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        specialistRevenueStats.innerHTML = [
+          renderRevenueStatCard('Total earned (your fee)', php(totals.netPhp), 'text-emerald-300'),
+          renderRevenueStatCard('Withdrawable now', php(totals.availableNowPhp), 'text-violet-300'),
+        ].join('');
+        const eligibleAt = data && data.nextPayoutEligibleAt ? String(data.nextPayoutEligibleAt).slice(0, 10) : '';
+        if (specialistPayoutHint) {
+          specialistPayoutHint.textContent = eligibleAt
+            ? `Next payout request date: ${eligibleAt} (every ${data.payoutIntervalDays || 14} days).`
+            : 'You can request payout every 14 days.';
+        }
+        renderPayoutHistory((data && data.payoutRequests) || []);
+      } catch (err) {
+        specialistRevenueStats.innerHTML =
+          '<p class="col-span-full rounded-xl border border-rose-500/30 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">Could not load revenue summary.</p>';
+        if (specialistPayoutHint) specialistPayoutHint.textContent = '';
+        if (specialistPayoutHistory) {
+          specialistPayoutHistory.innerHTML =
+            '<p class="rounded-xl border border-rose-500/30 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">Could not load payout history.</p>';
+        }
+        showToast(err.error || 'Failed to load specialist revenue', 'error');
+      }
+    }
+
     specialistFeeForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fee = Number(specialistFeeInput && specialistFeeInput.value);
@@ -2789,14 +4303,51 @@
       }
     });
 
+    specialistPayoutRequestBtn?.addEventListener('click', async () => {
+      try {
+        const result = await api('/consultations/specialist/payout-request', {
+          method: 'POST',
+          body: '{}',
+        });
+        const t = result && result.totals;
+        const net = t ? `₱${Number(t.netPhp || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '';
+        showToast(
+          `Payout request submitted${net ? ` (${net})` : ''}.`,
+          'success'
+        );
+        await loadSpecialistRevenue();
+      } catch (err) {
+        showToast(err.error || 'Could not submit payout request', 'error');
+      }
+    });
+
     const specialistCardsEl = document.getElementById('specialistCards');
     if (specialistCardsEl) {
       specialistCardsEl.addEventListener('click', (e) => {
+        const feedbackBtn = e.target.closest('[data-view-feedback]');
+        if (feedbackBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          openSpecialistFeedbackModal(feedbackBtn.getAttribute('data-view-feedback'));
+          return;
+        }
         const btn = e.target.closest('[data-specialist-id]');
         if (!btn) return;
         openConsultationRequestModal(btn.getAttribute('data-specialist-id'));
       });
+      specialistCardsEl.addEventListener('keydown', (e) => {
+        const feedbackBtn = e.target.closest('[data-view-feedback]');
+        if (!feedbackBtn) return;
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        openSpecialistFeedbackModal(feedbackBtn.getAttribute('data-view-feedback'));
+      });
     }
+
+    specialistFeedbackClose?.addEventListener('click', () => closeSpecialistFeedbackModal());
+    specialistFeedbackBackdrop?.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'specialist-feedback-backdrop') closeSpecialistFeedbackModal();
+    });
 
     const consultReqBackdrop = document.getElementById('consultation-request-backdrop');
     const consultReqClose = document.getElementById('consultationRequestModalClose');
@@ -2809,7 +4360,17 @@
 
     if (isSpecialist || isModerator) {
       if (specialistBrowseSection) specialistBrowseSection.classList.add('hidden');
-      if (isSpecialist) loadSpecialistFeeSettings();
+      if (isSpecialist) {
+        loadSpecialistFeeSettings();
+        loadSpecialistRevenue();
+        const sendPresencePing = async () => {
+          try {
+            await api('/consultations/specialist/presence', { method: 'POST', body: '{}' });
+          } catch (_err) {}
+        };
+        sendPresencePing();
+        setInterval(sendPresencePing, 30000);
+      }
     } else {
       loadSpecialists();
     }
@@ -2829,6 +4390,7 @@
     })();
 
     loadConsultations();
+    syncMobileWorkspaceLayout();
   </script>
 </body>
 </html>

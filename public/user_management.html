@@ -13,7 +13,7 @@
   <div id="nav-placeholder"></div>
 
   <main class="max-w-6xl mx-auto px-4 py-10">
-    <div class="flex justify-between items-center mb-8">
+    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-3xl font-bold text-white mb-2">User Management</h1>
         <p class="text-slate-400">Manage user accounts, suspend/reactivate, reset passwords.</p>
@@ -35,17 +35,17 @@
 
     <div class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full">
+        <table class="min-w-[980px] w-full text-xs sm:text-sm">
           <thead class="bg-slate-800">
             <tr>
-              <th class="text-left p-4 text-slate-300">ID</th>
-              <th class="text-left p-4 text-slate-300">Name</th>
-              <th class="text-left p-4 text-slate-300">Email</th>
-              <th class="text-left p-4 text-slate-300">Role</th>
-              <th class="text-left p-4 text-slate-300">ID Verification</th>
-              <th class="text-left p-4 text-slate-300">Status</th>
-              <th class="text-left p-4 text-slate-300">Assessments</th>
-              <th class="text-left p-4 text-slate-300">Actions</th>
+              <th class="text-left p-3 sm:p-4 text-slate-300 w-16 whitespace-nowrap">ID</th>
+              <th class="text-left p-3 sm:p-4 text-slate-300 whitespace-nowrap">Name</th>
+              <th class="text-left p-3 sm:p-4 text-slate-300 whitespace-nowrap">Email</th>
+              <th class="text-left p-3 sm:p-4 text-slate-300 whitespace-nowrap">Role</th>
+              <th class="text-left p-3 sm:p-4 text-slate-300 whitespace-nowrap">ID Verification</th>
+              <th class="text-left p-3 sm:p-4 text-slate-300 whitespace-nowrap">Status</th>
+              <th class="text-left p-3 sm:p-4 text-slate-300 whitespace-nowrap">Assessments</th>
+              <th class="text-left p-3 sm:p-4 text-slate-300 whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody id="users-tbody" class="divide-y divide-slate-700"></tbody>
@@ -136,23 +136,25 @@
         : '';
       return `
         <tr class="bg-slate-800/30 hover:bg-slate-800/50">
-          <td class="p-4">${u.userId}</td>
-          <td class="p-4">${escapeHtml(u.name || '')}</td>
-          <td class="p-4">${escapeHtml(u.email)}</td>
-          <td class="p-4"><span class="px-2 py-1 rounded text-xs ${u.roleName === 'admin' ? 'bg-amber-600/30 text-amber-300' : 'bg-slate-700 text-slate-300'}">${u.roleName}</span></td>
-          <td class="p-4">${idBadge}</td>
-          <td class="p-4">
+          <td class="p-3 sm:p-4 align-top whitespace-nowrap">${u.userId}</td>
+          <td class="p-3 sm:p-4 align-top">${escapeHtml(u.name || '')}</td>
+          <td class="p-3 sm:p-4 align-top break-all">${escapeHtml(u.email)}</td>
+          <td class="p-3 sm:p-4 align-top whitespace-nowrap"><span class="px-2 py-1 rounded text-xs ${u.roleName === 'admin' ? 'bg-amber-600/30 text-amber-300' : 'bg-slate-700 text-slate-300'}">${u.roleName}</span></td>
+          <td class="p-3 sm:p-4 align-top whitespace-nowrap">${idBadge}</td>
+          <td class="p-3 sm:p-4 align-top whitespace-nowrap">
             <span class="px-2 py-1 rounded text-xs ${u.isSuspended ? 'bg-rose-600/20 text-rose-300 border border-rose-500/40' : 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/40'}">
               ${u.isSuspended ? 'Suspended' : 'Active'}
             </span>
           </td>
-          <td class="p-4">${u.assessmentCount || 0}</td>
-          <td class="p-4">
+          <td class="p-3 sm:p-4 align-top whitespace-nowrap">${u.assessmentCount || 0}</td>
+          <td class="p-3 sm:p-4 align-top">
+            <div class="flex flex-wrap gap-x-3 gap-y-1">
             ${reviewBtn}
-            <button onclick="resetPassword(${u.userId})" class="text-violet-400 hover:underline text-sm mr-3">Reset Password</button>
+            <button onclick="resetPassword(${u.userId})" class="text-violet-400 hover:underline text-sm">Reset Password</button>
             ${u.roleName === 'admin'
               ? '<span class="text-slate-500 text-sm">Protected</span>'
               : `<button onclick="toggleStatus(${u.userId}, ${u.isSuspended || false})" class="${u.isSuspended ? 'text-emerald-400' : 'text-amber-400'} hover:underline text-sm">${u.isSuspended ? 'Unsuspend' : 'Suspend'}</button>`}
+            </div>
           </td>
         </tr>
       `;

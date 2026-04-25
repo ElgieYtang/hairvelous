@@ -23,7 +23,7 @@
         <div class="flex flex-wrap items-start gap-6">
           <div class="w-28 h-28 rounded-xl bg-slate-700/50 border border-slate-600 overflow-hidden flex items-center justify-center shrink-0">
             <img id="profile-photo-preview" src="" alt="Profile" class="w-full h-full object-cover hidden" />
-            <span id="profile-photo-placeholder" class="text-4xl text-slate-500">👤</span>
+            <span id="profile-photo-placeholder" class="text-4xl text-slate-500">U</span>
           </div>
           <div>
             <input
@@ -163,6 +163,20 @@
         </div>
       </section>
 
+      <section id="routine-share-section" class="hidden bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+        <h2 class="text-lg font-semibold text-white mb-2">Routine sharing</h2>
+        <p class="text-sm text-slate-400 mb-4">
+          Allow specialists you have an <strong class="text-slate-300">accepted consultation</strong> with to view your routine tracker logs. Each specialist only sees clients linked to them — not everyone.
+        </p>
+        <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-600 bg-slate-900/40 p-4">
+          <input type="checkbox" id="shareRoutineWithSpecialist" class="mt-1 h-4 w-4 rounded border-slate-500 text-violet-600 focus:ring-violet-500" />
+          <span>
+            <span class="block text-sm font-medium text-white">Share my routine with my specialist</span>
+            <span class="mt-1 block text-xs text-slate-500">You can turn this off anytime. Specialists without an accepted consultation with you never see your routines.</span>
+          </span>
+        </label>
+      </section>
+
       <div class="flex gap-4">
         <button type="submit" class="px-6 py-3 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium">
           Save profile
@@ -263,6 +277,10 @@
       const verifySection = document.getElementById('specialist-verification-section');
       if (verifySection) verifySection.classList.remove('hidden');
     }
+    if (role === 'user') {
+      const rs = document.getElementById('routine-share-section');
+      if (rs) rs.classList.remove('hidden');
+    }
 
     let profile = null;
     const verificationModal = document.getElementById('verification-modal');
@@ -300,6 +318,9 @@
           raceSel.appendChild(opt);
           raceSel.value = savedRace;
         }
+
+        const shareChk = document.getElementById('shareRoutineWithSpecialist');
+        if (shareChk) shareChk.checked = !!profile.shareRoutineWithSpecialist;
 
         const preview = document.getElementById('profile-photo-preview');
         const placeholder = document.getElementById('profile-photo-placeholder');
@@ -473,6 +494,10 @@
         birthdate: document.getElementById('birthdate').value || null,
         race: document.getElementById('race').value || null,
       };
+      const shareEl = document.getElementById('shareRoutineWithSpecialist');
+      if (shareEl && role === 'user') {
+        payload.shareRoutineWithSpecialist = !!shareEl.checked;
+      }
       try {
         await api('/profile', { method: 'PATCH', body: JSON.stringify(payload) });
         showToast('Profile saved', 'success');

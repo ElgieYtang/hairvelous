@@ -88,6 +88,23 @@ class BillingService {
     }
   }
 
+  async ensurePaymentTransactionColumns() {
+    const [colRows] = await pool.query(
+      `SELECT LOWER(COLUMN_NAME) AS name FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payment_transactions'`
+    );
+    const have = new Set(colRows.map((r) => r.name));
+    if (!have.has('card_name')) {
+      await pool.query('ALTER TABLE payment_transactions ADD COLUMN card_name VARCHAR(150) NULL');
+    }
+    if (!have.has('card_last4')) {
+      await pool.query('ALTER TABLE payment_transactions ADD COLUMN card_last4 VARCHAR(4) NULL');
+    }
+    if (!have.has('card_reference')) {
+      await pool.query('ALTER TABLE payment_transactions ADD COLUMN card_reference VARCHAR(100) NULL');
+    }
+  }
+
   async ensureSchema() {
     await this.ensureDiyGuidesAddonColumns();
     if (this.schemaReady) return;
@@ -140,9 +157,7 @@ class BillingService {
       )
     `);
     await pool.query("ALTER TABLE payment_transactions MODIFY COLUMN method ENUM('gcash','card') NOT NULL DEFAULT 'gcash'");
-    await pool.query('ALTER TABLE payment_transactions ADD COLUMN IF NOT EXISTS card_name VARCHAR(150) NULL');
-    await pool.query('ALTER TABLE payment_transactions ADD COLUMN IF NOT EXISTS card_last4 VARCHAR(4) NULL');
-    await pool.query('ALTER TABLE payment_transactions ADD COLUMN IF NOT EXISTS card_reference VARCHAR(100) NULL');
+    await this.ensurePaymentTransactionColumns();
 
     const [plans] = await pool.query('SELECT plan_code FROM subscription_plans');
     const codes = new Set(plans.map((p) => p.plan_code));
@@ -214,7 +229,8 @@ class BillingService {
 
   getEntitlementsFromIsPro(isPro) {
     return {
-      maxActiveConsultations: isPro ? 3 : 1,
+      /** Free plan: consultations are Pro-only (0 active slots). */
+      maxActiveConsultations: isPro ? 3 : 0,
       routineHistoryDays: isPro ? null : 30,
       routineMediaUpload: isPro ? 'image_video' : 'image_only',
       canUploadRoutineVideo: !!isPro,
@@ -243,6 +259,18 @@ class BillingService {
     return rows.length > 0;
   }
 
+  async activatePlanForUser(userId, planId, durationDays) {
+    await pool.query(
+      "UPDATE user_subscriptions SET status = 'expired' WHERE user_id = ? AND status = 'active'",
+      [userId]
+    );
+    await pool.query(
+      `INSERT INTO user_subscriptions (user_id, plan_id, status, starts_at, ends_at)
+       VALUES (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))`,
+      [userId, planId, durationDays]
+    );
+  }
+
   async submitGcashPayment(userId, payload, receiptPath) {
     await this.ensureSchema();
     const { planCode, gcashName, gcashNumber, gcashReference } = payload;
@@ -250,15 +278,15 @@ class BillingService {
       throw new Error('Missing payment fields');
     }
     const [planRows] = await pool.query(
-      'SELECT plan_id, price_php FROM subscription_plans WHERE plan_code = ? AND is_active = 1 LIMIT 1',
+      'SELECT plan_id, plan_code, price_php, duration_days FROM subscription_plans WHERE plan_code = ? AND is_active = 1 LIMIT 1',
       [planCode]
     );
     if (!planRows.length) throw new Error('Invalid plan');
     const plan = planRows[0];
     const [result] = await pool.query(
       `INSERT INTO payment_transactions
-         (user_id, plan_id, method, amount_php, gcash_name, gcash_number, gcash_reference, receipt_path, status)
-       VALUES (?, ?, 'gcash', ?, ?, ?, ?, ?, 'pending')`,
+         (user_id, plan_id, method, amount_php, gcash_name, gcash_number, gcash_reference, receipt_path, status, reviewed_at)
+       VALUES (?, ?, 'gcash', ?, ?, ?, ?, ?, 'approved', NOW())`,
       [
         userId,
         plan.plan_id,
@@ -269,7 +297,14 @@ class BillingService {
         receiptPath || null,
       ]
     );
-    return { paymentId: result.insertId, status: 'pending' };
+    await this.activatePlanForUser(userId, plan.plan_id, plan.duration_days);
+    await notificationService.createForUser(userId, {
+      type: 'payment_update',
+      title: 'Payment recorded',
+      message: `${plan.plan_code} plan is now active.`,
+      linkUrl: '/pricing.html',
+    });
+    return { paymentId: result.insertId, status: 'approved', activated: true, planCode: plan.plan_code };
   }
 
   async submitCardPayment(userId, payload, receiptPath) {
@@ -279,18 +314,25 @@ class BillingService {
       throw new Error('Missing card payment fields');
     }
     const [planRows] = await pool.query(
-      'SELECT plan_id, price_php FROM subscription_plans WHERE plan_code = ? AND is_active = 1 LIMIT 1',
+      'SELECT plan_id, plan_code, price_php, duration_days FROM subscription_plans WHERE plan_code = ? AND is_active = 1 LIMIT 1',
       [planCode]
     );
     if (!planRows.length) throw new Error('Invalid plan');
     const plan = planRows[0];
     const [result] = await pool.query(
       `INSERT INTO payment_transactions
-         (user_id, plan_id, method, amount_php, card_name, card_last4, card_reference, receipt_path, status)
-       VALUES (?, ?, 'card', ?, ?, ?, ?, ?, 'pending')`,
+         (user_id, plan_id, method, amount_php, card_name, card_last4, card_reference, receipt_path, status, reviewed_at)
+       VALUES (?, ?, 'card', ?, ?, ?, ?, ?, 'approved', NOW())`,
       [userId, plan.plan_id, Number(plan.price_php), cardName.trim(), String(cardLast4).trim().slice(-4), cardReference.trim(), receiptPath || null]
     );
-    return { paymentId: result.insertId, status: 'pending' };
+    await this.activatePlanForUser(userId, plan.plan_id, plan.duration_days);
+    await notificationService.createForUser(userId, {
+      type: 'payment_update',
+      title: 'Payment recorded',
+      message: `${plan.plan_code} plan is now active.`,
+      linkUrl: '/pricing.html',
+    });
+    return { paymentId: result.insertId, status: 'approved', activated: true, planCode: plan.plan_code };
   }
 
   async activateProDirect(userId) {
@@ -306,15 +348,7 @@ class BillingService {
       throw new Error('Pro plan is not available');
     }
     const plan = planRows[0];
-    await pool.query(
-      "UPDATE user_subscriptions SET status = 'expired' WHERE user_id = ? AND status = 'active'",
-      [userId]
-    );
-    await pool.query(
-      `INSERT INTO user_subscriptions (user_id, plan_id, status, starts_at, ends_at)
-       VALUES (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))`,
-      [userId, plan.plan_id, plan.duration_days]
-    );
+    await this.activatePlanForUser(userId, plan.plan_id, plan.duration_days);
     await notificationService.createForUser(userId, {
       type: 'plan_change',
       title: 'Pro plan activated',
@@ -336,15 +370,7 @@ class BillingService {
       throw new Error('Free plan is not available');
     }
     const plan = planRows[0];
-    await pool.query(
-      "UPDATE user_subscriptions SET status = 'expired' WHERE user_id = ? AND status = 'active'",
-      [userId]
-    );
-    await pool.query(
-      `INSERT INTO user_subscriptions (user_id, plan_id, status, starts_at, ends_at)
-       VALUES (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))`,
-      [userId, plan.plan_id, plan.duration_days]
-    );
+    await this.activatePlanForUser(userId, plan.plan_id, plan.duration_days);
     await notificationService.createForUser(userId, {
       type: 'plan_change',
       title: 'Free plan activated',
@@ -419,15 +445,7 @@ class BillingService {
       );
       if (!planRows.length) throw new Error('Plan missing');
       const plan = planRows[0];
-      await pool.query(
-        "UPDATE user_subscriptions SET status = 'expired' WHERE user_id = ? AND status = 'active'",
-        [rows[0].user_id]
-      );
-      await pool.query(
-        `INSERT INTO user_subscriptions (user_id, plan_id, status, starts_at, ends_at)
-         VALUES (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))`,
-        [rows[0].user_id, rows[0].plan_id, plan.duration_days]
-      );
+      await this.activatePlanForUser(rows[0].user_id, rows[0].plan_id, plan.duration_days);
       await notificationService.createForUser(rows[0].user_id, {
         type: 'payment_update',
         title: 'Payment approved',

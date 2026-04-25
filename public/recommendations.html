@@ -101,8 +101,8 @@
     <div class="flex flex-col lg:flex-row gap-8">
       <aside class="lg:w-64 shrink-0">
         <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-5 sticky top-24">
-          <h2 class="text-lg font-semibold text-white mb-1">Recommended</h2>
-          <p class="text-slate-400 text-sm mb-6">Products tailored to your hair profile.</p>
+          <h2 id="sidebar-panel-title" class="text-lg font-semibold text-white mb-1">Recommended</h2>
+          <p id="sidebar-panel-subtitle" class="text-slate-400 text-sm mb-6">Products tailored to your hair profile.</p>
 
           <h3 class="text-sm font-medium text-slate-300 mb-3">Categories</h3>
           <div id="categories-list" class="space-y-1.5 mb-6">
@@ -232,9 +232,12 @@
     }
 
     function expiryText(p) {
-      if (p.expiryType === 'date' && p.expiryDate) return 'Expires: ' + p.expiryDate;
-      if (p.expiryType === 'period_after_opening' && p.expiryPeriodMonths) {
-        return 'Use within ' + p.expiryPeriodMonths + ' months after opening';
+      const type = p.expiryType || p.expiry_type || 'not_applicable';
+      const date = p.expiryDate || p.expiry_date;
+      const months = p.expiryPeriodMonths != null ? p.expiryPeriodMonths : p.expiry_period_months;
+      if (type === 'date' && date) return 'Expires: ' + date;
+      if (type === 'period_after_opening' && months) {
+        return 'Use within ' + months + ' months after opening';
       }
       return 'Expiry: Not applicable';
     }
@@ -285,20 +288,68 @@
     }
 
     function getFilteredAndSortedItems() {
+      const preferredType = (document.getElementById('productType')?.value || 'all').toLowerCase();
+      const typeMap = {
+        shampoo: {
+          keywords: ['shampoo', 'cleanser', 'scalp wash'],
+          categoryHints: ['anti-dandruff', 'clarifying/oily scalp'],
+        },
+        conditioner: {
+          keywords: ['conditioner', 'rinse-out', 'daily treatment'],
+          categoryHints: ['moisturizing'],
+        },
+        serum: {
+          keywords: ['serum', 'oil', 'tonic', 'elixir', 'leave-on'],
+          categoryHints: ['anti-frizz', 'clarifying/oily scalp'],
+        },
+        mask: {
+          keywords: ['mask', 'treatment', 'deep repair', 'hair butter'],
+          categoryHints: ['moisturizing', 'anti-frizz'],
+        },
+      };
+      const matchesSelectedType = (item) => {
+        if (preferredType === 'all') return true;
+        const conf = typeMap[preferredType];
+        if (!conf) return true;
+        const haystack = `${item.name || ''} ${item.description || ''}`.toLowerCase();
+        const categories = Array.isArray(item.categories)
+          ? item.categories.map((c) => String(c || '').toLowerCase())
+          : [];
+        const keywordHit = (conf.keywords || []).some((kw) => haystack.includes(kw));
+        const categoryHit = (conf.categoryHints || []).some((hint) => categories.includes(hint));
+
+        if (preferredType === 'conditioner') {
+          // Avoid broad moisturizing-only false positives for conditioner.
+          return keywordHit;
+        }
+        if (preferredType === 'mask') {
+          // Mask should be strict to avoid pulling regular shampoos/conditioners.
+          return keywordHit;
+        }
+        // Shampoo/serum: keyword is primary, category hint is fallback.
+        return keywordHit || categoryHit;
+      };
+
       let items = allRecommendations.filter(r => {
         if (selectedCategory && (!r.categories || !r.categories.includes(selectedCategory))) return false;
         if (selectedBrands.size > 0 && (!r.brand || !selectedBrands.has(r.brand))) return false;
+        if (!matchesSelectedType(r)) return false;
         const q = (document.getElementById('search-products')?.value || '').trim().toLowerCase();
         if (q && !(r.name && r.name.toLowerCase().includes(q)) && !(r.brand && r.brand.toLowerCase().includes(q))) return false;
         return true;
       });
       const sort = document.getElementById('sort-products')?.value || 'relevance';
       if (sort === 'relevance') {
-        items = [...items].sort((a, b) => {
-          const recDelta = (Number(b.isRecommended) || 0) - (Number(a.isRecommended) || 0);
-          if (recDelta !== 0) return recDelta;
-          return (Number(b.matchScore) || 0) - (Number(a.matchScore) || 0);
-        });
+        if (productMode === 'recommended') {
+          items = [...items].sort((a, b) => {
+            const recDelta = (Number(b.isRecommended) || 0) - (Number(a.isRecommended) || 0);
+            if (recDelta !== 0) return recDelta;
+            return (Number(b.matchScore) || 0) - (Number(a.matchScore) || 0);
+          });
+        } else {
+          // All Products mode: neutral catalog ordering.
+          items = [...items].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        }
       }
       return items;
     }
@@ -309,7 +360,7 @@
       const noMatch = document.getElementById('no-match');
       const showingCount = document.getElementById('showing-count');
 
-      const items = getFilteredAndSortedItems();
+      const items = getFilteredAndSortedItems().filter((p) => p.productId != null);
 
       noProducts.classList.add('hidden');
       noMatch.classList.add('hidden');
@@ -330,10 +381,11 @@
 
       grid.innerHTML = items.map(p => `
         <div class="bg-slate-800/55 rounded-xl border border-slate-700/80 overflow-hidden hover:border-violet-500/50 transition-all duration-200 flex flex-col shadow-sm">
-          <div class="aspect-[4/3] bg-slate-700/40 flex items-center justify-center text-slate-500 overflow-hidden" data-thumb-wrap>
-            ${p.imageUrl
-              ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" class="w-full h-full object-cover" data-thumb-img />`
-              : `<svg class="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`
+          <div class="aspect-[4/3] bg-white flex items-center justify-center text-slate-500 overflow-hidden p-2" data-thumb-wrap>
+            ${
+              p.imageUrl
+                ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" class="w-full h-full object-contain" data-thumb-img decoding="async" onerror="this.classList.add('hidden');var ph=this.parentElement&&this.parentElement.querySelector('[data-thumb-fallback]');if(ph)ph.classList.remove('hidden');" /><div class="hidden h-full w-full flex items-center justify-center text-slate-500" data-thumb-fallback><svg class="h-16 w-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>`
+                : `<svg class="h-16 w-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`
             }
           </div>
           <div class="p-4 flex flex-col flex-1">
@@ -385,22 +437,82 @@
       if (showingCount) showingCount.textContent = 'Showing 0 products';
     }
 
+    function parseCategoriesField(raw) {
+      if (raw == null || raw === '') return [];
+      if (Array.isArray(raw)) {
+        return raw.map((c) => String(c).trim()).filter(Boolean);
+      }
+      if (typeof raw === 'string') {
+        return raw.split(',').map((c) => c.trim()).filter(Boolean);
+      }
+      return [];
+    }
+
+    function coerceProductId(p) {
+      const v = p.productId ?? p.product_id ?? p.id;
+      if (v == null || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    /** Match server logic: absolute URLs and leading / stay; bare paths get a leading slash. */
+    function normalizeCatalogImageUrl(img) {
+      if (img == null || img === '') return null;
+      const s = String(img).trim();
+      if (!s) return null;
+      if (/^https?:\/\//i.test(s)) return s;
+      if (s.startsWith('/')) return s;
+      return '/' + s.replace(/^\//, '');
+    }
+
     function normalizeProductToRecommendation(p) {
-      const cats = (p.categories || []);
-      const categoryList = Array.isArray(cats) ? cats.map(c => (typeof c === 'string' ? c.trim() : c)).filter(Boolean) : [];
+      if (!p || typeof p !== 'object') {
+        return {
+          productId: null,
+          name: 'Untitled product',
+          brand: null,
+          description: null,
+          imageUrl: null,
+          price: 0,
+          reason: '',
+          matchScore: 0,
+          isRecommended: false,
+          expiryType: 'not_applicable',
+          expiryDate: null,
+          expiryPeriodMonths: null,
+          categories: [],
+        };
+      }
+      const productId = coerceProductId(p);
+      const rawName =
+        (p.name != null && String(p.name).trim()) ||
+        (p.title != null && String(p.title).trim()) ||
+        '';
+      const name = rawName || 'Untitled product';
+      const brandRaw = p.brand != null ? String(p.brand).trim() : '';
+      const brand = brandRaw ? brandRaw : null;
+      const categoryList = parseCategoriesField(p.categories);
+      const expiryType = p.expiryType || p.expiry_type || 'not_applicable';
+      const expiryDate = p.expiryDate || p.expiry_date || null;
+      const periodRaw = p.expiryPeriodMonths ?? p.expiry_period_months;
       return {
-        productId: p.productId,
-        name: p.name,
-        brand: p.brand || null,
-        description: p.description || null,
-        imageUrl: p.imageUrl || null,
-        price: p.price != null ? Number(p.price) : 0,
-        reason: p.reason || '',
-        matchScore: p.matchScore != null ? Number(p.matchScore) : 0,
+        productId,
+        name,
+        brand,
+        description: p.description != null ? String(p.description) : null,
+        imageUrl: normalizeCatalogImageUrl(p.imageUrl ?? p.image_url),
+        price: p.price != null && p.price !== '' ? Number(p.price) : 0,
+        reason: p.reason != null ? String(p.reason) : '',
+        matchScore:
+          p.matchScore != null
+            ? Number(p.matchScore)
+            : p.match_score != null
+              ? Number(p.match_score)
+              : 0,
         isRecommended: !!p.isRecommended,
-        expiryType: p.expiryType || 'not_applicable',
-        expiryDate: p.expiryDate || null,
-        expiryPeriodMonths: p.expiryPeriodMonths != null ? Number(p.expiryPeriodMonths) : null,
+        expiryType,
+        expiryDate,
+        expiryPeriodMonths: periodRaw != null && periodRaw !== '' ? Number(periodRaw) : null,
         categories: categoryList,
       };
     }
@@ -694,6 +806,8 @@
     function syncModeButtons() {
       const recBtn = document.getElementById('btn-mode-recommended');
       const allBtn = document.getElementById('btn-mode-all');
+      const panelTitle = document.getElementById('sidebar-panel-title');
+      const panelSubtitle = document.getElementById('sidebar-panel-subtitle');
       const active = 'px-4 py-1.5 rounded-md text-sm font-medium bg-violet-600 text-white';
       const inactive = 'px-4 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white';
       recBtn.className = productMode === 'recommended' ? active : inactive;
@@ -701,7 +815,15 @@
       const modeHint = document.getElementById('mode-hint');
       modeHint.textContent = productMode === 'recommended'
         ? 'Recommended items are prioritized from your hair profile.'
-        : 'Showing all products, with recommended items still pinned higher.';
+        : 'Showing all products in neutral catalog order.';
+      if (panelTitle) {
+        panelTitle.textContent = productMode === 'recommended' ? 'Recommended' : 'Catalog Filters';
+      }
+      if (panelSubtitle) {
+        panelSubtitle.textContent = productMode === 'recommended'
+          ? 'Products tailored to your hair profile.'
+          : 'Browse and refine the full product catalog.';
+      }
     }
 
     document.getElementById('btn-mode-recommended').addEventListener('click', () => {

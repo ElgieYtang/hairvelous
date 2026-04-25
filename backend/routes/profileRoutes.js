@@ -7,10 +7,16 @@ const express = require('express');
 const router = express.Router();
 const profileController = require('../controllers/profileController');
 const { requireAuth } = require('../middleware/auth');
+const requireConsultationAccess = require('../middleware/requireConsultationAccess');
 const { validateUpdateProfile } = require('../middleware/validation');
 const { uploadProfilePhoto: multerProfilePhoto, uploadCredentialDocs: multerCredentialDocs } = require('../config/upload');
 
-router.get('/consultation-specialists', requireAuth, profileController.listConsultationSpecialists);
+router.get(
+  '/consultation-specialists',
+  requireAuth,
+  requireConsultationAccess,
+  profileController.listConsultationSpecialists
+);
 router.get('/', requireAuth, profileController.getProfile);
 router.patch('/', requireAuth, validateUpdateProfile, profileController.updateProfile);
 router.post('/photo', requireAuth, multerProfilePhoto.single('photo'), profileController.uploadProfilePhoto);

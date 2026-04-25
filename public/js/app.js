@@ -2,6 +2,20 @@ const API_BASE = '/api';
 const TOKEN_KEY = 'hairvelous_token';
 const USER_KEY = 'hairvelous_user';
 
+// Keep authentication session-only so closing the browser logs the user out.
+function getAuthStorage() {
+  return window.sessionStorage;
+}
+
+// Remove legacy persistent auth keys from prior versions.
+function clearLegacyPersistentAuth() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  } catch (_) {}
+}
+clearLegacyPersistentAuth();
+
 /** After login or registration, open the app with the nav drawer closed first */
 function collapseSidebarForFreshLogin() {
   try {
@@ -10,22 +24,30 @@ function collapseSidebarForFreshLogin() {
 }
 
 function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  try {
+    return getAuthStorage().getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 function setToken(token) {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  try {
+    if (token) getAuthStorage().setItem(TOKEN_KEY, token);
+    else getAuthStorage().removeItem(TOKEN_KEY);
+  } catch (_) {}
 }
 function getUser() {
   try {
-    return JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+    return JSON.parse(getAuthStorage().getItem(USER_KEY) || 'null');
   } catch {
     return null;
   }
 }
 function setUser(user) {
-  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
-  else localStorage.removeItem(USER_KEY);
+  try {
+    if (user) getAuthStorage().setItem(USER_KEY, JSON.stringify(user));
+    else getAuthStorage().removeItem(USER_KEY);
+  } catch (_) {}
 }
 function isLoggedIn() {
   return !!getToken();
@@ -80,7 +102,21 @@ async function api(path, options = {}) {
       data = { error: res.status === 404 ? 'Not found — is the API server running the latest code?' : `HTTP ${res.status}` };
     }
   }
-  if (!res.ok) throw { status: res.status, ...data };
+  if (!res.ok) {
+    const suspended =
+      res.status === 403 &&
+      token &&
+      (data.code === 'ACCOUNT_SUSPENDED' || /suspended/i.test(String(data.error || data.message || '')));
+    if (suspended) {
+      setToken(null);
+      setUser(null);
+      if (!window.__hvAccountSuspendedRedirect) {
+        window.__hvAccountSuspendedRedirect = true;
+        window.location.replace('/login.html?suspended=1');
+      }
+    }
+    throw { status: res.status, ...data };
+  }
   return data;
 }
 
@@ -91,7 +127,21 @@ async function apiForm(path, formData, method = 'POST') {
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(url, { method, headers, body: formData });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw { status: res.status, ...data };
+  if (!res.ok) {
+    const suspended =
+      res.status === 403 &&
+      token &&
+      (data.code === 'ACCOUNT_SUSPENDED' || /suspended/i.test(String(data.error || data.message || '')));
+    if (suspended) {
+      setToken(null);
+      setUser(null);
+      if (!window.__hvAccountSuspendedRedirect) {
+        window.__hvAccountSuspendedRedirect = true;
+        window.location.replace('/login.html?suspended=1');
+      }
+    }
+    throw { status: res.status, ...data };
+  }
   return data;
 }
 

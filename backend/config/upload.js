@@ -28,9 +28,16 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = (process.env.ALLOWED_FILE_TYPES || 'jpeg,jpg,png,gif,webp,mp4,webm,mov').split(',');
+  // Keep env overrides, but always include routine-supported video/image extensions
+  // so routine media uploads do not break when ALLOWED_FILE_TYPES is image-only.
+  const configured = String(process.env.ALLOWED_FILE_TYPES || '')
+    .split(',')
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+  const defaults = ['jpeg', 'jpg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov'];
+  const allowedTypes = Array.from(new Set([...(configured.length ? configured : defaults), ...defaults]));
   const ext = path.extname(file.originalname).slice(1).toLowerCase();
-  
+
   if (allowedTypes.includes(ext)) {
     cb(null, true);
   } else {

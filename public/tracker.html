@@ -165,7 +165,7 @@
                   </svg>
                   Clear
                 </button>
-                <span id="media-filename" class="truncate text-xs text-slate-300">No file selected</span>
+                <span id="media-filename" class="min-w-0 flex-1 truncate text-xs text-slate-300">No file selected</span>
               </div>
             </div>
             <input type="file" id="media" name="media" accept="image/*,video/mp4,video/webm,video/quicktime" class="hidden" />
@@ -194,14 +194,36 @@
 
   <script src="/js/app.js"></script>
   <script src="/js/layout.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     if (!requireAuth()) { /* redirects */ }
 
     let billingStatus = null;
     let logsCache = [];
+    let reminderCheckState = {};
+    let routineTrendChart = null;
+    let activityMixChart = null;
+    let analyticsRenderTimer = null;
+    let analyticsBusy = false;
     let calendarCursor = new Date();
     calendarCursor.setDate(1);
     let selectedCalendarIso = null;
+    const reminderStoreKey = () => {
+      const u = getUser() || {};
+      return `hairvelous_reminder_state_${u.userId || 'guest'}`;
+    };
+    function loadReminderCheckState() {
+      try {
+        reminderCheckState = JSON.parse(localStorage.getItem(reminderStoreKey()) || '{}') || {};
+      } catch (_err) {
+        reminderCheckState = {};
+      }
+    }
+    function saveReminderCheckState() {
+      try {
+        localStorage.setItem(reminderStoreKey(), JSON.stringify(reminderCheckState || {}));
+      } catch (_err) {}
+    }
     function hasRoutineVideoAccess() {
       const ent = billingStatus && billingStatus.entitlements ? billingStatus.entitlements : null;
       if (ent && typeof ent.canUploadRoutineVideo === 'boolean') return !!ent.canUploadRoutineVideo;
@@ -258,12 +280,9 @@
       if (typeof d === 'string') {
         const s = d.trim();
         if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-        // For timezone-aware ISO strings, convert to local date.
-        if (/^\d{4}-\d{2}-\d{2}T/i.test(s) && /(z|[+\-]\d{2}:\d{2})$/i.test(s)) {
-          const dt = new Date(s);
-          if (!Number.isNaN(dt.getTime())) return formatLocalISO(dt);
-        }
-        // For SQL-like datetime strings without timezone, keep date part.
+        // For datetime strings, always keep the original date part.
+        // Routine logs represent calendar dates (not instants), so converting timezone
+        // here can shift a log to the wrong day on charts/calendars.
         const datePrefix = s.match(/^(\d{4}-\d{2}-\d{2})[ t]/i);
         if (datePrefix) return datePrefix[1];
       }
@@ -273,21 +292,38 @@
     function computeStreakDays(logs) {
       const dates = [...new Set((logs || []).map((l) => toDateKey(l.dateLogged)).filter(Boolean))].sort().reverse();
       if (!dates.length) return 0;
-      let streak = 0;
-      const cursor = new Date();
-      cursor.setHours(0, 0, 0, 0);
-      const newest = parseISODateLocal(dates[0]);
-      if (!newest) return 0;
-      const diffDays = Math.floor((cursor - newest) / 86400000);
-      if (diffDays > 1) return 0;
-      if (diffDays === 1) cursor.setDate(cursor.getDate() - 1);
-      for (const d of dates) {
-        const iso = formatLocalISO(cursor);
-        if (d !== iso) break;
+      let streak = 1;
+      let cursor = parseISODateLocal(dates[0]);
+      if (!cursor) return 0;
+      for (let i = 1; i < dates.length; i += 1) {
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - 1);
+        const expectedIso = formatLocalISO(cursor);
+        if (dates[i] !== expectedIso) break;
         streak += 1;
-        cursor.setDate(cursor.getDate() - 1);
       }
       return streak;
+    }
+
+    function formatWeekLabel(weekToken) {
+      const raw = String(weekToken || '').trim();
+      const m = raw.match(/^(\d{4})-(\d{1,2})$/);
+      if (!m) return `Week ${escapeHtml(raw)}`;
+      const year = Number(m[1]);
+      const week = Number(m[2]);
+      if (!Number.isFinite(year) || !Number.isFinite(week) || week < 1 || week > 53) {
+        return `Week ${escapeHtml(raw)}`;
+      }
+
+      // Convert ISO week (Mon-based) to readable date range.
+      const jan4 = new Date(year, 0, 4);
+      const jan4Day = jan4.getDay() || 7;
+      const week1Monday = new Date(year, 0, 4 - (jan4Day - 1));
+      const weekStart = new Date(week1Monday.getFullYear(), week1Monday.getMonth(), week1Monday.getDate() + (week - 1) * 7);
+      const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+      const fmt = { month: 'short', day: 'numeric' };
+      const startLabel = weekStart.toLocaleDateString(undefined, fmt);
+      const endLabel = weekEnd.toLocaleDateString(undefined, { ...fmt, year: 'numeric' });
+      return `Week ${week} (${startLabel} - ${endLabel})`;
     }
 
     function updateMiniStats(logs) {
@@ -327,23 +363,50 @@
       return `/${s}`;
     }
 
+    function inferMediaKind(log, mediaUrl) {
+      const explicit = String(log && log.mediaType ? log.mediaType : '').trim().toLowerCase();
+      if (explicit === 'video' || explicit === 'image') return explicit;
+      const pathish = String(mediaUrl || log?.mediaPath || '').toLowerCase();
+      if (/\.(mp4|webm|mov)(\?|#|$)/i.test(pathish)) return 'video';
+      if (/\.(png|jpe?g|gif|webp|bmp|svg|heic|heif)(\?|#|$)/i.test(pathish)) return 'image';
+      return 'image';
+    }
+
+    function safeMediaUrl(rawUrl) {
+      const s = String(rawUrl || '').trim();
+      if (!s) return '';
+      try {
+        return encodeURI(s);
+      } catch (_err) {
+        return s;
+      }
+    }
+
     function renderMediaPreview(log) {
-      const mediaUrl = String(log.mediaUrl || '').trim() || toMediaUrl(log.mediaPath);
+      const mediaUrl = safeMediaUrl(String(log.mediaUrl || '').trim() || toMediaUrl(log.mediaPath));
       if (!mediaUrl) return '';
+      const mediaKind = inferMediaKind(log, mediaUrl);
       const mediaFrameStart = '<div class="mt-2 overflow-hidden rounded-lg border border-slate-700 bg-slate-950/80">';
       const mediaFrameEnd = '</div>';
-      if (log.mediaType === 'video') {
+      if (mediaKind === 'video') {
         return `${mediaFrameStart}
           <div class="relative flex h-56 w-full items-center justify-center bg-black sm:h-64">
             <video controls preload="metadata" class="h-full w-full object-contain bg-black" src="${escapeHtml(mediaUrl)}"></video>
           </div>
+          <div class="px-3 py-2 text-[11px] text-slate-400">
+            <a class="underline hover:text-slate-200" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noopener">Open media in new tab</a>
+          </div>
         ${mediaFrameEnd}`;
       }
-      return `${mediaFrameStart}
-        <div class="relative flex h-56 w-full items-center justify-center bg-black sm:h-64">
-          <img class="h-full w-full object-contain bg-black" src="${escapeHtml(mediaUrl)}" alt="Routine media" loading="lazy" />
+      return `<div class="mt-2 overflow-hidden rounded-lg border border-slate-700 bg-slate-900/40 p-2">
+        <div class="relative flex min-h-[120px] w-full items-center justify-center">
+          <img class="max-h-72 w-auto max-w-full rounded object-contain" src="${escapeHtml(mediaUrl)}" alt="Routine media"
+            onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend','<p class=&quot;px-3 text-xs text-amber-300&quot;>Unable to load image preview.</p>');" />
         </div>
-      ${mediaFrameEnd}`;
+        <div class="px-1 pt-2 text-[11px] text-slate-400">
+          <a class="underline hover:text-slate-200" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noopener">Open media in new tab</a>
+        </div>
+      </div>`;
     }
 
     async function loadLogs() {
@@ -367,6 +430,7 @@
           : 'Pro history window: full routine timeline visible.';
         updateMiniStats(entries);
         renderCalendar();
+        scheduleAdvancedAnalytics(80);
         if (entries.length > 0) {
           document.getElementById('no-logs').classList.add('hidden');
           entries.forEach(l => {
@@ -412,13 +476,21 @@
 
     function renderSelectedDay(iso, dayLogs) {
       const target = document.getElementById('cal-selected-day');
+      const modalTitle = document.getElementById('calendar-day-modal-title');
+      const modalBody = document.getElementById('calendar-day-modal-body');
       if (!target) return;
       if (!iso) {
-        target.textContent = 'Select a day to view logs.';
+        const emptyText = 'Select a day to view logs.';
+        target.textContent = emptyText;
+        if (modalTitle) modalTitle.textContent = 'Routine details';
+        if (modalBody) modalBody.innerHTML = `<p class="text-slate-400">${emptyText}</p>`;
         return;
       }
       if (!dayLogs || !dayLogs.length) {
-        target.innerHTML = `<p class="text-slate-300">${iso}</p><p class="mt-1 text-slate-500">No logs on this day.</p>`;
+        const emptyDayHtml = `<p class="text-slate-300">${iso}</p><p class="mt-1 text-slate-500">No logs on this day.</p>`;
+        target.innerHTML = emptyDayHtml;
+        if (modalTitle) modalTitle.textContent = `${iso} • Routine details`;
+        if (modalBody) modalBody.innerHTML = emptyDayHtml;
         return;
       }
       const parseHairFeel = (notes) => {
@@ -433,18 +505,36 @@
           ${dayLogs.map((l) => {
             const feel = parseHairFeel(l.notes);
             const cleanNotes = stripHairFeel(l.notes);
+            const mediaUrl = safeMediaUrl(String(l.mediaUrl || '').trim() || toMediaUrl(l.mediaPath));
+            const mediaKind = inferMediaKind(l, mediaUrl);
+            const mediaHtml = mediaUrl
+              ? mediaKind === 'video'
+                ? `<details class="mt-2 rounded border border-slate-700 bg-slate-900/40">
+                    <summary class="cursor-pointer px-2 py-1 text-xs text-slate-300 hover:text-white">Show media</summary>
+                    <div class="px-2 pb-2">
+                      <video controls class="h-44 w-auto max-w-full rounded border border-slate-700 bg-black" src="${escapeHtml(mediaUrl)}"></video>
+                      <div class="mt-2 text-[11px] text-slate-400">
+                        <a class="underline hover:text-slate-200" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noopener">Open media in new tab</a>
+                      </div>
+                    </div>
+                  </details>`
+                : `<details class="mt-2 rounded border border-slate-700 bg-slate-900/40">
+                    <summary class="cursor-pointer px-2 py-1 text-xs text-slate-300 hover:text-white">Show media</summary>
+                    <div class="px-2 pb-2">
+                      <img class="max-h-72 w-auto max-w-full rounded object-contain" src="${escapeHtml(mediaUrl)}" alt="Routine media"
+                        onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend','<p class=&quot;mt-2 text-xs text-amber-300&quot;>Unable to load image preview.</p>');" />
+                      <div class="mt-2 text-[11px] text-slate-400">
+                        <a class="underline hover:text-slate-200" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noopener">Open media in new tab</a>
+                      </div>
+                    </div>
+                  </details>`
+              : '';
             return `
               <div class="rounded-lg border border-slate-700 bg-slate-800/50 p-2.5">
                 <p class="text-sm font-medium text-white">${escapeHtml(l.activityType || 'Routine')}</p>
                 ${feel ? `<p class="mt-1 text-[11px] text-cyan-300">Hair feel: ${escapeHtml(feel)}</p>` : ''}
                 ${cleanNotes ? `<p class="mt-1 text-xs text-slate-300">${escapeHtml(cleanNotes)}</p>` : '<p class="mt-1 text-xs text-slate-500">No notes added.</p>'}
-                ${
-                  (l.mediaPath || l.mediaUrl)
-                    ? l.mediaType === 'video'
-                      ? `<video controls class="mt-2 h-44 w-auto max-w-full rounded border border-slate-700 bg-black" src="${escapeHtml(String(l.mediaUrl || '').trim() || toMediaUrl(l.mediaPath))}"></video>`
-                      : `<img class="mt-2 h-44 w-auto max-w-full rounded border border-slate-700 object-cover" src="${escapeHtml(String(l.mediaUrl || '').trim() || toMediaUrl(l.mediaPath))}" alt="Routine media" />`
-                    : ''
-                }
+                ${mediaHtml}
               </div>
             `;
           }).join('')}
@@ -452,8 +542,6 @@
       `;
       target.innerHTML = html;
 
-      const modalTitle = document.getElementById('calendar-day-modal-title');
-      const modalBody = document.getElementById('calendar-day-modal-body');
       if (modalTitle) modalTitle.textContent = `${iso} • Routine details`;
       if (modalBody) modalBody.innerHTML = html;
     }
@@ -535,7 +623,8 @@
         if (data.summary && data.summary.length > 0) {
           let html = '<div class="space-y-2">';
           data.summary.forEach(s => {
-            html += `<div class="flex justify-between items-center"><span class="text-slate-300">Week ${s.week}</span><span class="text-violet-400">${s.count} activities</span></div>`;
+            const weekLabel = formatWeekLabel(s.week);
+            html += `<div class="flex justify-between items-center"><span class="text-slate-300">${escapeHtml(weekLabel)}</span><span class="text-violet-400">${Number(s.count || 0)} activit${Number(s.count || 0) === 1 ? 'y' : 'ies'}</span></div>`;
           });
           html += '</div>';
           summary.innerHTML = html;
@@ -562,6 +651,7 @@
           box.textContent = `Pro Active: ${billingStatus.planName || 'Pro'} - advanced analytics and enhanced reminders enabled.`;
           if (analyticsUpgrade) analyticsUpgrade.classList.add('hidden');
           if (reminderUpgrade) reminderUpgrade.classList.add('hidden');
+          scheduleAdvancedAnalytics(160);
         } else {
           box.className = 'mb-6 rounded-xl border border-violet-700/40 bg-violet-900/20 p-4 text-sm text-violet-100';
           box.innerHTML = 'You are on Free plan. <a href="/pricing.html" class="underline">Upgrade to Pro</a> for advanced analytics and full reminder intelligence.';
@@ -602,6 +692,118 @@
       }
     }
 
+    function requestReminderNotificationPermission() {
+      if (!('Notification' in window)) {
+        showToast('Browser notifications are not supported in this browser.', 'info');
+        return;
+      }
+      Notification.requestPermission().then((perm) => {
+        if (perm === 'granted') showToast('Pro reminder notifications enabled.', 'success');
+        else showToast('Notifications remain disabled.', 'info');
+      });
+    }
+
+    function maybeTriggerReminderNotification(reminders) {
+      if (!Array.isArray(reminders) || !reminders.length) return;
+      if (!('Notification' in window)) return;
+      if (document.visibilityState === 'visible') return;
+      if (Notification.permission !== 'granted') return;
+      const urgent = reminders.find((r) => /not logged|days|today|stay consistent/i.test(String(r)));
+      if (!urgent) return;
+      const key = `hairvelous_last_notify_${(getUser() || {}).userId || 'guest'}`;
+      const now = Date.now();
+      const last = Number(localStorage.getItem(key) || 0);
+      // Throttle browser alerts to avoid spam.
+      if (now - last < 2 * 60 * 60 * 1000) return;
+      try {
+        new Notification('Hairvelous Pro Reminder', { body: urgent });
+        localStorage.setItem(key, String(now));
+      } catch (_err) {}
+    }
+
+    function buildHeatmap(logs, days = 42) {
+      const byDate = logsByDateMap(logs || []);
+      const cells = [];
+      const end = new Date();
+      end.setHours(0, 0, 0, 0);
+      for (let i = days - 1; i >= 0; i -= 1) {
+        const d = new Date(end.getFullYear(), end.getMonth(), end.getDate() - i);
+        const iso = formatLocalISO(d);
+        const count = (byDate.get(iso) || []).length;
+        const level = count >= 3 ? 'bg-emerald-400/80' : count === 2 ? 'bg-emerald-400/55' : count === 1 ? 'bg-emerald-400/30' : 'bg-slate-700/50';
+        cells.push(`<div title="${iso}: ${count} log${count === 1 ? '' : 's'}" class="h-3 w-3 rounded-sm ${level}"></div>`);
+      }
+      return `
+        <div class="overflow-x-auto">
+          <div class="grid gap-1" style="grid-template-columns: repeat(14, minmax(0, 1fr)); width: max-content;">
+            ${cells.join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function buildBeforeAfterImages(logs) {
+      const imageLogs = (logs || [])
+        .filter((l) => {
+          const url = String(l.mediaUrl || '').trim() || toMediaUrl(l.mediaPath);
+          return !!url && inferMediaKind(l, url) === 'image';
+        })
+        .sort((a, b) => String(a.dateLogged).localeCompare(String(b.dateLogged)));
+      if (imageLogs.length < 2) {
+        return '<p class="text-slate-400">Add at least two image logs to unlock before/after comparison.</p>';
+      }
+      const first = imageLogs[0];
+      const last = imageLogs[imageLogs.length - 1];
+      const firstUrl = safeMediaUrl(String(first.mediaUrl || '').trim() || toMediaUrl(first.mediaPath));
+      const lastUrl = safeMediaUrl(String(last.mediaUrl || '').trim() || toMediaUrl(last.mediaPath));
+      return `
+        <div class="grid gap-3 md:grid-cols-2">
+          <div class="rounded-lg border border-slate-700 bg-slate-900/40 p-2">
+            <p class="mb-2 text-xs text-slate-400">Before • ${escapeHtml(toDateKey(first.dateLogged))}</p>
+            <img src="${escapeHtml(firstUrl)}" alt="Before routine media" class="max-h-56 w-auto max-w-full rounded object-contain" />
+          </div>
+          <div class="rounded-lg border border-slate-700 bg-slate-900/40 p-2">
+            <p class="mb-2 text-xs text-slate-400">After • ${escapeHtml(toDateKey(last.dateLogged))}</p>
+            <img src="${escapeHtml(lastUrl)}" alt="After routine media" class="max-h-56 w-auto max-w-full rounded object-contain" />
+          </div>
+        </div>
+      `;
+    }
+
+    function buildProSummary(analytics, logs) {
+      const top = (analytics && analytics.topActivities) || [];
+      const topActivity = top.length ? top[0].activityType : 'routine care';
+      const withFeel = (logs || []).filter((l) => /\[Hair feel:\s*([^\]]+)\]/i.test(String(l.notes || '')));
+      const improving = withFeel.filter((l) => /\[Hair feel:\s*improving\]/i.test(String(l.notes || ''))).length;
+      const improvingPct = withFeel.length ? Math.round((improving / withFeel.length) * 100) : 0;
+      const monthly = (analytics && analytics.monthlyConsistency) || {};
+      const activeDays = Number(monthly.activeDays || 0);
+      const totalLogs = Number(monthly.totalLogs || 0);
+      const consistencyPct = Math.min(100, Math.round((activeDays / 30) * 100));
+      const trendText = withFeel.length
+        ? `${improvingPct}% of recent mood-tagged logs report "improving".`
+        : 'Add hair-feel tags to unlock trend confidence insights.';
+      return `
+        <div class="rounded-xl border border-violet-500/40 bg-violet-900/20 p-4">
+          <p class="text-xs uppercase tracking-wide text-violet-300">Pro Insight Engine</p>
+          <p class="mt-1 text-sm text-violet-100">
+            You are most consistent with <span class="font-semibold">${escapeHtml(String(topActivity))}</span>. 
+            ${trendText} Over the last 30 days, you logged <span class="font-semibold">${totalLogs}</span> activities across
+            <span class="font-semibold">${activeDays}</span> active days (${consistencyPct}% consistency).
+          </p>
+        </div>
+      `;
+    }
+
+    function scheduleAdvancedAnalytics(delayMs = 100) {
+      if (!(billingStatus && billingStatus.isPro)) return;
+      if (analyticsRenderTimer) clearTimeout(analyticsRenderTimer);
+      analyticsRenderTimer = setTimeout(() => {
+        analyticsRenderTimer = null;
+        loadAdvancedAnalytics();
+      }, Math.max(0, Number(delayMs) || 0));
+    }
+
     async function loadReminders() {
       if (!(billingStatus && billingStatus.isPro)) {
         return;
@@ -610,30 +812,147 @@
         const data = await api('/routine/reminders');
         const reminders = data.reminders || [];
         const target = document.getElementById('reminder-list');
-        target.innerHTML = reminders.length
-          ? `<ul class="space-y-2">${reminders.map((r) => `<li>• ${escapeHtml(r)}</li>`).join('')}</ul>`
-          : 'No reminders for now.';
+        loadReminderCheckState();
+        const items = reminders.map((r, idx) => {
+          const key = `r_${idx}_${String(r).slice(0, 32)}`;
+          const checked = !!reminderCheckState[key];
+          const typeClass = /not logged|days|today|consistent/i.test(String(r)) ? 'border-amber-500/40 bg-amber-900/20' : 'border-slate-700 bg-slate-900/40';
+          return `
+            <label class="flex items-start gap-3 rounded-lg border ${typeClass} p-3">
+              <input data-reminder-check="${escapeHtml(key)}" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-slate-500 bg-slate-800 text-violet-500" ${checked ? 'checked' : ''} />
+              <span class="text-sm ${checked ? 'text-slate-500 line-through' : 'text-slate-200'}">${escapeHtml(r)}</span>
+            </label>
+          `;
+        });
+        target.className = 'rounded-xl border border-slate-700 bg-slate-800/50 p-4';
+        target.innerHTML = `
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Smart Triggers</p>
+            <button id="enable-reminder-notify" type="button" class="rounded-md border border-violet-500/45 bg-violet-600/20 px-2.5 py-1 text-[11px] font-semibold text-violet-100 hover:bg-violet-600/30">Enable browser alerts</button>
+          </div>
+          <div class="space-y-2">${items.length ? items.join('') : '<p class="text-sm text-slate-400">No reminders for now.</p>'}</div>
+        `;
+        target.querySelectorAll('[data-reminder-check]').forEach((el) => {
+          el.addEventListener('change', () => {
+            const key = el.getAttribute('data-reminder-check');
+            reminderCheckState[key] = !!el.checked;
+            saveReminderCheckState();
+            loadReminders();
+          });
+        });
+        document.getElementById('enable-reminder-notify')?.addEventListener('click', requestReminderNotificationPermission);
+        maybeTriggerReminderNotification(reminders.filter((r, idx) => !reminderCheckState[`r_${idx}_${String(r).slice(0, 32)}`]));
       } catch (err) {
         document.getElementById('reminder-list').textContent = err.error || 'Failed to load reminders';
       }
     }
 
     async function loadAdvancedAnalytics() {
+      if (analyticsBusy) return;
+      analyticsBusy = true;
       const target = document.getElementById('advanced-analytics');
       try {
         const data = await api('/routine/analytics');
         const analytics = data.analytics || {};
         const top = analytics.topActivities || [];
         const c = analytics.monthlyConsistency || {};
-        target.className = 'bg-slate-800/50 rounded-xl p-6 border border-slate-700 text-slate-200 text-sm';
+        target.className = 'rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-slate-200 text-sm space-y-4';
         target.innerHTML = `
-          <p class="text-slate-300 mb-2">Last 60 days top activities:</p>
-          <ul class="space-y-1 mb-3">${top.map((t) => `<li>• ${escapeHtml(t.activityType)}: ${Number(t.total || 0)} logs</li>`).join('') || '<li>• No activity data yet.</li>'}</ul>
-          <p class="text-slate-300">30-day consistency: <span class="text-violet-300">${Number(c.activeDays || 0)} active days</span>, <span class="text-violet-300">${Number(c.totalLogs || 0)} total logs</span>.</p>
+          ${buildProSummary(analytics, logsCache)}
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-lg border border-slate-700 bg-slate-900/40 p-3">
+              <p class="mb-2 text-xs uppercase tracking-wide text-slate-400">Trend (last 14 days)</p>
+              <div class="relative h-56">
+                <canvas id="routine-trend-chart" class="h-full w-full"></canvas>
+              </div>
+            </div>
+            <div class="rounded-lg border border-slate-700 bg-slate-900/40 p-3">
+              <p class="mb-2 text-xs uppercase tracking-wide text-slate-400">Activity Mix</p>
+              <div class="relative h-56">
+                <canvas id="routine-activity-chart" class="h-full w-full"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="rounded-lg border border-slate-700 bg-slate-900/40 p-3">
+            <p class="mb-2 text-xs uppercase tracking-wide text-slate-400">Consistency Heatmap (last 6 weeks)</p>
+            ${buildHeatmap(logsCache, 42)}
+            <p class="mt-2 text-xs text-slate-400">${Number(c.activeDays || 0)} active days in last 30 days • ${Number(c.totalLogs || 0)} total logs.</p>
+          </div>
+          <div class="rounded-lg border border-slate-700 bg-slate-900/40 p-3">
+            <p class="mb-2 text-xs uppercase tracking-wide text-slate-400">Before & After Comparison</p>
+            ${buildBeforeAfterImages(logsCache)}
+          </div>
         `;
+
+        const days = [];
+        const counts = [];
+        const byDate = logsByDateMap(logsCache);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const latestLoggedIso = [...byDate.keys()].sort().slice(-1)[0] || '';
+        const latestLoggedDate = parseISODateLocal(latestLoggedIso);
+        const rangeEnd = latestLoggedDate && latestLoggedDate > today ? latestLoggedDate : today;
+        for (let i = 13; i >= 0; i -= 1) {
+          const d = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate() - i);
+          const iso = formatLocalISO(d);
+          days.push(iso.slice(5));
+          counts.push((byDate.get(iso) || []).length);
+        }
+        if (routineTrendChart) routineTrendChart.destroy();
+        if (activityMixChart) activityMixChart.destroy();
+        const trendEl = document.getElementById('routine-trend-chart');
+        const mixEl = document.getElementById('routine-activity-chart');
+        if (window.Chart && trendEl && mixEl) {
+          const maxY = Math.max(2, ...counts, 0);
+          routineTrendChart = new Chart(trendEl.getContext('2d'), {
+            type: 'line',
+            data: {
+              labels: days,
+              datasets: [{ label: 'Logs', data: counts, borderColor: 'rgb(168, 85, 247)', backgroundColor: 'rgba(168,85,247,0.22)', fill: true, tension: 0.3 }],
+            },
+            options: {
+              animation: false,
+              responsive: true,
+              maintainAspectRatio: false,
+              normalized: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { beginAtZero: true, max: maxY, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(148,163,184,0.2)' } },
+                x: {
+                  ticks: {
+                    color: '#94a3b8',
+                    autoSkip: false,
+                    maxRotation: 0,
+                    callback: (value, index) => (index % 2 === 0 || index === days.length - 1 ? days[index] : ''),
+                  },
+                  grid: { color: 'rgba(148,163,184,0.08)' },
+                },
+              },
+            },
+          });
+
+          const labels = top.map((t) => t.activityType);
+          const vals = top.map((t) => Number(t.total || 0));
+          activityMixChart = new Chart(mixEl.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+              labels: labels.length ? labels : ['No data'],
+              datasets: [{ data: vals.length ? vals : [1], backgroundColor: ['#8b5cf6', '#22d3ee', '#34d399', '#f59e0b', '#f472b6', '#60a5fa'] }],
+            },
+            options: {
+              animation: false,
+              responsive: true,
+              maintainAspectRatio: false,
+              normalized: true,
+              plugins: { legend: { labels: { color: '#cbd5e1', boxWidth: 12, boxHeight: 12 } } },
+            },
+          });
+        }
       } catch (_err) {
         target.className = 'bg-slate-800/50 rounded-xl p-6 border border-slate-700 text-slate-400 text-sm';
         target.innerHTML = 'Upgrade to <a href="/pricing.html" class="underline text-violet-300">Pro</a> to unlock advanced analytics.';
+      } finally {
+        analyticsBusy = false;
       }
     }
 
@@ -707,6 +1026,7 @@
         closeLogModal();
         loadLogs();
         loadProgress();
+        scheduleAdvancedAnalytics(80);
       } catch (err) {
         showToast(err.error || 'Failed', 'error');
       }
@@ -719,6 +1039,7 @@
         showToast('Log deleted', 'success');
         loadLogs();
         loadProgress();
+        scheduleAdvancedAnalytics(80);
       } catch (err) {
         showToast(err.error || 'Failed', 'error');
       }
@@ -960,7 +1281,7 @@
     loadBillingStatus().then(loadReminders);
     loadLogs();
     loadProgress();
-    loadAdvancedAnalytics();
+    scheduleAdvancedAnalytics(160);
   </script>
 </body>
 </html>

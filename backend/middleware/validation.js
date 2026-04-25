@@ -28,6 +28,7 @@ const validateResetPassword = [
 const validateUpdateProfile = [
   body('name').optional().trim().isLength({ max: 200 }),
   body('email').optional().trim().isEmail().normalizeEmail(),
+  body('shareRoutineWithSpecialist').optional().isBoolean().toBoolean(),
 ];
 
 const validateAssessment = [

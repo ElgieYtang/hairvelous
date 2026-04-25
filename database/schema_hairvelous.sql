@@ -180,11 +180,12 @@ CREATE TABLE diy_guides (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------------
--- Seed: roles (admin, user)
+-- Seed: roles (user, specialist, admin)
 -- ---------------------------------------------------------------------------
 INSERT INTO roles (role_id, role_name) VALUES
 (1, 'user'),
-(2, 'admin');
+(2, 'specialist'),
+(3, 'admin');
 
 -- ---------------------------------------------------------------------------
 -- Seed: sample products and product_categories
@@ -223,4 +224,5 @@ INSERT INTO diy_guides (title, category, difficulty, ingredients, steps, caution
 -- Optional: seed users (passwords are bcrypt placeholders; run backend/scripts/seed-users.js to set real ones)
 -- INSERT INTO users (name, email, password_hash, role_id) VALUES
 -- ('Jane User', 'user@example.com', '$2a$10$placeholder', 1),
--- ('Admin User', 'admin@example.com', '$2a$10$placeholder', 2);
+-- ('Specialist User', 'specialist@example.com', '$2a$10$placeholder', 2),
+-- ('Admin User', 'admin@example.com', '$2a$10$placeholder', 3);

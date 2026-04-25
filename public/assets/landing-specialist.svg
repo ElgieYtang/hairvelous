@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Specialist consultation illustration">
+  <rect width="900" height="520" fill="#0b1220"/>
+  <rect x="70" y="80" width="360" height="360" rx="22" fill="#1e293b" stroke="#334155"/>
+  <circle cx="180" cy="170" r="42" fill="#334155"/>
+  <circle cx="310" cy="170" r="42" fill="#334155"/>
+  <path d="M130 250h100M260 250h100M130 280h210" stroke="#64748b" stroke-width="10" stroke-linecap="round"/>
+  <rect x="500" y="100" width="320" height="130" rx="18" fill="#1e293b" stroke="#334155"/>
+  <rect x="530" y="136" width="180" height="12" rx="6" fill="#a78bfa"/>
+  <rect x="530" y="164" width="220" height="10" rx="5" fill="#475569"/>
+  <rect x="500" y="260" width="320" height="180" rx="18" fill="#1e293b" stroke="#334155"/>
+  <path d="M560 350h80M600 310v80" stroke="#22d3ee" stroke-width="14" stroke-linecap="round"/>
+  <rect x="660" y="300" width="120" height="24" rx="12" fill="#7c3aed"/>
+  <rect x="660" y="340" width="95" height="18" rx="9" fill="#475569"/>
+  <rect x="660" y="370" width="70" height="18" rx="9" fill="#475569"/>
+</svg>
