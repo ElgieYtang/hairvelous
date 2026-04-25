@@ -2855,7 +2855,7 @@
         isSpecialist &&
         isMySpecialistCase(c) &&
         !hasPrescriptionData(c) &&
-        ['scheduled', 'in_progress', 'completed'].includes(String(c.status || ''));
+        ['in_progress', 'completed'].includes(String(c.status || ''));
       const canShowPrescription =
         hasPrescriptionData(c) || canEditPrescription || (clientUser && String(c.status || '') === 'completed');
       const prescriptionSection = canShowPrescription
