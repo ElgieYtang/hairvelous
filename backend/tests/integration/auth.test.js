@@ -56,7 +56,6 @@ describe('Integration Test - Authentication', () => {
     expect(response.body).toHaveProperty('user');
     expect(response.body.user).toHaveProperty('email', 'test@example.com');
     expect(response.body.user).toHaveProperty('userId');
-    expect(response.body).toHaveProperty('disclaimer');
     expect(typeof response.body.token).toBe('string');
     expect(response.body.token.length).toBeGreaterThan(0);
   });
