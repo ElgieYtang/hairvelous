@@ -264,10 +264,10 @@
   <script>
     if (!requireAuth()) { /* redirects */ }
 
-    // Hide professional-only fields for normal users
+    // Hide professional-only fields for non-specialist roles (including admin).
     const currentUser = getUser();
     const role = currentUser && (currentUser.roleName || currentUser.role);
-    if (role !== 'admin' && role !== 'seller' && role !== 'specialist') {
+    if (role !== 'specialist') {
       const specEl = document.getElementById('field-specialty');
       const rateEl = document.getElementById('field-consultation-rate');
       if (specEl) specEl.style.display = 'none';
@@ -294,6 +294,32 @@
     const idPreviewLightbox = document.getElementById('id-preview-lightbox');
     const idPreviewImage = document.getElementById('id-preview-image');
     const idPreviewTitle = document.getElementById('id-preview-title');
+
+    function nameInitial(value) {
+      const s = String(value || '').trim();
+      return s ? s.charAt(0).toUpperCase() : 'U';
+    }
+
+    function applyProfilePhotoState(photoUrl, displayName) {
+      const preview = document.getElementById('profile-photo-preview');
+      const placeholder = document.getElementById('profile-photo-placeholder');
+      if (!preview || !placeholder) return;
+      placeholder.textContent = nameInitial(displayName);
+      if (!photoUrl) {
+        preview.removeAttribute('src');
+        preview.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        return;
+      }
+      preview.onerror = () => {
+        preview.removeAttribute('src');
+        preview.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+      };
+      preview.src = photoUrl;
+      preview.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+    }
 
     async function loadProfile() {
       try {
@@ -322,20 +348,13 @@
         const shareChk = document.getElementById('shareRoutineWithSpecialist');
         if (shareChk) shareChk.checked = !!profile.shareRoutineWithSpecialist;
 
-        const preview = document.getElementById('profile-photo-preview');
-        const placeholder = document.getElementById('profile-photo-placeholder');
+        applyProfilePhotoState(profile.profilePhotoUrl, profile.name);
         if (profile.profilePhotoUrl) {
-          preview.src = profile.profilePhotoUrl;
-          preview.classList.remove('hidden');
-          placeholder.classList.add('hidden');
           if (typeof window.HairvelousUpdateAccountAvatar === 'function') {
             const u = getUser();
             if (u) setUser({ ...u, profilePhotoUrl: profile.profilePhotoUrl });
             window.HairvelousUpdateAccountAvatar(profile.profilePhotoUrl);
           }
-        } else {
-          preview.classList.add('hidden');
-          placeholder.classList.remove('hidden');
         }
         renderVerificationDocs();
       } catch (err) {
@@ -463,11 +482,7 @@
       try {
         const updated = await apiForm('/profile/photo', fd);
         profile = updated;
-        const preview = document.getElementById('profile-photo-preview');
-        const placeholder = document.getElementById('profile-photo-placeholder');
-        preview.src = updated.profilePhotoUrl || preview.src;
-        preview.classList.remove('hidden');
-        placeholder.classList.add('hidden');
+        applyProfilePhotoState(updated.profilePhotoUrl, updated.name || (profile && profile.name));
         if (typeof window.HairvelousUpdateAccountAvatar === 'function' && updated.profilePhotoUrl) {
           const u = getUser();
           if (u) setUser({ ...u, profilePhotoUrl: updated.profilePhotoUrl });

@@ -36,7 +36,11 @@ function initFirebaseAdmin() {
 }
 
 function isFirebaseConfigured() {
-  return !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  const credPath = (process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim();
+  if (!credPath) return false;
+  const backendDir = path.join(__dirname, '..');
+  const absPath = path.isAbsolute(credPath) ? credPath : path.join(backendDir, credPath);
+  return fs.existsSync(absPath);
 }
 
 /**

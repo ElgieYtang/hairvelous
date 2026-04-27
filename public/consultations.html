@@ -1130,6 +1130,15 @@
       return d.innerHTML;
     }
 
+    function displayName(v) {
+      const raw = String(v || '').trim();
+      if (!raw) return '';
+      return raw
+        .split(/\s+/)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ');
+    }
+
     function hasPrescriptionData(c) {
       if (!c) return false;
       return (
@@ -1359,8 +1368,8 @@
       if (c.prescriptionIssuedAt) {
         writeLine(`Issued at: ${new Date(c.prescriptionIssuedAt).toLocaleString()}`, 10, 8);
       }
-      writeLine(`Client: ${c.userName || '—'}`, 11, 6);
-      writeLine(`Specialist: ${c.specialistName || '—'}`, 11, 10);
+      writeLine(`Client: ${displayName(c.userName) || '—'}`, 11, 6);
+      writeLine(`Specialist: ${displayName(c.specialistName) || '—'}`, 11, 10);
       writeLine(`Concern: ${c.concernTitle || '—'}`, 11, 12);
       doc.setFont('helvetica', 'bold');
       writeLine('1) Care Summary', 12, 4);
@@ -1691,7 +1700,7 @@
       if (!Number.isFinite(uid) || uid <= 0 || !specialistFeedbackBackdrop || !specialistFeedbackList) return;
       const specialist = specialistsForBooking.find((s) => Number(s.userId) === uid);
       if (specialistFeedbackTitle) {
-        specialistFeedbackTitle.textContent = `Feedback for ${specialist && specialist.name ? specialist.name : 'specialist'}`;
+        specialistFeedbackTitle.textContent = `Feedback for ${specialist && specialist.name ? displayName(specialist.name) : 'specialist'}`;
       }
       if (specialistFeedbackSubtitle) specialistFeedbackSubtitle.textContent = 'Recent client comments and ratings';
       specialistFeedbackList.innerHTML = '<p class="text-sm text-slate-400">Loading feedback...</p>';
@@ -1714,7 +1723,7 @@
                 <p class="text-[11px] text-slate-500">${esc(formatFeedbackDate(r.createdAt))}</p>
               </div>
               <p class="mt-2 text-sm text-slate-200">${esc(txt || 'No comment text provided.')}</p>
-              <p class="mt-2 text-[11px] font-medium text-slate-500">- ${esc(r.clientName || 'Client')}</p>
+              <p class="mt-2 text-[11px] font-medium text-slate-500">- ${esc(displayName(r.clientName) || 'Client')}</p>
             </article>`;
           })
           .join('');
@@ -1822,13 +1831,14 @@
       const feedbackLabel = topFeedback
         ? `“${feedbackPreview}${feedbackPreview.length >= 120 ? '…' : ''}”`
         : 'No client comments yet.';
-      const feedbackBy = topFeedback && topFeedback.clientName ? `- ${topFeedback.clientName}` : '';
+      const feedbackBy = topFeedback && topFeedback.clientName ? `- ${displayName(topFeedback.clientName)}` : '';
+      const initials = esc(specialistInitials(s.name));
       const bannerImg = s.profilePhotoUrl
-        ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-full min-h-[6.5rem] w-full object-cover opacity-95" />`
-        : `<div class="flex h-full min-h-[6.5rem] w-full items-center justify-center bg-gradient-to-br from-violet-900/80 via-slate-900 to-slate-950"><span class="text-3xl font-bold text-violet-200/90">${esc(specialistInitials(s.name))}</span></div>`;
+        ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-full min-h-[6.5rem] w-full object-cover opacity-95" onerror="this.onerror=null;this.outerHTML='<div class=&quot;flex h-full min-h-[6.5rem] w-full items-center justify-center bg-gradient-to-br from-violet-900/80 via-slate-900 to-slate-950&quot;><span class=&quot;text-3xl font-bold text-violet-200/90&quot;>${initials}</span></div>';" />`
+        : `<div class="flex h-full min-h-[6.5rem] w-full items-center justify-center bg-gradient-to-br from-violet-900/80 via-slate-900 to-slate-950"><span class="text-3xl font-bold text-violet-200/90">${initials}</span></div>`;
       const avatarInner = s.profilePhotoUrl
-        ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-full w-full object-cover" />`
-        : `<span class="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-violet-900 text-base font-bold text-white">${esc(specialistInitials(s.name))}</span>`;
+        ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-full w-full object-cover" onerror="this.onerror=null;this.outerHTML='<span class=&quot;flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-violet-900 text-base font-bold text-white&quot;>${initials}</span>';" />`
+        : `<span class="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-violet-900 text-base font-bold text-white">${initials}</span>`;
       const tagPills = tags
         .slice(0, 3)
         .map(
@@ -1865,7 +1875,7 @@
             : ''
         }
         <h3 class="mt-3 line-clamp-2 text-[15px] font-bold leading-snug text-white sm:text-base">
-          ${esc(s.name || 'Specialist')}<span class="font-normal text-slate-400"> · ${esc(hook.length > 48 ? hook.slice(0, 46) + '…' : hook)}</span>
+          ${esc(displayName(s.name) || 'Specialist')}<span class="font-normal text-slate-400"> · ${esc(hook.length > 48 ? hook.slice(0, 46) + '…' : hook)}</span>
         </h3>
         <p class="mt-1.5 line-clamp-1 text-xs font-medium leading-snug text-slate-400">${esc(category)}</p>
         <p class="mt-2 flex items-start gap-1.5 text-xs leading-snug text-slate-400">
@@ -1948,7 +1958,7 @@
       const phase = getConsultationTrackerPhase(c);
       const { currentStep, awaitingSpecialist, needPayment } = phase;
       const id = Number(c.consultationId);
-      const spec = esc(c.specialistName || 'Your specialist');
+      const spec = esc(displayName(c.specialistName) || 'Your specialist');
       const title = esc(c.concernTitle || 'Consultation');
       const pref = c.preferredDate ? esc(String(c.preferredDate).slice(0, 10)) : '—';
       const fee =
@@ -2204,7 +2214,7 @@
           s = specialistsForBooking.find((x) => Number(x.userId) === uid);
         } catch (_) {}
       }
-      const name = esc(s?.name || c.specialistName || 'Specialist');
+      const name = esc(displayName(s?.name || c.specialistName) || 'Specialist');
       const specLine = esc(s?.specialty || 'Hair specialist');
       const loc = esc(s?.location || '—');
       let rateLabel = 'On request';
@@ -2212,10 +2222,10 @@
         rateLabel = 'From ₱' + Number(s.consultationRate).toFixed(0);
       }
       const bio = esc(s?.bioSnippet || 'Hair and scalp specialist — book for tailored advice.');
-      const initials = listAvatarInitials(s?.name || c.specialistName || '');
+      const initials = listAvatarInitials(displayName(s?.name || c.specialistName || ''));
       const photo =
         s?.profilePhotoUrl
-          ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-slate-600" />`
+          ? `<img src="${esc(s.profilePhotoUrl)}" alt="" class="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-slate-600" onerror="this.onerror=null;this.outerHTML='<div class=&quot;flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-900 text-lg font-bold text-white ring-2 ring-slate-600&quot;>${esc(initials)}</div>';" />`
           : `<div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-900 text-lg font-bold text-white ring-2 ring-slate-600">${esc(initials)}</div>`;
       const tags = (s?.expertiseTags || [])
         .slice(0, 8)
@@ -2571,7 +2581,7 @@
       if (specLine && c) {
         const rate =
           c.amountPhp != null ? `Fee ₱${Number(c.amountPhp).toLocaleString()}` : 'Fee on request';
-        specLine.textContent = `${c.specialistName || 'Specialist'} · ${rate}`;
+        specLine.textContent = `${displayName(c.specialistName) || 'Specialist'} · ${rate}`;
       }
       if (dateEl) {
         dateEl.textContent = c && c.preferredDate ? String(c.preferredDate).slice(0, 10) : '—';
@@ -3107,7 +3117,7 @@
       if (droutine) {
         droutine.addEventListener('click', () => {
           const uid = Number(droutine.getAttribute('data-client-user-id'));
-          if (Number.isFinite(uid)) openClientRoutineModal(uid, c.userName || 'Client');
+          if (Number.isFinite(uid)) openClientRoutineModal(uid, displayName(c.userName) || 'Client');
         });
       }
       const savePrescriptionBtn = el.querySelector('#savePrescriptionBtn');
@@ -3406,7 +3416,7 @@
           const id = Number(c.consultationId);
           const active = activeChatId === id;
           const snippet = (c.concernMessage || '').replace(/\s+/g, ' ').slice(0, 56);
-          const partner = partnerNameForList(c);
+      const partner = partnerNameForList(c);
           const initials = listAvatarInitials(partner);
           const partnerPhoto = partnerPhotoForList(c);
           const avatarHtml = partnerPhoto
@@ -3425,7 +3435,7 @@
               </div>
               <p class="mt-0.5 line-clamp-1 text-xs text-slate-300">${esc(c.concernTitle || '')}</p>
               <p class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500">${esc(snippet)}${snippet.length >= 56 ? '…' : ''}</p>
-              ${isModerator || isSpecialist ? `<p class="mt-1 truncate text-[9px] text-slate-600">${esc(c.userName || '')}</p>` : ''}
+              ${isModerator || isSpecialist ? `<p class="mt-1 truncate text-[9px] text-slate-600">${esc(displayName(c.userName || ''))}</p>` : ''}
               ${isSpecialist ? `<p class="mt-1 text-[10px] text-slate-500">Updated ${esc(formatRelativeTime(c.updatedAt || c.createdAt))}</p>` : ''}
             </div>
           </button>`;
@@ -3486,7 +3496,7 @@
               const titleEl = document.getElementById('adminApprovalModalTitle');
               const subEl = document.getElementById('adminApprovalModalSubtitle');
               if (titleEl) titleEl.textContent = cur.concernTitle || 'Consultation';
-              if (subEl) subEl.textContent = `${cur.userName || 'User'} · ${cur.userEmail || '—'}`;
+              if (subEl) subEl.textContent = `${displayName(cur.userName) || 'User'} · ${cur.userEmail || '—'}`;
             }
           } else {
             renderDetail(cur);
@@ -3520,11 +3530,11 @@
 
     function partnerNameForHeader(c, messages) {
       if (!c) return 'Consultation';
-      if (isModerator || isSpecialist) return c.userName || 'User';
+      if (isModerator || isSpecialist) return displayName(c.userName) || 'User';
       if (c.specialistName) return c.specialistName;
       if (messages && messages.length) {
         const specMsg = [...messages].reverse().find((m) => String(m.senderRole).toLowerCase() === 'specialist');
-        if (specMsg && specMsg.senderName) return specMsg.senderName;
+        if (specMsg && specMsg.senderName) return displayName(specMsg.senderName);
       }
       return 'Hair specialist';
     }
@@ -3555,8 +3565,8 @@
 
     function partnerNameForList(c) {
       if (!c) return 'Consultation';
-      if (isModerator || isSpecialist) return c.userName || 'User';
-      if (c.specialistName) return c.specialistName;
+      if (isModerator || isSpecialist) return displayName(c.userName) || 'User';
+      if (c.specialistName) return displayName(c.specialistName);
       return 'Hair specialist';
     }
 
@@ -3615,7 +3625,7 @@
         ? 'You'
         : senderRole === 'assistant'
           ? 'Hairvelous AI Assistant'
-          : `${m.senderName || 'Unknown'} · ${m.senderRole || 'user'}`;
+          : `${displayName(m.senderName) || 'Unknown'} · ${m.senderRole || 'user'}`;
       const mid = m.messageId != null ? m.messageId : m.message_id;
       const canDelete = mid && (isModerator || mine);
       const resolvedImg = resolveChatImageUrl(m);
@@ -3647,8 +3657,8 @@
       const senderAvatar = mine
         ? ''
         : m.senderPhotoUrl
-          ? '<img src="' + esc(m.senderPhotoUrl) + '" alt="' + esc(m.senderName || 'Sender') + '" class="mt-1 h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-600/60" />'
-          : '<span class="mt-1 h-8 w-8 shrink-0 rounded-full bg-slate-700/90 text-center text-[10px] font-bold leading-8 text-slate-300 ring-1 ring-slate-600/60" aria-hidden="true">' + esc(listAvatarInitials(m.senderName || '?')) + '</span>';
+          ? '<img src="' + esc(m.senderPhotoUrl) + '" alt="' + esc(displayName(m.senderName) || 'Sender') + '" class="mt-1 h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-600/60" />'
+          : '<span class="mt-1 h-8 w-8 shrink-0 rounded-full bg-slate-700/90 text-center text-[10px] font-bold leading-8 text-slate-300 ring-1 ring-slate-600/60" aria-hidden="true">' + esc(listAvatarInitials(displayName(m.senderName) || '?')) + '</span>';
       return `
         <div class="flex gap-2 ${mine ? 'justify-end' : 'justify-start'}">
           ${senderAvatar}
@@ -3789,7 +3799,7 @@
         const titleEl = document.getElementById('adminApprovalModalTitle');
         const subEl = document.getElementById('adminApprovalModalSubtitle');
         if (titleEl) titleEl.textContent = c.concernTitle || concernTitle || 'Consultation';
-        if (subEl) subEl.textContent = `${c.userName || 'User'} · ${c.userEmail || '—'}`;
+        if (subEl) subEl.textContent = `${displayName(c.userName) || 'User'} · ${c.userEmail || '—'}`;
         renderDetail(c, modalBody);
         openAdminApprovalModal();
         return;

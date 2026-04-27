@@ -148,13 +148,41 @@
       return d.toISOString().slice(0, 10);
     }
 
-    function setIdentity(profilePhotoUrl) {
-      const user = getUser() || {};
-      const name = user.name || 'Hairvelous User';
-      const email = user.email || '';
+    function getDisplayName(user) {
+      if (!user || typeof user !== 'object') return 'Hairvelous User';
+      const direct =
+        (typeof user.name === 'string' && user.name.trim()) ||
+        (typeof user.fullName === 'string' && user.fullName.trim()) ||
+        (typeof user.displayName === 'string' && user.displayName.trim());
+      if (direct) return direct;
+      const first = typeof user.firstName === 'string' ? user.firstName.trim() : '';
+      const last = typeof user.lastName === 'string' ? user.lastName.trim() : '';
+      const combined = `${first} ${last}`.trim();
+      if (combined) return combined;
+      if (typeof user.email === 'string' && user.email.includes('@')) {
+        return user.email.split('@')[0];
+      }
+      return 'Hairvelous User';
+    }
+
+    function normalizeDisplayName(name) {
+      if (!name || typeof name !== 'string') return 'Hairvelous User';
+      return name
+        .trim()
+        .split(/\s+/)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ');
+    }
+
+    function setIdentity(profileData) {
+      const sessionUser = getUser() || {};
+      const profile = profileData && typeof profileData === 'object' ? profileData : {};
+      const merged = { ...sessionUser, ...profile };
+      const name = normalizeDisplayName(getDisplayName(merged));
+      const email = merged.email || '';
       const initial = name.charAt(0).toUpperCase();
       const avatar = document.getElementById('user-avatar');
-      const rawPhoto = profilePhotoUrl || user.profilePhotoUrl || '';
+      const rawPhoto = merged.profilePhotoUrl || '';
       const safePhoto = typeof rawPhoto === 'string' && rawPhoto.trim().startsWith('/') ? rawPhoto.trim() : '';
       document.getElementById('user-name').textContent = name;
       document.getElementById('user-email').textContent = email;
@@ -256,10 +284,17 @@
 
       try {
         let profile = await api('/profile');
-        if (profile && profile.profilePhotoUrl) {
+        if (profile) {
           const u = getUser();
-          if (u) setUser({ ...u, profilePhotoUrl: profile.profilePhotoUrl });
-          setIdentity(profile.profilePhotoUrl);
+          if (u) {
+            setUser({
+              ...u,
+              name: profile.name || u.name,
+              email: profile.email || u.email,
+              profilePhotoUrl: profile.profilePhotoUrl || u.profilePhotoUrl,
+            });
+          }
+          setIdentity(profile);
         }
         let hp = profile.hairProfile;
         if (!hp) {

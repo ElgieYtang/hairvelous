@@ -127,7 +127,10 @@
             <div class="flex items-center gap-3">
               ${
                 s.profilePhotoUrl
-                  ? `<img src="${escapeHtml(s.profilePhotoUrl)}" alt="${escapeHtml(s.name || 'Specialist')}" class="w-10 h-10 rounded-full object-cover shrink-0 ring-1 ring-slate-600/70" />`
+                  ? `<span class="relative w-10 h-10 shrink-0">
+                      <img src="${escapeHtml(s.profilePhotoUrl)}" alt="${escapeHtml(s.name || 'Specialist')}" class="w-10 h-10 rounded-full object-cover ring-1 ring-slate-600/70" onerror="this.classList.add('hidden');this.nextElementSibling.classList.remove('hidden');" />
+                      <span class="hidden absolute inset-0 w-10 h-10 rounded-full bg-cyan-600/30 flex items-center justify-center text-sm font-semibold">${escapeHtml(initials(s.name || 'S'))}</span>
+                    </span>`
                   : `<div class="w-10 h-10 rounded-full bg-cyan-600/30 flex items-center justify-center text-sm font-semibold shrink-0">${escapeHtml(initials(s.name || 'S'))}</div>`
               }
               <span class="font-medium text-white">${escapeHtml(s.name || '—')}</span>

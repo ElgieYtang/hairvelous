@@ -15,8 +15,12 @@ const pool = mysql.createPool({
   keepAliveInitialDelay: 0,
 });
 
-// Test connection (skip when running without a database)
-if (process.env.SKIP_DB_FOR_TESTING !== 'true') {
+// Test connection on app runtime, but avoid creating extra handles in Jest.
+const shouldTestConnection =
+  process.env.SKIP_DB_FOR_TESTING !== 'true' &&
+  process.env.NODE_ENV !== 'test';
+
+if (shouldTestConnection) {
   pool.getConnection()
     .then(connection => {
       const cfg = getMysqlConnectionOptions();
@@ -29,7 +33,7 @@ if (process.env.SKIP_DB_FOR_TESTING !== 'true') {
       console.error('✗ Database connection failed:', err.message);
     });
 } else {
-  console.log('⚠ Database connection skipped (SKIP_DB_FOR_TESTING=true)');
+  console.log('⚠ Database connection check skipped (test mode or SKIP_DB_FOR_TESTING=true)');
 }
 
 module.exports = pool;

@@ -46,7 +46,9 @@ class NotificationService {
       message = '',
       linkUrl = null,
     } = payload || {};
-    if (!recipientUserId || !message) return null;
+    if (!recipientUserId || !message) {
+      return null;
+    }
     const [result] = await pool.query(
       `INSERT INTO notifications (recipient_user_id, type, title, message, link_url)
        VALUES (?, ?, ?, ?, ?)`,

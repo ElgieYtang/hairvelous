@@ -4,6 +4,8 @@
  * Purpose: Business logic for admin operations
  */
 const bcrypt = require('bcryptjs');
+const fs = require('fs').promises;
+const path = require('path');
 const pool = require('../config/db');
 
 function toUrl(filePath) {
@@ -11,6 +13,20 @@ function toUrl(filePath) {
   const normalized = String(filePath).replace(/\\/g, '/');
   if (normalized.startsWith('http://') || normalized.startsWith('https://')) return normalized;
   return '/' + normalized.replace(/^\/+/, '');
+}
+
+async function toUrlIfLocalFileExists(filePath) {
+  const url = toUrl(filePath);
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const relative = url.replace(/^\/+/, '');
+  const absolute = path.join(__dirname, '..', '..', relative);
+  try {
+    await fs.access(absolute);
+    return url;
+  } catch (_err) {
+    return null;
+  }
 }
 
 class AdminService {
@@ -56,14 +72,14 @@ class AdminService {
        WHERE r.role_name = 'user'
        ORDER BY u.date_created DESC`
     );
-    return rows.map(r => ({
+    return Promise.all(rows.map(async (r) => ({
       userId: r.user_id,
       name: r.name,
       email: r.email,
       dateCreated: r.date_created,
       isSuspended: !!r.is_suspended,
-      profilePhotoUrl: toUrl(r.profile_photo_path),
-    }));
+      profilePhotoUrl: await toUrlIfLocalFileExists(r.profile_photo_path),
+    })));
   }
 
   /**
@@ -81,7 +97,7 @@ class AdminService {
        WHERE r.role_name = 'specialist'
        ORDER BY u.date_created DESC`
     );
-    return rows.map(r => ({
+    return Promise.all(rows.map(async (r) => ({
       userId: r.user_id,
       name: r.name,
       email: r.email,
@@ -89,8 +105,8 @@ class AdminService {
       isSuspended: !!r.is_suspended,
       consultationRate: r.consultation_rate != null ? Number(r.consultation_rate) : null,
       idVerificationStatus: r.id_verification_status || 'not_submitted',
-      profilePhotoUrl: toUrl(r.profile_photo_path),
-    }));
+      profilePhotoUrl: await toUrlIfLocalFileExists(r.profile_photo_path),
+    })));
   }
 
   /**

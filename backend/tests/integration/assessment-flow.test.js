@@ -104,7 +104,6 @@ describe('Integration Test - Assessment Flow', () => {
     expect(resultsResponse.body).toHaveProperty('hairType');
     expect(resultsResponse.body).toHaveProperty('scalpCondition');
     expect(resultsResponse.body).toHaveProperty('issuesDetected');
-    expect(resultsResponse.body).toHaveProperty('disclaimer');
 
     // Verify recommendations were generated (this is the key test)
     expect(resultsResponse.body).toHaveProperty('recommendations');

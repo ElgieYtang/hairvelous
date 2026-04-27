@@ -10,6 +10,13 @@ const { signToken } = require('../middleware/auth');
 const emailService = require('./emailService');
 
 class AuthService {
+  buildAuthFailure(message) {
+    const err = new Error(message);
+    err.status = 401;
+    err.code = 'AUTH_INVALID_CREDENTIALS';
+    return err;
+  }
+
   async ensureUserProfileDemographicColumns() {
     const [columns] = await pool.query(
       `SELECT LOWER(COLUMN_NAME) AS name
@@ -133,7 +140,7 @@ async register(name, email, password, profile = {}) {
     const [rows] = await pool.query(query, [email]);
 
     if (rows.length === 0) {
-      throw new Error('Invalid email or password');
+      throw this.buildAuthFailure('Invalid email or password');
     }
 
     const user = rows[0];
@@ -141,15 +148,15 @@ async register(name, email, password, profile = {}) {
     // Allow dual auth: Google-linked accounts can still use email/password
     // after they set a password via forgot-password/reset flow.
     if (!user.password_hash) {
-      throw new Error('No password is set for this account yet. Use "Forgot password" to create one.');
+      throw this.buildAuthFailure('No password is set for this account yet. Use "Forgot password" to create one.');
     }
 
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
       if (hasGoogleColumns && user.auth_provider === 'google') {
-        throw new Error('Incorrect password. If this is a Google account, use "Forgot password" to set an email password.');
+        throw this.buildAuthFailure('Incorrect password. If this is a Google account, use "Forgot password" to set an email password.');
       }
-      throw new Error('Invalid email or password');
+      throw this.buildAuthFailure('Invalid email or password');
     }
 
     if (user.is_suspended === 1 || user.is_suspended === true) {
