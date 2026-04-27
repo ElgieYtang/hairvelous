@@ -4,6 +4,7 @@
   "private": true,
   "description": "Hairvelous – Hair Care and Product Recommendations",
   "scripts": {
+    "prestart": "node scripts/free-port-3000.js",
     "start": "cd backend && npm start",
     "dev": "cd backend && npm run dev",
     "setup": "cd backend && npm run setup",

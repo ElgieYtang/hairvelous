@@ -203,7 +203,7 @@ function renderNav() {
                  }
                 <a href="/profile-edit.html" class="mb-3 flex items-center gap-3 rounded-xl border border-slate-700/80 bg-slate-800/55 px-3 py-2.5 hover:bg-slate-800/80 transition-colors">
                   <div class="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-500/35 bg-gradient-to-b from-violet-500/25 to-slate-900 text-xs font-semibold text-violet-100">
-                    <img id="mobile-account-photo"${profilePhotoSrc ? ` src="${escapeHtml(profilePhotoSrc)}"` : ''} alt="" class="absolute inset-0 h-full w-full object-cover ${profilePhotoSrc ? '' : 'hidden'}" decoding="async" />
+                    <img id="mobile-account-photo"${profilePhotoSrc ? ` src="${escapeHtml(profilePhotoSrc)}"` : ''} alt="" class="absolute inset-0 h-full w-full object-cover ${profilePhotoSrc ? '' : 'hidden'}" decoding="async" onerror="this.classList.add('hidden');var i=document.getElementById('mobile-account-initial');if(i)i.classList.remove('hidden');" />
                     <span id="mobile-account-initial" class="${profilePhotoSrc ? 'hidden' : ''}">${accountInitial}</span>
                   </div>
                   <div class="min-w-0">
@@ -275,7 +275,7 @@ function renderNav() {
                  : 'hover:bg-slate-800/55'
              }" title="${escapeHtml('Your profile — ' + (user.email || ''))}" aria-label="Account and profile">
                <div id="sidebar-account-avatar" class="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-500/35 bg-gradient-to-b from-violet-500/25 to-slate-900 text-sm font-semibold text-violet-100 group-hover:border-violet-400/50" aria-hidden="true">
-                 <img id="sidebar-account-photo"${profilePhotoSrc ? ` src="${escapeHtml(profilePhotoSrc)}"` : ''} alt="" class="absolute inset-0 h-full w-full object-cover ${profilePhotoSrc ? '' : 'hidden'}" decoding="async" />
+                 <img id="sidebar-account-photo"${profilePhotoSrc ? ` src="${escapeHtml(profilePhotoSrc)}"` : ''} alt="" class="absolute inset-0 h-full w-full object-cover ${profilePhotoSrc ? '' : 'hidden'}" decoding="async" onerror="this.classList.add('hidden');var i=document.getElementById('sidebar-account-initial');if(i)i.classList.remove('hidden');" />
                  <span id="sidebar-account-initial" class="relative z-0 ${profilePhotoSrc ? 'hidden' : ''}">${accountInitial}</span>
                </div>
               <div class="min-w-0 flex-1">
@@ -624,11 +624,16 @@ function initLayout() {
     if (typeof getToken === 'function' && getToken() && typeof getUser === 'function' && getUser() && typeof api === 'function') {
       api('/profile')
         .then((p) => {
-          if (p && p.profilePhotoUrl) {
-            const u = getUser();
-            if (u) setUser({ ...u, profilePhotoUrl: p.profilePhotoUrl });
-            syncAccountAvatarFromProfile(p.profilePhotoUrl);
+          const u = getUser();
+          if (u) {
+            setUser({
+              ...u,
+              profilePhotoUrl: (p && p.profilePhotoUrl) || '',
+              name: (p && p.name) || u.name,
+              email: (p && p.email) || u.email,
+            });
           }
+          syncAccountAvatarFromProfile((p && p.profilePhotoUrl) || '');
         })
         .catch(() => {});
     }

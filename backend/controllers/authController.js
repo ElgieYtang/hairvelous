@@ -102,11 +102,10 @@ class AuthController {
       const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
       const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
       const callbackUrl = process.env.GOOGLE_CALLBACK_URL?.trim();
-      const firebaseCredPath = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
       
       const isConfigured = !!(clientId && clientSecret && callbackUrl && 
                                clientId !== '' && clientSecret !== '' && callbackUrl !== '');
-      const firebaseConfigured = !!(firebaseCredPath && firebaseCredPath !== '');
+      const firebaseConfigured = firebaseAuthService.isFirebaseConfigured();
       
       res.json({ configured: isConfigured || firebaseConfigured, oauthConfigured: isConfigured, firebaseConfigured });
     } catch (err) {

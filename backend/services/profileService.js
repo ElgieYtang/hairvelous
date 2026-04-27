@@ -152,6 +152,17 @@ class ProfileService {
     );
 
     const toUrl = (p) => (p ? '/' + p.replace(/\\/g, '/') : null);
+    const toUrlIfFileExists = async (p) => {
+      const url = toUrl(p);
+      if (!url) return null;
+      const absolute = path.join(__dirname, '..', '..', url.replace(/^\/+/, ''));
+      try {
+        await fs.access(absolute);
+        return url;
+      } catch (_err) {
+        return null;
+      }
+    };
 
     return {
       userId: user.user_id,
@@ -159,7 +170,7 @@ class ProfileService {
       email: user.email,
       roleName: user.role_name,
       dateCreated: user.date_created,
-      profilePhotoUrl: toUrl(user.profile_photo_path),
+      profilePhotoUrl: await toUrlIfFileExists(user.profile_photo_path),
       specialty: user.specialty || null,
       location: user.location || null,
       consultationRate: user.consultation_rate != null ? Number(user.consultation_rate) : null,
@@ -393,7 +404,8 @@ class ProfileService {
          FROM users u
          JOIN roles r ON r.role_id = u.role_id
          LEFT JOIN user_profiles up ON up.user_id = u.user_id
-         WHERE r.role_name IN ('seller', 'specialist')
+         WHERE r.role_name = 'specialist'
+           AND up.id_verification_status = 'verified'
            AND (u.is_suspended IS NULL OR u.is_suspended = 0)
          ORDER BY u.name ASC`
       );
@@ -407,12 +419,24 @@ class ProfileService {
          FROM users u
          JOIN roles r ON r.role_id = u.role_id
          LEFT JOIN user_profiles up ON up.user_id = u.user_id
-         WHERE r.role_name IN ('seller', 'specialist')
+         WHERE r.role_name = 'specialist'
+           AND up.id_verification_status = 'verified'
          ORDER BY u.name ASC`
       );
       rows = fallbackRows;
     }
-    const toUrl = (p) => (p ? '/' + String(p).replace(/\\/g, '/') : null);
+    const toUrlIfFileExists = async (p) => {
+      if (!p) return null;
+      const normalized = String(p).replace(/\\/g, '/');
+      const absolute = path.join(__dirname, '..', '..', normalized);
+      try {
+        await fs.access(absolute);
+        return '/' + normalized;
+      } catch (_err) {
+        // Imported DB dumps may reference files that don't exist locally.
+        return null;
+      }
+    };
 
     const tagsFromProfile = (expertiseJson, skillsJson, specialty) => {
       const tags = [];
@@ -454,7 +478,7 @@ class ProfileService {
       return 'Hair and scalp specialist — book a session for tailored advice and product direction.';
     };
 
-    return rows.map((row) => {
+    return Promise.all(rows.map(async (row) => {
       const bioFull = bioFromProfile(row.expertise_json, row.specialty);
       const bioSnippet = bioFull.length > 140 ? `${bioFull.slice(0, 137)}...` : bioFull;
       return {
@@ -463,11 +487,11 @@ class ProfileService {
         specialty: row.specialty || null,
         location: row.location || null,
         consultationRate: row.consultation_rate != null ? Number(row.consultation_rate) : null,
-        profilePhotoUrl: toUrl(row.profile_photo_path),
+        profilePhotoUrl: await toUrlIfFileExists(row.profile_photo_path),
         expertiseTags: tagsFromProfile(row.expertise_json, row.skills_json, row.specialty),
         bioSnippet,
       };
-    });
+    }));
   }
 }
 
